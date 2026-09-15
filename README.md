@@ -84,11 +84,12 @@ Afterwards you get counts per category, the `needs_review` count, how many dupli
 were merged, and what was filtered out — check that before trusting the result.
 
 > **Where pricePerStock comes from.** The masterdoc has no per-stock price, so it is
-> derived: `Pris 1st inkl. moms` × `Innehåll DFP` (45 kr × 10 = 450 kr). That keeps the
-> meaning the field had in Phase 1 — what a full stock is worth on the shelf. To price
-> orders at cost (`Inpris` × `Innehåll DFP`) instead, change `PRICE_BASIS` in
-> `src/lib/supplier-xlsx.ts` — it is one constant, and every price column is stored
-> either way.
+> derived: **`Inpris` × `Innehåll DFP`** (23 kr × 10 = 230 kr) — what the store actually
+> pays for a stock. `Pris 1st inkl. moms` and `Pris 2st inkl. moms` are shelf prices the
+> *customer* pays; they are still stored per product as `unitPrice` / `casePrice`, but
+> order totals are not built from them. Change `PRICE_BASIS` in
+> `src/lib/supplier-xlsx.ts` to switch basis — it is one constant, and every price
+> column is stored either way.
 
 ### The name parser
 
@@ -113,13 +114,20 @@ The masterdoc has no brand column, so brand/flavor/strength/format are read off
 Set when the parser wasn't confident, with the reason in `reviewNotes` and the original
 `Benämning` kept in `sourceName` so a bad parse can always be traced back. It is raised
 for: an unknown brand, a **nicotine pouch or vape with no strength in the name**, an
-empty flavor, or two articles that parsed to the same variant (only one is kept).
+empty flavor, two articles that parsed to the same variant (only one is kept), and the
+two price gaps below.
 
 A missing strength is *not* flagged for nicotine-free pouches (stored as `0mg`) or
 tobacco snus (stored as `Regular`) — those genuinely have no strength to state.
 
-On the 2026-09-14 file that's **319 of 1086** products, nearly all of them nicotine
-pouches whose name simply has no mg value. The admin page shows the count; the flagged
+**Price gaps are flagged, never dropped or guessed.** A product with no `Inpris` is
+imported at **0 kr**, and a product whose `Innehåll DFP` is 0 is priced **per can rather
+than per stock** — in both cases the row stays orderable and the note says exactly what
+is missing. Guessing a price would quietly put a wrong number on every order; dropping
+the row would stop staff ordering a product they actually stock.
+
+On the 2026-09-14 file that's **366 of 1088** products: mostly nicotine pouches whose
+name has no mg value, plus 67 with no `Inpris` and 54 with no `Innehåll DFP`. The admin page shows the count; the flagged
 rows import and are orderable, they just need a human pass.
 
 To check parse quality on a new file before importing:

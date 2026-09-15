@@ -43,12 +43,12 @@ const COLUMNS = {
 /**
  * pricePerStock is derived, because the masterdoc has no per-stock price.
  *
- * "retail" keeps the meaning Phase 1 gave the field (what a full stock is worth
- * on the shelf): `Pris 1st inkl. moms` x `Innehåll DFP`. Switch to "cost" to
- * price orders at `Inpris` x `Innehåll DFP` instead — that is the only change
- * needed, every other column is stored either way.
+ * "cost" is what a restock order actually costs the store: `Inpris` x
+ * `Innehåll DFP`. `Pris 1st/2st inkl. moms` are shelf prices the customer pays,
+ * not the store — they are still stored per product as unitPrice / casePrice,
+ * just not used for order totals.
  */
-export const PRICE_BASIS: "retail" | "cost" | "case" = "retail";
+export const PRICE_BASIS: "cost" | "retail" | "case" = "cost";
 
 export type SupplierRow = ProductInput & {
   sku: string | null;
@@ -76,6 +76,8 @@ export type SupplierParseResult = {
     skippedCategory: number;
     skippedUnusable: number;
     mergedDuplicates: number;
+    missingPrice: number;
+    unknownPackSize: number;
     byCategory: Record<string, number>;
     needsReview: number;
   };
@@ -103,6 +105,8 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
     skippedCategory: 0,
     skippedUnusable: 0,
     mergedDuplicates: 0,
+    missingPrice: 0,
+    unknownPackSize: 0,
     byCategory: {},
     needsReview: 0,
   };
@@ -137,22 +141,30 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
     const costPrice = numberOrNull(record[COLUMNS.costPrice]);
     const unitsPerStock = intOrNull(record[COLUMNS.unitsPerStock]);
 
-    const pricePerStock = derivePricePerStock({ unitPrice, casePrice, costPrice, unitsPerStock });
-    if (pricePerStock === null) {
-      stats.skippedUnusable += 1;
-      problems.push({ name: sourceName, message: "No usable price — row skipped." });
-      continue;
-    }
+    const price = derivePricePerStock({ unitPrice, casePrice, costPrice, unitsPerStock });
 
     const parsed = parseProductName(sourceName, category);
     const notes = [...parsed.reviewNotes];
+
+    if (price.unknownPackSize && !price.missing) {
+      stats.unknownPackSize += 1;
+      notes.push("Innehåll DFP is 0 — priced per can, not per stock.");
+    }
+
+    if (price.missing) {
+      // Imported at 0 kr rather than dropped: the product is real and the store
+      // still has to be able to order it. The flag and the 0 make the gap
+      // obvious instead of hiding it behind a guessed price.
+      stats.missingPrice += 1;
+      notes.push("No Inpris in the masterdoc — price per stock set to 0 kr.");
+    }
 
     const row: SupplierRow = {
       brand: parsed.brand,
       flavor: parsed.flavor,
       strength: parsed.strength,
       format: parsed.format,
-      pricePerStock,
+      pricePerStock: price.value,
       sku: text(record[COLUMNS.sku]) || null,
       category,
       manufacturerCode: text(record[COLUMNS.manufacturerCode]) || null,
@@ -166,7 +178,7 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
       stockMin: intOrNull(record[COLUMNS.stockMin]),
       stockMax: intOrNull(record[COLUMNS.stockMax]),
       sourceName,
-      needsReview: parsed.needsReview,
+      needsReview: parsed.needsReview || price.missing || price.unknownPackSize,
       reviewNotes: notes.length > 0 ? notes.join(" ") : null,
     };
 
@@ -206,8 +218,12 @@ function derivePricePerStock(input: {
   casePrice: number | null;
   costPrice: number | null;
   unitsPerStock: number | null;
-}): number | null {
-  const units = input.unitsPerStock && input.unitsPerStock > 0 ? input.unitsPerStock : 1;
+}): { value: number; missing: boolean; unknownPackSize: boolean } {
+  // Innehåll DFP is 0 on some rows — the pack size simply is not stated. Price
+  // the row per can rather than inventing a pack size, and flag it, because a
+  // stock of these would otherwise be billed at a tenth of the real cost.
+  const unknownPackSize = !input.unitsPerStock || input.unitsPerStock <= 0;
+  const units = unknownPackSize ? 1 : input.unitsPerStock!;
 
   const base =
     PRICE_BASIS === "cost"
@@ -216,9 +232,11 @@ function derivePricePerStock(input: {
         ? (input.casePrice ?? input.unitPrice)
         : input.unitPrice;
 
-  if (base === null || !Number.isFinite(base) || base <= 0) return null;
+  if (base === null || !Number.isFinite(base) || base <= 0) {
+    return { value: 0, missing: true, unknownPackSize };
+  }
 
-  return Math.round(base * units * 100) / 100;
+  return { value: Math.round(base * units * 100) / 100, missing: false, unknownPackSize };
 }
 
 function text(value: unknown): string {

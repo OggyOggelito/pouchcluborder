@@ -16,6 +16,8 @@ type SupplierResult = {
     skippedCategory: number;
     skippedUnusable: number;
     mergedDuplicates: number;
+    missingPrice: number;
+    unknownPackSize: number;
     byCategory: Record<string, number>;
     needsReview: number;
   };
@@ -132,6 +134,16 @@ export default function SupplierImport() {
                     {Object.values(stats.byCategory).reduce((sum, n) => sum + n, 0)} produkter
                   </li>
                   <li>sammanslagna dubbletter: {stats.mergedDuplicates}</li>
+                  {stats.missingPrice > 0 ? (
+                    <li className="text-amber-700">
+                      saknar Inpris (importerade till 0 kr): <strong>{stats.missingPrice}</strong>
+                    </li>
+                  ) : null}
+                  {stats.unknownPackSize > 0 ? (
+                    <li className="text-amber-700">
+                      saknar Innehåll DFP (pris per dosa): <strong>{stats.unknownPackSize}</strong>
+                    </li>
+                  ) : null}
                   <li>
                     bortfiltrerade: {stats.skippedInactive} inaktiva, {stats.skippedCategory} fel
                     kategori, {stats.skippedUnusable} utan pris/namn

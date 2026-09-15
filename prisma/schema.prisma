@@ -32,7 +32,7 @@ model Product {
   strength String
   /// Mini | Slim | Normal | Large
   format   String
-  /// Price per stock in SEK (a stock = `unitsPerStock` cans).
+  /// What one stock costs the store in SEK (a stock = `unitsPerStock` cans).
   pricePerStock Float
   active        Boolean @default(true)
 
@@ -51,11 +51,11 @@ model Product {
   supplier String?
   /// Innehåll DFP — cans per stock.
   unitsPerStock Int?
-  /// Pris 1st inkl. moms
+  /// Pris 1st inkl. moms — shelf price for one can, not what the store pays.
   unitPrice Float?
   /// Pris 2st inkl. moms
   casePrice Float?
-  /// Inpris — cost price.
+  /// Inpris — what the store pays per can. This is what pricePerStock is built from.
   costPrice Float?
   eanKfp    String?
   eanDfp    String?

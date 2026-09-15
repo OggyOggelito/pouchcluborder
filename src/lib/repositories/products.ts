@@ -122,10 +122,13 @@ export async function importProducts(
   return prisma.$transaction(async (tx) => {
     // Remember what was live before the import so "deactivated" reports the
     // products the new file genuinely dropped, not ones already switched off.
-    const previouslyActive =
+    const previouslyActive = new Set<string>(
       mode === "replace"
-        ? await tx.product.findMany({ where: { active: true }, select: { id: true } })
-        : [];
+        ? (await tx.product.findMany({ where: { active: true }, select: { id: true } })).map(
+            (product) => product.id
+          )
+        : []
+    );
 
     if (mode === "replace") {
       await tx.product.updateMany({ where: { active: true }, data: { active: false } });
@@ -133,6 +136,10 @@ export async function importProducts(
 
     let created = 0;
     let updated = 0;
+    // Counted in memory rather than with a final `id: { in: [...] }` query:
+    // that list is one bind parameter per product and blows past SQLite's
+    // 999-parameter limit once the catalog is bigger than that.
+    let reactivated = 0;
 
     for (const row of rows) {
       const key = {
@@ -147,6 +154,7 @@ export async function importProducts(
       const existing = await tx.product.findUnique({ where: key, select: { id: true } });
 
       if (existing) {
+        if (previouslyActive.has(existing.id)) reactivated += 1;
         await tx.product.update({
           where: key,
           data: { pricePerStock: row.pricePerStock, active: true, ...supplierFieldsOf(row) },
@@ -168,12 +176,9 @@ export async function importProducts(
       }
     }
 
-    const deactivated =
-      previouslyActive.length === 0
-        ? 0
-        : await tx.product.count({
-            where: { id: { in: previouslyActive.map((p) => p.id) }, active: false },
-          });
+    // Everything active was switched off up front; whatever the file put back
+    // is no longer deactivated.
+    const deactivated = previouslyActive.size - reactivated;
 
     return { created, updated, deactivated };
   });
