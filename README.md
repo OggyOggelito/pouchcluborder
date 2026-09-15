@@ -122,6 +122,15 @@ two price gaps below.
 A missing strength is *not* flagged for nicotine-free pouches (stored as `0mg`) or
 tobacco snus (stored as `Regular`) — those genuinely have no strength to state.
 
+**An explicit nicotine-free name beats `Artikeltyp`.** The masterdoc files some
+nicotine-free articles under `Vitt Snus` — on the 2026-09-14 file that is
+`XQS Virgin Peppermint Nikotinfri` and the four `Après ... - ZERO` rows. When the name
+says `Nikotinfri`, `No Nico`, `Nicotine free` or `Zero`, the row is filed as
+nicotine-free (and so gets `0mg` rather than a missing-strength flag). The override is
+counted in the import summary and noted on the product, because it is us disagreeing
+with the supplier's own data. `virgin` alone is deliberately *not* a marker — it names a
+mocktail flavour as often as it means nicotine-free.
+
 **Price gaps are flagged, never dropped or guessed.** A product with no `Inpris` is
 imported at **0 kr**, and a product whose `Innehåll DFP` is 0 is priced **per can rather
 than per stock** — in both cases the row stays orderable and the note says exactly what

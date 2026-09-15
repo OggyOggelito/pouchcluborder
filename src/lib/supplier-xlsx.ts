@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { ARTIKELTYP_TO_CATEGORY } from "@/lib/categories";
+import { ARTIKELTYP_TO_CATEGORY, isNicotineFreeName } from "@/lib/categories";
 import { parseProductName } from "@/lib/product-name-parser";
 import type { ProductInput } from "@/lib/repositories/products";
 
@@ -73,6 +73,7 @@ export type SupplierParseResult = {
     mergedDuplicates: number;
     missingPrice: number;
     unknownPackSize: number;
+    recategorised: number;
     byCategory: Record<string, number>;
     needsReview: number;
   };
@@ -102,6 +103,7 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
     mergedDuplicates: 0,
     missingPrice: 0,
     unknownPackSize: 0,
+    recategorised: 0,
     byCategory: {},
     needsReview: 0,
   };
@@ -118,8 +120,8 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
       continue;
     }
 
-    const category = CATEGORY_MAP[text(record[COLUMNS.articleType]).toLowerCase()];
-    if (!category) {
+    const articleTypeCategory = CATEGORY_MAP[text(record[COLUMNS.articleType]).toLowerCase()];
+    if (!articleTypeCategory) {
       stats.skippedCategory += 1;
       continue;
     }
@@ -131,6 +133,14 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
       continue;
     }
 
+    // The masterdoc files a handful of nicotine-free articles under Vitt Snus.
+    // Where the name says so outright, the name wins — and the row then also
+    // gets 0mg instead of being flagged for a missing strength.
+    const recategorised =
+      articleTypeCategory === "Nicotine pouch" && isNicotineFreeName(sourceName);
+    const category = recategorised ? "Nicotine-free pouch" : articleTypeCategory;
+    if (recategorised) stats.recategorised += 1;
+
     const unitPrice = numberOrNull(record[COLUMNS.unitPrice]);
     const casePrice = numberOrNull(record[COLUMNS.casePrice]);
     const costPrice = numberOrNull(record[COLUMNS.costPrice]);
@@ -140,6 +150,10 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
 
     const parsed = parseProductName(sourceName, category);
     const notes = [...parsed.reviewNotes];
+
+    if (recategorised) {
+      notes.push('Name says nicotine-free but Artikeltyp said "Vitt Snus" — filed as nicotine-free.');
+    }
 
     if (price.unknownPackSize && !price.missing) {
       stats.unknownPackSize += 1;
@@ -173,7 +187,7 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
       stockMin: intOrNull(record[COLUMNS.stockMin]),
       stockMax: intOrNull(record[COLUMNS.stockMax]),
       sourceName,
-      needsReview: parsed.needsReview || price.missing || price.unknownPackSize,
+      needsReview: parsed.needsReview || price.missing || price.unknownPackSize || recategorised,
       reviewNotes: notes.length > 0 ? notes.join(" ") : null,
     };
 
