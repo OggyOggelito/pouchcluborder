@@ -72,7 +72,7 @@ export type SupplierParseResult = {
     skippedUnusable: number;
     mergedDuplicates: number;
     missingPrice: number;
-    unknownPackSize: number;
+    inferredPackSize: number;
     recategorised: number;
     byCategory: Record<string, number>;
     needsReview: number;
@@ -102,17 +102,24 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
     skippedUnusable: 0,
     mergedDuplicates: 0,
     missingPrice: 0,
-    unknownPackSize: 0,
+    inferredPackSize: 0,
     recategorised: 0,
     byCategory: {},
     needsReview: 0,
   };
   const problems: { name: string; message: string }[] = [];
 
-  // Identity -> index, so a later row replaces an earlier one that parsed to the
-  // same brand/flavor/strength/format instead of blowing up the unique key.
-  const byIdentity = new Map<string, number>();
-  const rows: SupplierRow[] = [];
+  // --- Pass 1: filter and parse names, without pricing anything yet. ---------
+  type Candidate = {
+    record: Record<string, unknown>;
+    sourceName: string;
+    category: string;
+    recategorised: boolean;
+    parsed: ReturnType<typeof parseProductName>;
+    units: number | null;
+  };
+
+  const candidates: Candidate[] = [];
 
   for (const record of raw) {
     if (text(record[COLUMNS.active]) !== "Ja") {
@@ -141,24 +148,42 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
     const category = recategorised ? "Nicotine-free pouch" : articleTypeCategory;
     if (recategorised) stats.recategorised += 1;
 
+    const units = intOrNull(record[COLUMNS.unitsPerStock]);
+
+    candidates.push({
+      record,
+      sourceName,
+      category,
+      recategorised,
+      parsed: parseProductName(sourceName, category),
+      units: units && units > 0 ? units : null,
+    });
+  }
+
+  // --- Pack sizes, for the rows where Innehåll DFP is blank or 0. -----------
+  const packSizes = collectPackSizes(candidates);
+
+  // --- Pass 2: price, flag and de-duplicate. --------------------------------
+  const byIdentity = new Map<string, number>();
+  const rows: SupplierRow[] = [];
+
+  for (const candidate of candidates) {
+    const { record, sourceName, category, parsed } = candidate;
+    const notes = [...parsed.reviewNotes];
+
     const unitPrice = numberOrNull(record[COLUMNS.unitPrice]);
     const casePrice = numberOrNull(record[COLUMNS.casePrice]);
     const costPrice = numberOrNull(record[COLUMNS.costPrice]);
-    const unitsPerStock = intOrNull(record[COLUMNS.unitsPerStock]);
 
-    const price = derivePricePerStock({ unitPrice, casePrice, costPrice, unitsPerStock });
-
-    const parsed = parseProductName(sourceName, category);
-    const notes = [...parsed.reviewNotes];
-
-    if (recategorised) {
-      notes.push('Name says nicotine-free but Artikeltyp said "Vitt Snus" — filed as nicotine-free.');
+    const pack = resolvePackSize(candidate, packSizes);
+    if (pack.inferred) {
+      stats.inferredPackSize += 1;
+      notes.push(
+        `Innehåll DFP is 0 — assumed ${pack.units} per stock (${pack.source}).`
+      );
     }
 
-    if (price.unknownPackSize && !price.missing) {
-      stats.unknownPackSize += 1;
-      notes.push("Innehåll DFP is 0 — priced per can, not per stock.");
-    }
+    const price = derivePricePerStock({ unitPrice, casePrice, costPrice, units: pack.units });
 
     if (price.missing) {
       // Imported at 0 kr rather than dropped: the product is real and the store
@@ -166,6 +191,10 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
       // obvious instead of hiding it behind a guessed price.
       stats.missingPrice += 1;
       notes.push("No Inpris in the masterdoc — price per stock set to 0 kr.");
+    }
+
+    if (candidate.recategorised) {
+      notes.push('Name says nicotine-free but Artikeltyp said "Vitt Snus" — filed as nicotine-free.');
     }
 
     const row: SupplierRow = {
@@ -178,7 +207,7 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
       category,
       manufacturerCode: text(record[COLUMNS.manufacturerCode]) || null,
       supplier: text(record[COLUMNS.supplier]) || null,
-      unitsPerStock,
+      unitsPerStock: pack.units,
       unitPrice,
       casePrice,
       costPrice,
@@ -187,7 +216,8 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
       stockMin: intOrNull(record[COLUMNS.stockMin]),
       stockMax: intOrNull(record[COLUMNS.stockMax]),
       sourceName,
-      needsReview: parsed.needsReview || price.missing || price.unknownPackSize || recategorised,
+      needsReview:
+        parsed.needsReview || price.missing || candidate.recategorised || pack.weakInference,
       reviewNotes: notes.length > 0 ? notes.join(" ") : null,
     };
 
@@ -222,18 +252,118 @@ export function parseSupplierWorkbook(data: ArrayBuffer | Buffer): SupplierParse
   return { rows, stats, problems };
 }
 
+type PackSizeIndex = {
+  byBrand: Map<string, number>;
+  byCategory: Map<string, number>;
+  overall: number | null;
+};
+
+/**
+ * Most common pack size per brand, per category, and overall. 54 rows in the
+ * 2026-09-14 file have Innehåll DFP = 0, and the brand's own other articles are
+ * a far better answer than assuming a single can — XQS Virgin Peppermint is
+ * 27 kr a can and 270 kr a stock, and 34 other XQS rows say 10.
+ */
+function collectPackSizes(
+  candidates: { parsed: { brand: string }; category: string; units: number | null }[]
+): PackSizeIndex {
+  const brandCounts = new Map<string, Map<number, number>>();
+  const categoryCounts = new Map<string, Map<number, number>>();
+  const overallCounts = new Map<number, number>();
+
+  const bump = (map: Map<number, number>, units: number) =>
+    map.set(units, (map.get(units) ?? 0) + 1);
+
+  for (const candidate of candidates) {
+    if (!candidate.units) continue;
+
+    if (!brandCounts.has(candidate.parsed.brand)) brandCounts.set(candidate.parsed.brand, new Map());
+    bump(brandCounts.get(candidate.parsed.brand)!, candidate.units);
+
+    if (!categoryCounts.has(candidate.category)) categoryCounts.set(candidate.category, new Map());
+    bump(categoryCounts.get(candidate.category)!, candidate.units);
+
+    bump(overallCounts, candidate.units);
+  }
+
+  const mode = (counts: Map<number, number>): number | null => {
+    let best: number | null = null;
+    let bestCount = 0;
+    for (const [units, count] of counts) {
+      if (count > bestCount) {
+        best = units;
+        bestCount = count;
+      }
+    }
+    return best;
+  };
+
+  return {
+    byBrand: new Map(
+      [...brandCounts.entries()].flatMap(([brand, counts]) => {
+        const value = mode(counts);
+        return value === null ? [] : [[brand, value] as [string, number]];
+      })
+    ),
+    byCategory: new Map(
+      [...categoryCounts.entries()].flatMap(([category, counts]) => {
+        const value = mode(counts);
+        return value === null ? [] : [[category, value] as [string, number]];
+      })
+    ),
+    overall: mode(overallCounts),
+  };
+}
+
+function resolvePackSize(
+  candidate: { parsed: { brand: string }; category: string; units: number | null },
+  index: PackSizeIndex
+): { units: number; inferred: boolean; source: string; weakInference: boolean } {
+  if (candidate.units) {
+    return { units: candidate.units, inferred: false, source: "", weakInference: false };
+  }
+
+  const fromBrand = index.byBrand.get(candidate.parsed.brand);
+  if (fromBrand) {
+    return {
+      units: fromBrand,
+      inferred: true,
+      source: `same as other ${candidate.parsed.brand} articles`,
+      weakInference: false,
+    };
+  }
+
+  // No other article from this brand states a pack size, so fall back to the
+  // category and then the catalogue. That is a weaker guess about money, so
+  // the row is flagged for review as well as noted.
+  const fromCategory = index.byCategory.get(candidate.category);
+  if (fromCategory) {
+    return {
+      units: fromCategory,
+      inferred: true,
+      source: `most common for ${candidate.category}`,
+      weakInference: true,
+    };
+  }
+
+  if (index.overall) {
+    return {
+      units: index.overall,
+      inferred: true,
+      source: "most common in the file",
+      weakInference: true,
+    };
+  }
+
+  return { units: 1, inferred: true, source: "no data — priced per can", weakInference: true };
+}
+
 function derivePricePerStock(input: {
   unitPrice: number | null;
   casePrice: number | null;
   costPrice: number | null;
-  unitsPerStock: number | null;
-}): { value: number; missing: boolean; unknownPackSize: boolean } {
-  // Innehåll DFP is 0 on some rows — the pack size simply is not stated. Price
-  // the row per can rather than inventing a pack size, and flag it, because a
-  // stock of these would otherwise be billed at a tenth of the real cost.
-  const unknownPackSize = !input.unitsPerStock || input.unitsPerStock <= 0;
-  const units = unknownPackSize ? 1 : input.unitsPerStock!;
-
+  units: number;
+}): { value: number; missing: boolean } {
   const base =
     PRICE_BASIS === "cost"
       ? input.costPrice
@@ -242,10 +372,10 @@ function derivePricePerStock(input: {
         : input.unitPrice;
 
   if (base === null || !Number.isFinite(base) || base <= 0) {
-    return { value: 0, missing: true, unknownPackSize };
+    return { value: 0, missing: true };
   }
 
-  return { value: Math.round(base * units * 100) / 100, missing: false, unknownPackSize };
+  return { value: Math.round(base * input.units * 100) / 100, missing: false };
 }
 
 function text(value: unknown): string {

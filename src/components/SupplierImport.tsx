@@ -17,7 +17,7 @@ type SupplierResult = {
     skippedUnusable: number;
     mergedDuplicates: number;
     missingPrice: number;
-    unknownPackSize: number;
+    inferredPackSize: number;
     recategorised: number;
     byCategory: Record<string, number>;
     needsReview: number;
@@ -145,9 +145,9 @@ export default function SupplierImport() {
                       saknar Inpris (importerade till 0 kr): <strong>{stats.missingPrice}</strong>
                     </li>
                   ) : null}
-                  {stats.unknownPackSize > 0 ? (
+                  {stats.inferredPackSize > 0 ? (
                     <li className="text-amber-700">
-                      saknar Innehåll DFP (pris per dosa): <strong>{stats.unknownPackSize}</strong>
+                      saknar Innehåll DFP (antal/stock gissat): <strong>{stats.inferredPackSize}</strong>
                     </li>
                   ) : null}
                   <li>

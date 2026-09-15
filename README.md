@@ -131,14 +131,23 @@ counted in the import summary and noted on the product, because it is us disagre
 with the supplier's own data. `virgin` alone is deliberately *not* a marker — it names a
 mocktail flavour as often as it means nicotine-free.
 
-**Price gaps are flagged, never dropped or guessed.** A product with no `Inpris` is
-imported at **0 kr**, and a product whose `Innehåll DFP` is 0 is priced **per can rather
-than per stock** — in both cases the row stays orderable and the note says exactly what
-is missing. Guessing a price would quietly put a wrong number on every order; dropping
-the row would stop staff ordering a product they actually stock.
+**A missing `Inpris` is flagged, never guessed.** The product is imported at **0 kr** and
+stays orderable, with a note saying the cost is missing. Inventing a price would put a
+wrong number on every order that includes it; dropping the row would stop staff ordering
+something they actually stock.
 
-On the 2026-09-14 file that's **366 of 1088** products: mostly nicotine pouches whose
-name has no mg value, plus 67 with no `Inpris` and 54 with no `Innehåll DFP`. The admin page shows the count; the flagged
+**A missing `Innehåll DFP` is inferred from the brand's other articles.** 54 rows in the
+2026-09-14 file state no pack size. Assuming a single can is badly wrong — XQS Virgin
+Peppermint is 27 kr a can but **270 kr a stock** — so the pack size is taken from the
+most common value among that brand's other rows (34 other XQS articles say 10), falling
+back to the category and then the whole file. Every pack size in this catalogue resolves
+to 10. The assumption is always written into `reviewNotes`; rows that had to fall back
+past the brand (Vozol, La Morenita — no sibling states a pack size) are flagged as well,
+since that is a weaker guess about money.
+
+On the 2026-09-14 file that's **359 of 1088** products: mostly nicotine pouches whose
+name has no mg value, plus 67 with no `Inpris`, 27 whose pack size had to be guessed
+beyond the brand, and the 5 recategorised rows. The admin page shows the count; the flagged
 rows import and are orderable, they just need a human pass.
 
 To check parse quality on a new file before importing:
