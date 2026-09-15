@@ -7,6 +7,7 @@ export type CatalogProduct = {
   strength: string;
   format: string;
   pricePerStock: number;
+  category: string | null;
 };
 
 export type ProductInput = {
@@ -78,6 +79,7 @@ export async function listActiveProducts(): Promise<CatalogProduct[]> {
       strength: true,
       format: true,
       pricePerStock: true,
+      category: true,
     },
   });
 }

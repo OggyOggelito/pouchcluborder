@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import QuantityInput from "@/components/QuantityInput";
 import { formatNumber, formatSek } from "@/lib/format";
-import { filterCatalog, groupCatalog } from "@/lib/grouping";
+import { brandVariants, filterCatalog, groupCatalog } from "@/lib/grouping";
+import { categoryLabel } from "@/lib/categories";
 import type { CatalogProduct } from "@/lib/repositories/products";
 import type { StoreSummary } from "@/lib/repositories/stores";
 import { forgetStore } from "@/lib/store-selection";
@@ -26,6 +27,7 @@ export default function OrderForm({
 
   const [quantities, setQuantities] = useState<Quantities>({});
   const [query, setQuery] = useState("");
+  const [category, setCategory] = useState<string | null>(null);
   const [openBrands, setOpenBrands] = useState<Set<string>>(() => new Set());
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -33,7 +35,17 @@ export default function OrderForm({
   const [submitted, setSubmitted] = useState<Submitted | null>(null);
   const draftLoaded = useRef(false);
 
-  const groups = useMemo(() => groupCatalog(products), [products]);
+  // Categories present in the catalog, in catalog order, for the filter chips.
+  const categories = useMemo(() => {
+    const seen = new Set<string>();
+    for (const product of products) if (product.category) seen.add(product.category);
+    return [...seen];
+  }, [products]);
+
+  const groups = useMemo(
+    () => groupCatalog(category ? products.filter((p) => p.category === category) : products),
+    [products, category]
+  );
   const visibleGroups = useMemo(() => filterCatalog(groups, query), [groups, query]);
   const priceById = useMemo(
     () => new Map(products.map((product) => [product.id, product.pricePerStock])),
@@ -93,11 +105,11 @@ export default function OrderForm({
   }, []);
 
   const quantityInBrand = useCallback(
-    (brand: string) =>
-      groups
-        .find((group) => group.brand === brand)
-        ?.flavors.flatMap((flavorGroup) => flavorGroup.variants)
-        .reduce((sum, variant) => sum + (quantities[variant.id] ?? 0), 0) ?? 0,
+    (brand: string) => {
+      const group = groups.find((candidate) => candidate.brand === brand);
+      if (!group) return 0;
+      return brandVariants(group).reduce((sum, variant) => sum + (quantities[variant.id] ?? 0), 0);
+    },
     [groups, quantities]
   );
 
@@ -142,6 +154,7 @@ export default function OrderForm({
       setQuantities({});
       setNote("");
       setQuery("");
+      setCategory(null);
       window.scrollTo({ top: 0 });
       router.refresh();
     } catch (cause) {
@@ -195,6 +208,23 @@ export default function OrderForm({
             </button>
           ) : null}
         </div>
+
+        {categories.length > 1 ? (
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            <CategoryChip active={category === null} onClick={() => setCategory(null)}>
+              Alla
+            </CategoryChip>
+            {categories.map((name) => (
+              <CategoryChip
+                key={name}
+                active={category === name}
+                onClick={() => setCategory(category === name ? null : name)}
+              >
+                {categoryLabel(name)}
+              </CategoryChip>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {visibleGroups.length === 0 ? (
@@ -219,10 +249,15 @@ export default function OrderForm({
                 aria-expanded={expanded}
                 className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-zinc-50"
               >
-                <span className="flex items-center gap-2">
-                  <span className="text-base font-semibold">{group.brand}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate text-base font-semibold">{group.brand}</span>
+                  {group.categories.length === 1 && group.categories[0].category ? (
+                    <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
+                      {categoryLabel(group.categories[0].category)}
+                    </span>
+                  ) : null}
                   {brandQuantity > 0 ? (
-                    <span className="rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white">
+                    <span className="shrink-0 rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white">
                       {brandQuantity}
                     </span>
                   ) : null}
@@ -240,35 +275,63 @@ export default function OrderForm({
 
               {expanded ? (
                 <div className="border-t border-zinc-100">
-                  {group.flavors.map((flavorGroup) => (
-                    <div key={flavorGroup.key} className="border-b border-zinc-100 last:border-b-0">
-                      <p className="px-4 pt-3 text-sm font-medium text-zinc-500">
-                        {flavorGroup.flavor}
-                      </p>
-                      <ul>
-                        {flavorGroup.variants.map((variant) => (
-                          <li
-                            key={variant.id}
-                            className="flex items-center justify-between gap-3 px-4 py-2"
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-[15px]">
-                                <span className="font-medium">{variant.strength}</span>
-                                <span className="text-zinc-400"> · </span>
-                                <span className="text-zinc-600">{variant.format}</span>
-                              </p>
-                              <p className="text-sm text-zinc-400">
-                                {formatSek(variant.pricePerStock)} / stock
-                              </p>
-                            </div>
-                            <QuantityInput
-                              value={quantities[variant.id] ?? 0}
-                              onChange={(next) => setQuantity(variant.id, next)}
-                              label={`${group.brand} ${flavorGroup.flavor} ${variant.strength} ${variant.format}`}
-                            />
-                          </li>
-                        ))}
-                      </ul>
+                  {group.categories.map((categoryGroup) => (
+                    <div key={categoryGroup.key}>
+                      {group.categories.length > 1 && categoryGroup.category ? (
+                        <p className="bg-zinc-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                          {categoryLabel(categoryGroup.category)}
+                        </p>
+                      ) : null}
+
+                      {categoryGroup.flavors.map((flavorGroup) => (
+                        <div
+                          key={flavorGroup.key}
+                          className="border-b border-zinc-100 last:border-b-0"
+                        >
+                          <p className="px-4 pt-3 text-sm font-medium text-zinc-500">
+                            {flavorGroup.flavor}
+                          </p>
+                          <ul>
+                            {flavorGroup.variants.map((variant) => (
+                              <li
+                                key={variant.id}
+                                className="flex items-center justify-between gap-3 px-4 py-2"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate text-[15px]">
+                                    {variant.strength ? (
+                                      <>
+                                        <span className="font-medium">{variant.strength}</span>
+                                        <span className="text-zinc-400"> · </span>
+                                      </>
+                                    ) : null}
+                                    <span
+                                      className={
+                                        variant.strength ? "text-zinc-600" : "font-medium"
+                                      }
+                                    >
+                                      {variant.format}
+                                    </span>
+                                    {!variant.strength ? (
+                                      <span className="text-zinc-400"> · styrka saknas</span>
+                                    ) : null}
+                                  </p>
+                                  <p className="text-sm text-zinc-400">
+                                    {variant.pricePerStock > 0
+                                      ? `${formatSek(variant.pricePerStock)} / stock`
+                                      : "Pris saknas"}
+                                  </p>
+                                </div>
+                                <QuantityInput
+                                  value={quantities[variant.id] ?? 0}
+                                  onChange={(next) => setQuantity(variant.id, next)}
+                                  label={`${group.brand} ${flavorGroup.flavor} ${variant.strength} ${variant.format}`}
+                                />
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
@@ -301,6 +364,31 @@ export default function OrderForm({
         onSubmit={submitOrder}
       />
     </main>
+  );
+}
+
+function CategoryChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`h-9 shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition ${
+        active
+          ? "border-zinc-900 bg-zinc-900 text-white"
+          : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 

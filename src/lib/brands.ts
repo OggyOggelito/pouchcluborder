@@ -24,7 +24,6 @@ export const BRANDS: BrandEntry[] = [
   { canonical: "Nick & Johnny", prefixes: ["nick & johnny", "nick and johnny"] },
   { canonical: "Frunk Bar", prefixes: ["frunk bar", "frunk"] },
   { canonical: "N One", prefixes: ["n one"] },
-  { canonical: "Knox Karaktär", prefixes: ["knox karaktär", "knox karaktar", "knox"] },
   { canonical: "Göteborgs Rapé", prefixes: ["göteborgs rapé", "göteborgs rape"] },
   { canonical: "Göteborgs Prima Fint", prefixes: ["göteborgs prima fint"] },
   { canonical: "Smålands Brukssnus", prefixes: ["smålands brukssnus", "smålands"] },
@@ -61,6 +60,8 @@ export const BRANDS: BrandEntry[] = [
   { canonical: "Kaliber", prefixes: ["kaliber"] },
   { canonical: "Kapten", prefixes: ["kapten"] },
   { canonical: "Killa", prefixes: ["killa"] },
+  // Karaktär is one of Knox's lines, not a brand — it belongs in the flavor.
+  { canonical: "Knox", prefixes: ["knox"] },
   { canonical: "Kronan", prefixes: ["kronan"] },
   { canonical: "Kuma", prefixes: ["kuma"] },
   { canonical: "LD", prefixes: ["ld"] },

@@ -100,7 +100,9 @@ The masterdoc has no brand column, so brand/flavor/strength/format are read off
   is what keeps `Nordic Spirit` from becoming `Nordic` and `Siberia-80` from becoming
   `Siberia`. Canonical spelling wins over the source's (the file mixes `ZYN`/`Zyn`,
   `FUMi`/`FUMI`, `skruf`/`Skruf`). **Add new brands here** — an unknown brand still
-  imports, but gets flagged.
+  imports, but gets flagged. Only list an actual brand: a product *line* belongs in the
+  flavor. Listing `Knox Karaktär` as a brand hid `Knox Portion` and `Knox White`, because
+  every Knox article was filed under the line name.
 - **Strength** — `10,4 mg` / `20mg` / `10mg/p`, then `#3`-style tiers, then ZYN's
   `S2`/`S4` codes, then word strengths (`Extra Strong`, `Hypèr Strong`, `Stark`).
 - **Format** — Mini / Slim / Large / Normal, plus **Lös** and **Portion**, which are the
@@ -180,11 +182,17 @@ point at them, and an old order has to stay re-exportable.
 3. The search box matches brand, flavor, strength, and format. Every whitespace-separated
    token has to match, so `loop mango` and `white fox 30` both narrow the way you'd expect.
    Swedish vowels are folded (`skane` finds `Skåne`).
-4. Quantities use −/number/+ controls with 44px tap targets. A zero renders blank and greyed.
-5. The sticky footer shows running total stocks and SEK. Submit is disabled at zero.
-6. An unsent order is kept in `localStorage` per store, so a reload or a phone locking
+4. A brand that sells in more than one category (Lundgrens, Skruf, Loop, Velo, Lewa sell
+   both pouches and something else) splits into labelled sections inside its brand row;
+   brands in a single category show it as a chip. Category chips above the list filter
+   the whole catalogue to Vitt snus / Nikotinfritt / Tobakssnus / Vape.
+5. Quantities use −/number/+ controls with 44px tap targets. A zero renders blank and
+   greyed, and a variant whose strength the masterdoc never stated says "styrka saknas"
+   rather than rendering a blank.
+6. The sticky footer shows running total stocks and SEK. Submit is disabled at zero.
+7. An unsent order is kept in `localStorage` per store, so a reload or a phone locking
    doesn't lose it. It's cleared on successful submit.
-7. After submit you get the Excel export button; the same file stays available from
+8. After submit you get the Excel export button; the same file stays available from
    **`/orders`**.
 
 ### Excel export

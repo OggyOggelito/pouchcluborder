@@ -38,8 +38,11 @@ const ZYN_CODE_PATTERN = /\bS(\d)\b/;
 
 const WORD_STRENGTHS: { label: string; pattern: RegExp }[] = [
   { label: "Hyper Strong", pattern: /\bhyp[eè]r\s+strong\b/i },
-  { label: "Super Strong", pattern: /\bsuper\s+strong\b/i },
-  { label: "Extra Strong", pattern: /\b(extra\s+strong|x-?strong|extra\s+stark)\b/i },
+  { label: "Ultra Strong", pattern: /\bultra\s+(strong|stark)\b/i },
+  { label: "Super Strong", pattern: /\bsuper\s+(strong|stark)\b/i },
+  // "Xtra Stark" is Knox's spelling of extra strong; without it, "Knox Stark
+  // White" and "Knox Xtra Stark White" both collapse to plain Strong.
+  { label: "Extra Strong", pattern: /\b(extra\s+strong|x-?tra\s+(strong|stark)|x-?strong|extra\s+stark)\b/i },
   { label: "Strong", pattern: /\b(strong|stark)\b/i },
   { label: "Hyper", pattern: /\bhyp[eè]r\b/i },
   { label: "Max", pattern: /\bmax\b/i },

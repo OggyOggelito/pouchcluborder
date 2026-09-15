@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { ARTIKELTYP_TO_CATEGORY } from "@/lib/categories";
 import { parseProductName } from "@/lib/product-name-parser";
 import type { ProductInput } from "@/lib/repositories/products";
 
@@ -11,16 +12,10 @@ export const SHEET_NAME = "MASTERDOC";
 const HEADER_ROW_OFFSET = 1;
 
 /**
- * Artikeltyp values we stock, matched case-insensitively — the source mixes
- * "Vitt Snus", "VItt Snus" and "Vitt snus" for the same thing. Everything else
- * (cigarettes, cigars, loose tobacco, accessories) is dropped.
+ * Artikeltyp values we stock. Everything else (cigarettes, cigars, loose
+ * tobacco, accessories) is dropped.
  */
-export const CATEGORY_MAP: Record<string, string> = {
-  "vitt snus": "Nicotine pouch",
-  "nikotinfritt snus": "Nicotine-free pouch",
-  tobakssnus: "Tobacco snus",
-  vapes: "Vape",
-};
+export const CATEGORY_MAP = ARTIKELTYP_TO_CATEGORY;
 
 // Note the double space in "Pris 1st  inkl. moms" — it is like that in the file.
 const COLUMNS = {
