@@ -142,8 +142,11 @@ Peppermint is 27 kr a can but **270 kr a stock** — so the pack size is taken f
 most common value among that brand's other rows (34 other XQS articles say 10), falling
 back to the category and then the whole file. Every pack size in this catalogue resolves
 to 10. The assumption is always written into `reviewNotes`; rows that had to fall back
-past the brand (Vozol, La Morenita — no sibling states a pack size) are flagged as well,
-since that is a weaker guess about money.
+past the brand are flagged as well, since that is a weaker guess about money.
+
+When you have checked a brand's real stock price, add it to `CONFIRMED_PACK_SIZES` in
+`src/lib/brands.ts`. That pack size is then used as given and the rows stop being
+flagged, instead of being re-guessed on every import.
 
 On the 2026-09-14 file that's **359 of 1088** products: mostly nicotine pouches whose
 name has no mg value, plus 67 with no `Inpris`, 27 whose pack size had to be guessed

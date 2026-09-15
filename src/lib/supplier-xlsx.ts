@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { CONFIRMED_PACK_SIZES } from "@/lib/brands";
 import { ARTIKELTYP_TO_CATEGORY, isNicotineFreeName } from "@/lib/categories";
 import { parseProductName } from "@/lib/product-name-parser";
 import type { ProductInput } from "@/lib/repositories/products";
@@ -321,6 +322,17 @@ function resolvePackSize(
 ): { units: number; inferred: boolean; source: string; weakInference: boolean } {
   if (candidate.units) {
     return { units: candidate.units, inferred: false, source: "", weakInference: false };
+  }
+
+  // A pack size confirmed by hand beats anything inferred, and does not flag.
+  const confirmed = CONFIRMED_PACK_SIZES[candidate.parsed.brand];
+  if (confirmed) {
+    return {
+      units: confirmed,
+      inferred: true,
+      source: `confirmed pack size for ${candidate.parsed.brand}`,
+      weakInference: false,
+    };
   }
 
   const fromBrand = index.byBrand.get(candidate.parsed.brand);

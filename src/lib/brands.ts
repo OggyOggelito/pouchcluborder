@@ -102,3 +102,19 @@ export const LEADING_LINE_NUMBER = /^no\.\s*\d+\s+/i;
 export const BRAND_LOOKUP: { prefix: string; canonical: string }[] = BRANDS.flatMap((entry) =>
   entry.prefixes.map((prefix) => ({ prefix, canonical: entry.canonical }))
 ).sort((a, b) => b.prefix.length - a.prefix.length);
+
+/**
+ * Pack sizes confirmed by hand, for brands whose masterdoc rows leave
+ * `Innehåll DFP` blank.
+ *
+ * The importer can usually infer a pack size from the brand's other articles,
+ * but some brands state it nowhere — then it falls back to the category mode
+ * and flags the row, because that is a weak guess about money. Listing a brand
+ * here settles it: the pack size is used as given and the row is not flagged.
+ *
+ * Only add a brand after checking a real stock price against the supplier.
+ */
+export const CONFIRMED_PACK_SIZES: Record<string, number> = {
+  // Confirmed 2026-09-15: Calavera Portion is 465 kr/stock at 46,50 per can.
+  "La Morenita": 10,
+};
