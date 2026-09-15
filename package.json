@@ -10,7 +10,9 @@
     "seed": "tsx --env-file-if-exists=.env prisma/seed.ts",
     "db:push": "prisma db push",
     "db:reset": "prisma migrate reset --force",
-    "setup": "prisma db push && npm run seed"
+    "setup": "prisma db push && npm run seed",
+    "parse:check": "tsx scripts/dry-run-parse.ts",
+    "parse:collisions": "tsx scripts/dry-run-collisions.ts"
   },
   "prisma": {
     "seed": "tsx --env-file-if-exists=.env prisma/seed.ts"

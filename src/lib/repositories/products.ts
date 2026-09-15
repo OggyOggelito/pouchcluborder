@@ -17,6 +17,55 @@ export type ProductInput = {
   pricePerStock: number;
 };
 
+/**
+ * Extra columns the supplier .xlsx carries. The CSV path never sets these, so
+ * every field is optional and a CSV import leaves whatever is already stored
+ * untouched rather than blanking it.
+ */
+export type SupplierFields = Partial<{
+  sku: string | null;
+  category: string | null;
+  manufacturerCode: string | null;
+  supplier: string | null;
+  unitsPerStock: number | null;
+  unitPrice: number | null;
+  casePrice: number | null;
+  costPrice: number | null;
+  eanKfp: string | null;
+  eanDfp: string | null;
+  stockMin: number | null;
+  stockMax: number | null;
+  sourceName: string | null;
+  needsReview: boolean;
+  reviewNotes: string | null;
+}>;
+
+const SUPPLIER_FIELDS = [
+  "sku",
+  "category",
+  "manufacturerCode",
+  "supplier",
+  "unitsPerStock",
+  "unitPrice",
+  "casePrice",
+  "costPrice",
+  "eanKfp",
+  "eanDfp",
+  "stockMin",
+  "stockMax",
+  "sourceName",
+  "needsReview",
+  "reviewNotes",
+] as const;
+
+function supplierFieldsOf(row: ProductInput & SupplierFields): SupplierFields {
+  const extras: Record<string, unknown> = {};
+  for (const field of SUPPLIER_FIELDS) {
+    if (field in row) extras[field] = row[field];
+  }
+  return extras as SupplierFields;
+}
+
 /** Everything the order page renders: active products only, ordered for grouping. */
 export async function listActiveProducts(): Promise<CatalogProduct[]> {
   return prisma.product.findMany({
@@ -67,7 +116,7 @@ export type ImportResult = {
  * them and an old order must stay re-exportable.
  */
 export async function importProducts(
-  rows: ProductInput[],
+  rows: (ProductInput & SupplierFields)[],
   mode: ImportMode
 ): Promise<ImportResult> {
   return prisma.$transaction(async (tx) => {
@@ -100,11 +149,21 @@ export async function importProducts(
       if (existing) {
         await tx.product.update({
           where: key,
-          data: { pricePerStock: row.pricePerStock, active: true },
+          data: { pricePerStock: row.pricePerStock, active: true, ...supplierFieldsOf(row) },
         });
         updated += 1;
       } else {
-        await tx.product.create({ data: { ...row, active: true } });
+        await tx.product.create({
+          data: {
+            brand: row.brand,
+            flavor: row.flavor,
+            strength: row.strength,
+            format: row.format,
+            pricePerStock: row.pricePerStock,
+            active: true,
+            ...supplierFieldsOf(row),
+          },
+        });
         created += 1;
       }
     }
@@ -118,4 +177,9 @@ export async function importProducts(
 
     return { created, updated, deactivated };
   });
+}
+
+/** Products the name parser was unsure about, for the admin banner. */
+export async function countNeedsReview(): Promise<number> {
+  return prisma.product.count({ where: { active: true, needsReview: true } });
 }

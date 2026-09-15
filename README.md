@@ -32,6 +32,8 @@ the seed again updates existing rows instead of duplicating them.
 | `npm run seed` | Re-run the seed only |
 | `npm run db:push` | Apply schema changes to the SQLite file |
 | `npm run db:reset` | Drop everything and rebuild from schema + seed |
+| `npm run parse:check <file.xlsx>` | Dry-run the name parser over a masterdoc |
+| `npm run parse:collisions <file.xlsx>` | List articles that parse to the same variant |
 
 ---
 
@@ -47,11 +49,89 @@ via the CSV import below.
 
 ---
 
-## Importing the real catalog (CSV)
+## Importing the catalog
 
-Go to **`/admin`**, pick a file or paste the CSV, choose a mode, and import.
+There are two importers. Both go through the same `importProducts()` replace-mode
+path, so both deactivate rather than delete (past orders keep their line items).
 
-### Columns
+### 1. Supplier masterdoc (.xlsx) — the normal route
+
+Go to **`/admin`** → *Importera leverantörsfil* and hand it the supplier file exactly
+as it arrives (`Sortiment_YYYYMMDD.xlsx`, sheet `MASTERDOC`). No pre-cleaning. It:
+
+1. Reads headers from **row 2** (row 1 is a stray banner row).
+2. Keeps only `Aktiv = Ja`.
+3. Keeps only these `Artikeltyp` values, matched case-insensitively because the source
+   is inconsistent (`Vitt Snus`, `VItt Snus`, `Vitt snus` all appear):
+
+   | Artikeltyp | Category |
+   | --- | --- |
+   | `Vitt Snus` | Nicotine pouch |
+   | `Nikotinfritt snus` | Nicotine-free pouch |
+   | `Tobakssnus` | Tobacco snus |
+   | `Vapes` | Vape |
+
+   Everything else (cigarettes, cigars, loose tobacco, accessories) is dropped.
+4. Maps `Art.nr.` → sku, `Fabr./Repr.` → manufacturerCode (a **distributor** code —
+   LUNA, SMD, ECIGG — *not* a retail brand), `Leverantör` → supplier, `Innehåll DFP` →
+   unitsPerStock, `Pris 1st  inkl. moms` (double space in the source) → unitPrice,
+   `Pris 2st inkl. moms` → casePrice, `Inpris` → costPrice, `EAN-kod KFP`/`EAN-kod DFP`
+   → EANs (as digit strings, never floats), `Lager min`/`Lager max` → stockMin/stockMax.
+5. Parses `Benämning` into brand / flavor / strength / format (see below).
+6. Runs the result through the existing replace-mode import.
+
+Afterwards you get counts per category, the `needs_review` count, how many duplicates
+were merged, and what was filtered out — check that before trusting the result.
+
+> **Where pricePerStock comes from.** The masterdoc has no per-stock price, so it is
+> derived: `Pris 1st inkl. moms` × `Innehåll DFP` (45 kr × 10 = 450 kr). That keeps the
+> meaning the field had in Phase 1 — what a full stock is worth on the shelf. To price
+> orders at cost (`Inpris` × `Innehåll DFP`) instead, change `PRICE_BASIS` in
+> `src/lib/supplier-xlsx.ts` — it is one constant, and every price column is stored
+> either way.
+
+### The name parser
+
+The masterdoc has no brand column, so brand/flavor/strength/format are read off
+`Benämning` (`src/lib/product-name-parser.ts`):
+
+- **Brand** — longest-prefix match against the dictionary in `src/lib/brands.ts`, which
+  is what keeps `Nordic Spirit` from becoming `Nordic` and `Siberia-80` from becoming
+  `Siberia`. Canonical spelling wins over the source's (the file mixes `ZYN`/`Zyn`,
+  `FUMi`/`FUMI`, `skruf`/`Skruf`). **Add new brands here** — an unknown brand still
+  imports, but gets flagged.
+- **Strength** — `10,4 mg` / `20mg` / `10mg/p`, then `#3`-style tiers, then ZYN's
+  `S2`/`S4` codes, then word strengths (`Extra Strong`, `Hypèr Strong`, `Stark`).
+- **Format** — Mini / Slim / Large / Normal, plus **Lös** and **Portion**, which are the
+  real formats for tobacco snus.
+- **Flavor** — what's left after stripping `(...)` notes, `/19,2 g` weights, and
+  `Engångsvape`. `White`/`Vit` is deliberately **kept**: for tobacco snus it names a real
+  variant, and `Ettan Portion` vs `Ettan Portion Vit` are different articles.
+
+### `needs_review`
+
+Set when the parser wasn't confident, with the reason in `reviewNotes` and the original
+`Benämning` kept in `sourceName` so a bad parse can always be traced back. It is raised
+for: an unknown brand, a **nicotine pouch or vape with no strength in the name**, an
+empty flavor, or two articles that parsed to the same variant (only one is kept).
+
+A missing strength is *not* flagged for nicotine-free pouches (stored as `0mg`) or
+tobacco snus (stored as `Regular`) — those genuinely have no strength to state.
+
+On the 2026-09-14 file that's **319 of 1086** products, nearly all of them nicotine
+pouches whose name simply has no mg value. The admin page shows the count; the flagged
+rows import and are orderable, they just need a human pass.
+
+To check parse quality on a new file before importing:
+
+```bash
+npm run parse:check "/path/to/Sortiment_YYYYMMDD.xlsx"
+npm run parse:collisions "/path/to/Sortiment_YYYYMMDD.xlsx"
+```
+
+### 2. Simple CSV — for hand-maintained lists
+
+`/admin` → *Importera produktkatalog (CSV)*. Columns:
 
 | Column | Required | Notes |
 | --- | --- | --- |
@@ -61,29 +141,23 @@ Go to **`/admin`**, pick a file or paste the CSV, choose a mode, and import.
 | `format` | no | `Mini` / `Slim` / `Normal` / `Large` |
 | `pricePerStock` | yes | `459`, `459,00`, `459.00`, `459,00 kr` all work |
 
-The importer is deliberately forgiving about how Shopify exports things:
+Forgiving about delimiters (comma/semicolon/tab, auto-detected), a UTF-8 BOM, quoted
+fields, and Swedish header names (`märke`, `smak`, `styrka`, `storlek`, `pris`). Missing
+`format` is inferred from the flavor text. Bad rows are skipped and reported by line
+number; the rest still imports.
 
-- Comma, semicolon, or tab delimiters (auto-detected), UTF-8 BOM, quoted fields with commas inside.
-- Swedish header names also work: `märke`, `smak`, `styrka`, `storlek`, `pris`.
-- If `format` is missing, it is inferred from the flavor text (`Ice Cold Large` → `Large`,
-  `Mint Slim` → `Slim`), falling back to `Normal`.
-- Rows that are missing a brand, flavor, strength, or have an unparseable price are skipped
-  and reported back with their line number — the rest of the file still imports.
+This path only ever touches brand/flavor/strength/format/price — supplier fields on an
+existing product are left alone.
 
 ### Modes
 
-- **Lägg till / uppdatera (merge)** — upserts the rows in the file, leaves everything else alone.
-- **Ersätt katalogen (replace)** — deactivates the whole catalog first, then reactivates
-  exactly what's in the file. Use this for the first real import so the seed placeholders
-  disappear.
+- **Ersätt katalogen (replace)** — deactivates the whole catalog, then reactivates
+  exactly what's in the file. The .xlsx importer always uses this.
+- **Lägg till / uppdatera (merge)** — upserts the file's rows, leaves everything else
+  alone. CSV only.
 
-Products are **never hard-deleted**, only deactivated (`active = false`). Past orders point at
-them, and an old order has to stay re-exportable.
-
-> A product's identity is `brand + flavor + strength + format`. If your export has no `format`
-> column, the inferred value has to match what's already stored, or you'll get a second row
-> instead of an update. For the first real import, use **replace** mode and the placeholders
-> get switched off regardless.
+Products are **never hard-deleted**, only deactivated (`active = false`). Past orders
+point at them, and an old order has to stay re-exportable.
 
 ---
 
@@ -136,6 +210,9 @@ src/
   components/            OrderForm, QuantityInput, StorePicker, CsvImport
   lib/
     repositories/        The ONLY place that touches Prisma
+    supplier-xlsx.ts     Raw masterdoc -> filtered, normalised rows
+    product-name-parser.ts  Benämning -> brand/flavor/strength/format
+    brands.ts            Brand dictionary (add new brands here)
     db.ts                Prisma client + SQLite driver adapter
     csv.ts               CSV parsing
     catalog.ts           Strength/format/price normalisation

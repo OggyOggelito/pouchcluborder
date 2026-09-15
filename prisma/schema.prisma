@@ -32,9 +32,40 @@ model Product {
   strength String
   /// Mini | Slim | Normal | Large
   format   String
-  /// Price per stock (roll of 10 cans) in SEK.
+  /// Price per stock in SEK (a stock = `unitsPerStock` cans).
   pricePerStock Float
   active        Boolean @default(true)
+
+  // ---------------------------------------------------------------
+  // Supplier masterdoc fields. All optional: the CSV path never sets
+  // them, and only the .xlsx import fills them in.
+  // ---------------------------------------------------------------
+
+  /// Art.nr. — the supplier's article number, the real business key.
+  sku String?
+  /// Nicotine pouch | Nicotine-free pouch | Tobacco snus | Vape
+  category String?
+  /// Fabr./Repr. — distributor code (LUNA, SMD, ECIGG...), NOT a retail brand.
+  manufacturerCode String?
+  /// Leverantör
+  supplier String?
+  /// Innehåll DFP — cans per stock.
+  unitsPerStock Int?
+  /// Pris 1st inkl. moms
+  unitPrice Float?
+  /// Pris 2st inkl. moms
+  casePrice Float?
+  /// Inpris — cost price.
+  costPrice Float?
+  eanKfp    String?
+  eanDfp    String?
+  stockMin  Int?
+  stockMax  Int?
+  /// Raw Benämning, kept so a bad parse can always be traced back.
+  sourceName String?
+  /// Set when the name parser was not confident; see reviewNotes.
+  needsReview Boolean @default(false)
+  reviewNotes String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -45,6 +76,8 @@ model Product {
   @@unique([brand, flavor, strength, format])
   @@index([brand, flavor])
   @@index([active])
+  @@index([sku])
+  @@index([needsReview])
   @@map("products")
 }
 

@@ -1,19 +1,31 @@
 import Link from "next/link";
 import CsvImport from "@/components/CsvImport";
-import { countProducts, listBrands } from "@/lib/repositories/products";
+import SupplierImport from "@/components/SupplierImport";
+import { countProducts, countNeedsReview, listBrands } from "@/lib/repositories/products";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const [counts, brands] = await Promise.all([countProducts(), listBrands()]);
+  const [counts, brands, review] = await Promise.all([
+    countProducts(),
+    listBrands(),
+    countNeedsReview(),
+  ]);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="text-xl font-semibold tracking-tight">Admin</h1>
       <p className="mt-1 text-zinc-600">
         {counts.active} aktiva produkter av {counts.total} totalt, {brands.length} märken.
+        {review > 0 ? (
+          <>
+            {" "}
+            <strong className="text-amber-700">{review} behöver granskas.</strong>
+          </>
+        ) : null}
       </p>
 
+      <SupplierImport />
       <CsvImport />
 
       <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
