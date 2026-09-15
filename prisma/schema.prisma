@@ -1,0 +1,79 @@
+// Pouch Club restock ordering — Phase 1 schema.
+//
+// SQLite for now. Nothing here is SQLite-specific beyond the datasource block,
+// so moving to Postgres/Supabase later means swapping the provider + url and
+// re-running migrations; application code talks to src/lib/repositories/* only.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  runtime  = "nodejs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Store {
+  id     String  @id @default(cuid())
+  name   String  @unique
+  slug   String  @unique
+  city   String?
+  orders Order[]
+
+  @@map("stores")
+}
+
+model Product {
+  id     String @id @default(cuid())
+  brand  String
+  flavor String
+  /// Nicotine strength as displayed, e.g. "10mg".
+  strength String
+  /// Mini | Slim | Normal | Large
+  format   String
+  /// Price per stock (roll of 10 cans) in SEK.
+  pricePerStock Float
+  active        Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orderLines OrderLine[]
+
+  // A variant is uniquely identified by these four fields. CSV import upserts on it.
+  @@unique([brand, flavor, strength, format])
+  @@index([brand, flavor])
+  @@index([active])
+  @@map("products")
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+  submittedAt DateTime @default(now())
+  /// Free-text note from the store, optional.
+  note String?
+
+  lines OrderLine[]
+
+  @@index([storeId, submittedAt])
+  @@map("orders")
+}
+
+model OrderLine {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  /// Price snapshot at submit time, so re-downloading an old order keeps its
+  /// original totals even after the catalog is re-imported.
+  unitPrice Float
+
+  @@unique([orderId, productId])
+  @@index([productId])
+  @@map("order_lines")
+}
