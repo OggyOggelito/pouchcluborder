@@ -18,9 +18,12 @@ type Submitted = { id: string; totalQuantity: number; totalSek: number };
 export default function OrderForm({
   store,
   products,
+  canSwitchStore = false,
 }: {
   store: StoreSummary;
   products: CatalogProduct[];
+  /** False when the account only reaches one store — switching would dead-end. */
+  canSwitchStore?: boolean;
 }) {
   const router = useRouter();
   const draftKey = `pc_draft_${store.id}`;
@@ -178,13 +181,15 @@ export default function OrderForm({
     <main className="mx-auto max-w-3xl px-4 pb-40 pt-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h1 className="text-xl font-semibold tracking-tight">{store.name}</h1>
-        <button
-          type="button"
-          onClick={changeStore}
-          className="text-sm text-zinc-500 underline underline-offset-4 transition hover:text-zinc-900"
-        >
-          Byt butik
-        </button>
+        {canSwitchStore ? (
+          <button
+            type="button"
+            onClick={changeStore}
+            className="text-sm text-zinc-500 underline underline-offset-4 transition hover:text-zinc-900"
+          >
+            Byt butik
+          </button>
+        ) : null}
       </div>
 
       <div className="sticky top-[57px] z-20 -mx-4 bg-zinc-50/95 px-4 pb-3 pt-3 backdrop-blur">

@@ -12,7 +12,9 @@
     "db:reset": "prisma migrate reset --force",
     "setup": "prisma db push && npm run seed",
     "parse:check": "tsx scripts/dry-run-parse.ts",
-    "parse:collisions": "tsx scripts/dry-run-collisions.ts"
+    "parse:collisions": "tsx scripts/dry-run-collisions.ts",
+    "backfill:brands": "tsx scripts/backfill-brands.ts",
+    "seed:users": "tsx prisma/seed-users.ts"
   },
   "prisma": {
     "seed": "tsx --env-file-if-exists=.env prisma/seed.ts"
@@ -20,9 +22,12 @@
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.10.0",
     "@prisma/client": "^7.10.0",
+    "bcryptjs": "^3.0.3",
     "next": "^16.3.5",
+    "next-auth": "^5.0.0-beta.32",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-markdown": "^10.1.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

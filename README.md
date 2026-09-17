@@ -15,9 +15,15 @@ The UI is in Swedish (staff-facing); the Excel columns are in English as specifi
 
 ```bash
 npm install
-npm run setup   # creates prisma/dev.db, applies the schema, seeds stores + catalog
-npm run dev     # http://localhost:3000
+cp .env.example .env          # then set AUTH_SECRET (openssl rand -base64 32)
+npm run setup                 # schema + stores + catalog
+npm run backfill:brands -- --publish   # a brand page per catalog brand
+npm run seed:users            # one ADMIN + one OWNER per store
+npm run dev                   # http://localhost:3000
 ```
+
+`AUTH_SECRET` is required — Auth.js signs session cookies with it and login fails
+without it.
 
 `npm run setup` is `prisma db push` followed by the seed. Both are idempotent — running
 the seed again updates existing rows instead of duplicating them.
@@ -34,6 +40,9 @@ the seed again updates existing rows instead of duplicating them.
 | `npm run db:reset` | Drop everything and rebuild from schema + seed |
 | `npm run parse:check <file.xlsx>` | Dry-run the name parser over a masterdoc |
 | `npm run parse:collisions <file.xlsx>` | List articles that parse to the same variant |
+| `npm run seed:users` | Create the ADMIN + one OWNER per store (idempotent) |
+| `npm run backfill:brands` | Create/link a `Brand` row per catalog brand |
+| `npm run backfill:brands -- --publish` | Same, and publish brands that have stock |
 
 ---
 
@@ -192,6 +201,102 @@ point at them, and an old order has to stay re-exportable.
 
 ---
 
+## Accounts and access
+
+Ordering requires a login. The staff knowledge guide (`/staff`) does not — that is
+deliberate, so anyone on the shop floor can read it without an account.
+
+| Route | Who |
+| --- | --- |
+| `/staff`, `/staff/brands/[slug]` | Anyone, no login |
+| `/`, `/orders` | Any signed-in user |
+| `/admin`, `/admin/brands`, `/admin/users` | `ADMIN` only |
+
+### Roles
+
+- **`OWNER`** — orders for the stores granted in `StoreAccess`, and only ever sees
+  that store's order history and exports.
+- **`ADMIN`** — every store, plus the admin area.
+
+Roles are a plain string (`User.role`), not a Prisma enum, so a third role needs no
+migration — add it to `ROLES` in `src/lib/roles.ts` and decide what
+`canAccessAllStores` should say about it.
+
+### Creating accounts
+
+There is no self-signup. Either:
+
+```bash
+npm run seed:users     # ADMIN + one OWNER per store; keeps existing passwords
+```
+
+…or **`/admin/users`**, which creates an account, sets its role, ticks which stores it
+may order for, and changes any password. An `OWNER` must have at least one store, or
+they land on "Ingen butik kopplad".
+
+Seeded logins are `admin@pouchclub.se` and `<store-slug>@pouchclub.se` (so
+`linkoping@pouchclub.se`). The default passwords are placeholders — change them at
+`/admin/users`, or set `SEED_ADMIN_PASSWORD` / `SEED_OWNER_PASSWORD` before seeding.
+Re-running the seed never overwrites a password you have already changed.
+
+### How the login is wired
+
+- **Auth.js v5**, credentials provider, bcrypt (12 rounds), **JWT sessions** — Auth.js
+  does not support database sessions with the credentials provider, so that choice is
+  made for us.
+- The JWT holds only the user id. Role and store access are read from the database on
+  every request (`src/lib/session.ts`), so revoking a store takes effect immediately
+  rather than when the token expires.
+- `src/proxy.ts` (this Next version renamed `middleware.ts` to `proxy.ts`) only checks
+  whether a session cookie *exists*, and redirects to `/login` if not. It is an
+  optimistic redirect, not the authorization — the Next docs are explicit about not
+  using proxy for that. Every protected page and API route calls `requireUser`,
+  `requireAdmin` or `canOrderForStore` itself.
+- A wrong password and an unknown email take about the same time to answer, because
+  `authorize()` runs a bcrypt compare either way.
+
+### One store = no picker
+
+An owner with exactly one store goes straight into that store's order page, and the
+"Byt butik" link is hidden — one tap fewer than before logins existed. With more than
+one store they get a picker limited to their own stores, and a remembered store is
+only honoured if they still have access to it.
+
+---
+
+## Staff knowledge guide
+
+`/staff` lists every **published** brand, grouped by category and searchable. A brand
+that sells in more than one category (Lundgrens, Skruf, Loop, Velo, Lewa) is listed
+under each, with that category's own product count, so it is findable either way.
+
+`/staff/brands/[slug]` is one brand: description, manufacturing process, blending
+notes, logo/hero image, and the brand's active flavours pulled live from the catalog.
+
+### Editing brand content
+
+`/admin/brands` lists every brand with its draft/published state; `/admin/brands/[id]`
+edits one. The long-form fields are plain **markdown textareas** — `##` headings, `-`
+lists, `**bold**`, `>` quotes and links all render. There is no WYSIWYG and no CMS.
+
+A brand with nothing written yet still has a working page; it shows "Innehåll kommer
+snart" above its stock list rather than a blank or broken page. Untick **Publicerad**
+to hide a brand from `/staff` while writing — its URL then returns 404.
+
+### Where brands come from
+
+`Brand` is a real table, and `Product.brandId` points at it. The brand-parsing logic
+is **not** re-run on read: `npm run backfill:brands` creates a row per distinct parsed
+brand and links the products once, and every catalog import calls the same
+`syncBrandsFromProducts()` so a newly imported brand gets a draft page automatically.
+Editorial content is never touched by an import.
+
+`Brand.slug` uses `brandSlug()` rather than the older `slugify()`, which drops accents
+entirely and would turn "Göteborgs Rapé" into `goteborgs-rap`. All 71 current brands
+produce unique slugs; the sync appends `-2` if a future one ever collides.
+
+---
+
 ## How it works
 
 ### Order flow
@@ -245,7 +350,11 @@ src/
     api/orders/          POST order, GET Excel export
     api/admin/import/    POST CSV import
   components/            OrderForm, QuantityInput, StorePicker, CsvImport
+  auth.ts                Auth.js config (credentials provider, JWT)
+  proxy.ts               Optimistic redirect for signed-out users
   lib/
+    session.ts           requireUser / requireAdmin / store access checks
+    roles.ts             OWNER | ADMIN
     repositories/        The ONLY place that touches Prisma
     supplier-xlsx.ts     Raw masterdoc -> filtered, normalised rows
     product-name-parser.ts  Benämning -> brand/flavor/strength/format
@@ -275,25 +384,21 @@ the working directory, so `src/lib/sqlite-url.ts` normalises both to one absolut
 
 ## Not in Phase 1
 
-### No authentication
+### Manual password resets
 
-Anyone who can reach the app can order for any store and open `/admin`. That's deliberate for
-Phase 1. When you add auth (NextAuth / Clerk / Supabase Auth):
+There is no self-service reset. An admin sets a new password from `/admin/users`,
+or you re-run `npm run seed:users` with `SEED_OWNER_PASSWORD` for a fresh install.
 
-1. **Middleware** — add `src/middleware.ts` with a matcher over `/admin` and `/api/admin/:path*`
-   first; the import endpoint is the one that can overwrite the whole catalog.
-2. **Store identity** — replace the `pc_store_id` cookie in `src/lib/current-store.ts` with the
-   store on the signed-in user's session. `getCurrentStore()` is the single place the rest of
-   the app asks "which store is this?", so everything downstream keeps working.
-3. **Order attribution** — add `userId` (or `submittedBy`) to `Order` and set it in
-   `createOrder()` in `src/lib/repositories/orders.ts`.
-4. **Export authorisation** — `GET /api/orders/[id]/export` currently serves any order id to
-   anyone. Once sessions exist, check that the order's store matches the caller's store.
+To add a real reset flow later: add a `PasswordResetToken` model (userId, hashed
+token, expiresAt, usedAt), a `POST /api/auth/reset-request` route that emails a
+signed link, and a `/reset/[token]` page that calls the same bcrypt hashing used by
+`setPasswordAction` in `src/lib/admin-actions.ts`. Nothing else needs to change —
+passwords already live only as bcrypt hashes on `User.hashedPassword`.
 
-Also missing by design: no analytics or charts, no recommended-quantity logic, no Shopify/POS
-integration.
+### Still not built
 
----
+No analytics or charts, no recommended-quantity logic, no Shopify/POS integration,
+and no self-signup (accounts are created by an admin, by design).
 
 ## Phase 2 notes
 

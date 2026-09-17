@@ -1,25 +1,54 @@
 import Link from "next/link";
 import StorePicker from "@/components/StorePicker";
 import { formatDateTime, formatNumber, formatSek } from "@/lib/format";
-import { getCurrentStore } from "@/lib/current-store";
-import { listOrdersForStore } from "@/lib/repositories/orders";
-import { listStores } from "@/lib/repositories/stores";
+import { resolveOrderingStore } from "@/lib/current-store";
+import { listOrders } from "@/lib/repositories/orders";
+import { canAccessAllStores } from "@/lib/roles";
+import { requireUser, storesForUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function RecentOrdersPage() {
-  const store = await getCurrentStore();
+  const user = await requireUser("/orders");
+  const isAdmin = canAccessAllStores(user.role);
 
-  if (!store) {
-    return <StorePicker stores={await listStores()} />;
+  // An ADMIN sees every store's history; an OWNER only the store they are in.
+  // `null` is the repository's "no store filter", and is only ever passed here.
+  let orders;
+  let heading: string;
+
+  if (isAdmin) {
+    orders = await listOrders(null);
+    heading = "Alla butiker";
+  } else {
+    const resolution = await resolveOrderingStore(user);
+
+    if (resolution.kind === "none") {
+      return (
+        <main className="mx-auto max-w-3xl px-4 py-10">
+          <h1 className="text-xl font-semibold tracking-tight">Ingen butik kopplad</h1>
+          <p className="mt-2 text-zinc-600">Be en administratör koppla en butik till kontot.</p>
+        </main>
+      );
+    }
+
+    if (resolution.kind === "choose") {
+      return <StorePicker stores={resolution.choices} />;
+    }
+
+    orders = await listOrders([resolution.store.id]);
+    heading = resolution.store.name;
   }
 
-  const orders = await listOrdersForStore(store.id);
+  const stores = await storesForUser(user);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="text-xl font-semibold tracking-tight">Tidigare beställningar</h1>
-      <p className="mt-1 text-zinc-600">{store.name}</p>
+      <p className="mt-1 text-zinc-600">
+        {heading}
+        {isAdmin ? <span className="text-zinc-400"> · {stores.length} butiker</span> : null}
+      </p>
 
       {orders.length === 0 ? (
         <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
@@ -39,9 +68,13 @@ export default async function RecentOrdersPage() {
               <div className="min-w-0">
                 <p className="font-medium">{formatDateTime(order.submittedAt)}</p>
                 <p className="text-sm text-zinc-500 tabular-nums">
+                  {isAdmin ? <span className="text-zinc-700">{order.storeName} · </span> : null}
                   {formatNumber(order.totalQuantity)} stockar · {order.lineCount} rader ·{" "}
                   {formatSek(order.totalSek)}
                 </p>
+                {order.placedByEmail ? (
+                  <p className="truncate text-xs text-zinc-400">{order.placedByEmail}</p>
+                ) : null}
               </div>
               <a
                 href={`/api/orders/${order.id}/export`}

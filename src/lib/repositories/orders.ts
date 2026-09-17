@@ -32,6 +32,8 @@ export type OrderSummary = {
   totalQuantity: number;
   totalSek: number;
   lineCount: number;
+  storeName: string;
+  placedByEmail: string | null;
 };
 
 export class OrderValidationError extends Error {}
@@ -44,6 +46,7 @@ export async function createOrder(input: {
   storeId: string;
   lines: OrderLineDraft[];
   note?: string | null;
+  placedByUserId?: string | null;
 }): Promise<{ id: string }> {
   const lines = input.lines.filter((line) => Number.isInteger(line.quantity) && line.quantity > 0);
 
@@ -74,6 +77,7 @@ export async function createOrder(input: {
       data: {
         storeId: store.id,
         note: input.note?.trim() || null,
+        placedByUserId: input.placedByUserId ?? null,
         lines: {
           create: lines.map((line) => ({
             productId: line.productId,
@@ -142,14 +146,23 @@ export async function getOrder(id: string): Promise<OrderDetail | null> {
   };
 }
 
-export async function listOrdersForStore(storeId: string, limit = 50): Promise<OrderSummary[]> {
+/**
+ * Orders for a set of stores. Callers pass the stores the signed-in user may
+ * see — `null` means every store, which only an ADMIN is ever given.
+ */
+export async function listOrders(
+  storeIds: string[] | null,
+  limit = 50
+): Promise<OrderSummary[]> {
   const orders = await prisma.order.findMany({
-    where: { storeId },
+    where: storeIds === null ? {} : { storeId: { in: storeIds } },
     orderBy: { submittedAt: "desc" },
     take: limit,
     select: {
       id: true,
       submittedAt: true,
+      store: { select: { name: true } },
+      placedBy: { select: { email: true } },
       lines: { select: { quantity: true, unitPrice: true } },
     },
   });
@@ -157,10 +170,25 @@ export async function listOrdersForStore(storeId: string, limit = 50): Promise<O
   return orders.map((order) => ({
     id: order.id,
     submittedAt: order.submittedAt,
+    storeName: order.store.name,
+    placedByEmail: order.placedBy?.email ?? null,
     lineCount: order.lines.length,
     totalQuantity: order.lines.reduce((sum, line) => sum + line.quantity, 0),
     totalSek: round2(order.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0)),
   }));
+}
+
+export async function listOrdersForStore(storeId: string, limit = 50): Promise<OrderSummary[]> {
+  return listOrders([storeId], limit);
+}
+
+/** The store an order belongs to, for authorising an export. */
+export async function getOrderStoreId(orderId: string): Promise<string | null> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { storeId: true },
+  });
+  return order?.storeId ?? null;
 }
 
 function round2(value: number): number {

@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
 import { parseSupplierWorkbook, PRICE_BASIS } from "@/lib/supplier-xlsx";
 import { importProducts, type ImportMode } from "@/lib/repositories/products";
+import { syncBrandsFromProducts } from "@/lib/repositories/brands";
+import { getSessionUser } from "@/lib/session";
+import { canAccessAllStores } from "@/lib/roles";
 
 export const runtime = "nodejs";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
 export async function POST(request: Request) {
+  // Replacing the catalog is an admin action — without this, anyone who can
+  // reach the app could overwrite every product.
+  const user = await getSessionUser();
+  if (!user || !canAccessAllStores(user.role)) {
+    return NextResponse.json({ error: "Behörighet saknas." }, { status: 403 });
+  }
+
   let form: FormData;
 
   try {
@@ -45,7 +55,13 @@ export async function POST(request: Request) {
 
     const result = await importProducts(parsed.rows, mode);
 
+    // Give any brand new to this import a (draft, empty) page, and keep
+    // Product.brandId pointing at the right Brand — rather than re-parsing the
+    // brand out of the name on every read.
+    const brands = await syncBrandsFromProducts();
+
     return NextResponse.json({
+      brands,
       ...result,
       mode,
       priceBasis: PRICE_BASIS,

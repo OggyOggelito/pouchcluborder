@@ -2,10 +2,13 @@ import Link from "next/link";
 import CsvImport from "@/components/CsvImport";
 import SupplierImport from "@/components/SupplierImport";
 import { countProducts, countNeedsReview, listBrands } from "@/lib/repositories/products";
+import { requireAdmin } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
+  await requireAdmin();
+
   const [counts, brands, review] = await Promise.all([
     countProducts(),
     listBrands(),

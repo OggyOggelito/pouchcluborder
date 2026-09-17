@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
 import { parseProductCsv } from "@/lib/csv";
 import { importProducts, type ImportMode } from "@/lib/repositories/products";
+import { syncBrandsFromProducts } from "@/lib/repositories/brands";
+import { getSessionUser } from "@/lib/session";
+import { canAccessAllStores } from "@/lib/roles";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  // Replacing the catalog is an admin action — without this, anyone who can
+  // reach the app could overwrite every product.
+  const user = await getSessionUser();
+  if (!user || !canAccessAllStores(user.role)) {
+    return NextResponse.json({ error: "Behörighet saknas." }, { status: 403 });
+  }
+
   let body: { csv?: unknown; mode?: unknown };
 
   try {
@@ -33,8 +43,11 @@ export async function POST(request: Request) {
 
   try {
     const result = await importProducts(parsed.rows, mode);
+    // Same as the .xlsx path: a brand new to this import gets a draft page.
+    const brands = await syncBrandsFromProducts();
     return NextResponse.json({
       ...result,
+      brands,
       mode,
       parsed: parsed.rows.length,
       errors: parsed.errors.slice(0, 20),

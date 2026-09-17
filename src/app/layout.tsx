@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import SiteNav from "@/components/SiteNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,22 +25,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-zinc-900 text-sm font-bold text-white">
                 PC
               </span>
-              <span>Pouch Club</span>
+              {/* The wordmark is the first thing to go when the nav grew a
+                  fourth item; the badge still identifies the app. */}
+              <span className="hidden sm:inline">Pouch Club</span>
             </Link>
-            <nav className="flex items-center gap-1 text-sm">
-              <Link
-                href="/orders"
-                className="rounded-lg px-3 py-2 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
-              >
-                Tidigare
-              </Link>
-              <Link
-                href="/admin"
-                className="rounded-lg px-3 py-2 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
-              >
-                Admin
-              </Link>
-            </nav>
+            <SiteNav />
           </div>
         </header>
         {children}

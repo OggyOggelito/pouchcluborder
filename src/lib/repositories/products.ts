@@ -190,3 +190,20 @@ export async function importProducts(
 export async function countNeedsReview(): Promise<number> {
   return prisma.product.count({ where: { active: true, needsReview: true } });
 }
+
+/** A brand's active catalog, for its staff page. */
+export async function listActiveProductsForBrand(brandId: string): Promise<CatalogProduct[]> {
+  return prisma.product.findMany({
+    where: { brandId, active: true },
+    orderBy: [{ category: "asc" }, { flavor: "asc" }, { strength: "asc" }, { format: "asc" }],
+    select: {
+      id: true,
+      brand: true,
+      flavor: true,
+      strength: true,
+      format: true,
+      pricePerStock: true,
+      category: true,
+    },
+  });
+}

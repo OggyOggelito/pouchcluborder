@@ -20,8 +20,82 @@ model Store {
   slug   String  @unique
   city   String?
   orders Order[]
+  access StoreAccess[]
 
   @@map("stores")
+}
+
+/// Accounts are created by an admin — there is no self-signup.
+model User {
+  id             String @id @default(cuid())
+  email          String @unique
+  hashedPassword String
+  name           String?
+  /// OWNER | ADMIN. Kept as a string rather than an enum so more roles can be
+  /// added without a migration; validated in src/lib/roles.ts.
+  role String @default("OWNER")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  storeAccess StoreAccess[]
+  orders      Order[]
+
+  @@map("users")
+}
+
+/// Which stores a user may order for. A join table rather than a column on
+/// User, because an owner can hold more than one store.
+model StoreAccess {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, storeId])
+  @@index([storeId])
+  @@map("store_access")
+}
+
+/// Editorial content about a brand, for the staff knowledge dashboard.
+/// Separate from Product.brand, which stays the parsed string the importer
+/// writes — brandId is the link between the two.
+model Brand {
+  id   String @id @default(cuid())
+  /// Matches the parsed Product.brand exactly, e.g. "77", "Loop", "Vozol".
+  name String @unique
+  /// URL-safe form used by /staff/brands/[slug].
+  slug String @unique
+
+  /// Distributor code(s) seen on this brand's products (LUNA, SMD, ECIGG...).
+  /// Internal reference only — a distributor is not a retail brand.
+  manufacturerCode String?
+  countryOfOrigin  String?
+
+  /// One paragraph: what the brand is and how it is positioned.
+  shortDescription String?
+  /// Markdown. How the pouches or vapes are actually made.
+  manufacturingProcess String?
+  /// Markdown. How nicotine, tobacco and flavouring are blended or dosed.
+  blendingNotes String?
+
+  logoUrl      String?
+  heroImageUrl String?
+  websiteUrl   String?
+
+  /// Drafts stay invisible to staff until this is switched on.
+  published Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+
+  @@index([published])
+  @@map("brands")
 }
 
 model Product {
@@ -67,6 +141,11 @@ model Product {
   needsReview Boolean @default(false)
   reviewNotes String?
 
+  /// Link to the editorial Brand record. Backfilled from `brand` by
+  /// `npm run backfill:brands`; the importer keeps it in sync on every import.
+  brandId  String?
+  brandRef Brand?  @relation(fields: [brandId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -78,6 +157,7 @@ model Product {
   @@index([active])
   @@index([sku])
   @@index([needsReview])
+  @@index([brandId])
   @@map("products")
 }
 
@@ -89,9 +169,15 @@ model Order {
   /// Free-text note from the store, optional.
   note String?
 
+  /// Who submitted it. Nullable: orders placed before logins existed have no
+  /// user, and those rows must stay valid.
+  placedByUserId String?
+  placedBy       User?   @relation(fields: [placedByUserId], references: [id])
+
   lines OrderLine[]
 
   @@index([storeId, submittedAt])
+  @@index([placedByUserId])
   @@map("orders")
 }
 
