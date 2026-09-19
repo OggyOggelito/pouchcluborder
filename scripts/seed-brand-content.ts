@@ -1,11 +1,14 @@
 /**
  * Writes the first brand pages for the staff guide.
  *
- * The text here is Pouch Club's own, written from factual sources: Skruf's
- * description of its production in Sävsjö (skruf.se/om-skruf/produktionen,
- * read 2026-09-19), manufacturer figures supplied by Oscar, and the strength
- * spread in our own catalog. No marketing copy from a brand or a competing
- * retailer is reproduced.
+ * The text here is Pouch Club's own, written from factual sources: the brands'
+ * own product and production pages (skruf.se, x-allwhite.se, zonepouch.se, read
+ * 2026-09-19), manufacturer figures, and the strength spread in our own catalog.
+ * No marketing copy from a brand or a competing retailer is reproduced.
+ *
+ * Knox, X, ZONE and Smålands Brukssnus all come out of Skruf's plant, so each
+ * points back at the Skruf page for the production detail rather than repeating
+ * it five times.
  *
  * Re-running overwrites these three brands' content, so edit at
  * /admin/brands/[id] instead once you have changed anything there.
@@ -50,7 +53,18 @@ Brun portion fuktas innan den packas. **Vit portion packas torr**, direkt i dosa
 
 Produktionen kontrolleras i flera steg, och vikt och mått stäms av löpande vid packningen.
 
-*Källa: skruf.se, läst 2026-09-19.*`,
+## Utan tobak
+
+**Skruf Super White** är den tobaksfria motsvarigheten: samma hus, men växtfiber i
+stället för malen tobak. Den delen av processen ovan som handlar om tobak gäller
+alltså inte dem.
+
+## Samma fabrik, flera märken
+
+Sävsjö gör mer än Skruf. **Knox**, **Smålands Brukssnus**, **X All White** och
+**ZONE** kommer ur samma produktion — se respektive sida.
+
+*Källor: skruf.se, läst 2026-09-19.*`,
     blendingNotes: `## Styrkor i vårt sortiment
 
 Skruf ligger brett: från **6 mg** upp till **17,1 mg per portion**.
@@ -130,6 +144,127 @@ XQS finns i **nio olika styrkor** hos oss: 0, 4, 6, 8, 9,6, 10, 11, 11,2 och 17 
 ## Nikotinfritt
 
 XQS finns även helt utan nikotin (0 mg) — de ligger under Nikotinfritt i listan.`,
+  },
+
+  {
+    name: "Knox",
+    countryOfOrigin: "Sverige",
+    websiteUrl: "https://skruf.se/vara-produkter/knox/",
+    shortDescription:
+      "Klassiskt svenskt tobakssnus från Skruf, tillverkat i Sävsjö. Knox är den mer traditionella delen av Skrufs sortiment — hit går kunden som vill ha vanligt brunt snus snarare än en vit nikotinpåse.",
+    manufacturingProcess: `## Var det görs
+
+Knox tillverkas av **Skruf i Sävsjö**, samma fabrik som Skrufs eget snus. Hela
+processen — malning, blandning, pastörisering, mognad och packning — är densamma.
+Den beskrivs i detalj på [Skrufs sida](/staff/brands/skruf).
+
+## Karaktär
+
+**Knox Karaktär** är inte ett eget märke utan en serie inom Knox, och den är
+tobakssnus precis som resten. Smakbilden bygger på klassiska svenska toner —
+enbär, bergamott och torkade örter — med tobaken tydligt framme.
+
+Serien går på färg i stället för namn. Vi har fyra i sortimentet:
+
+- Karaktär **Blue**
+- Karaktär **Green**
+- Karaktär **Red**
+- Karaktär **Yellow**
+
+> I leverantörens fil heter allt det här "Knox Karaktär", men Karaktär är en serie
+> under Knox — inte ett märke. Därför ligger de under Knox hos oss.`,
+    blendingNotes: `## Styrkor i vårt sortiment
+
+Knox ligger starkt: **10,5 till 19,2 mg per portion**. Det är bland det starkaste vi
+har i brunt snus, så det är värt att fråga innan man rekommenderar till någon som är
+van vid vitt snus i lägre styrkor.
+
+## Format
+
+**Lös**, **portion** och **vit portion**. Kom ihåg att vit portion packas torr och
+därför rinner långsammare — skillnaden mot brun portion märks direkt.`,
+  },
+  {
+    name: "ZONE",
+    countryOfOrigin: "Sverige",
+    websiteUrl: "https://zonepouch.se/",
+    shortDescription:
+      "Tobaksfria nikotinpåsar som tillverkas i Sverige av Imperial Tobacco, i samma produktion som Skruf. Sortimentet är smakdrivet — bär, mint och frukt — och numreras i stället för att skriva ut styrkan.",
+    manufacturingProcess: `## Var det görs
+
+ZONE tillverkas i **Sverige** av Imperial Tobacco, som också äger Skruf, och våra
+leverantörsuppgifter anger Skruf som tillverkare. Produktionen följer samma steg som
+beskrivs på [Skrufs sida](/staff/brands/skruf), men utan tobaksmomenten — ZONE är
+helt tobaksfritt och byggt på växtfiber.`,
+    blendingNotes: `## Nyckeln till numreringen
+
+ZONE skriver inte ut styrkan i klartext. **Sista siffran i numret är styrkan** — det
+är den enda du behöver hålla reda på:
+
+| Slutar på | Styrka | Nikotin |
+| --- | --- | --- |
+| **3** | Strong | ca 10 mg/portion |
+| **4–5** | Ultra | ca 11 mg/portion |
+| **7** | Ultra Strong | ca 17 mg/portion |
+
+Så *No13 Sweet Mint* och *No15 Sweet Mint Ultra* är samma smak i två styrkor, och
+*No 77 Blueberry Burst* är den starkaste vi har av den smaken.
+
+## Styrkor i vårt sortiment
+
+Tre nivåer: **10**, **11** och **17 mg per portion**. Hoppet upp till 17 är stort —
+en kund som är nöjd med en trea ska inte rekommenderas en sjua rakt av.`,
+  },
+  {
+    name: "X",
+    countryOfOrigin: "Sverige",
+    websiteUrl: "https://x-allwhite.se/",
+    shortDescription:
+      "Tobaksfria all white-påsar som tillverkas i Sävsjö av Imperial Tobacco. Litet sortiment med tre smaklinjer, och den av våra tillverkare som gått längst på förpackningssidan.",
+    manufacturingProcess: `## Var det görs
+
+X tillverkas i **Sävsjö**, samma ort som Skruf, av Imperial Tobacco. Produktionsstegen
+finns beskrivna på [Skrufs sida](/staff/brands/skruf) — utan tobaksmomenten, eftersom
+X är tobaksfritt.
+
+## Påsen och dosan
+
+Påsen är av **bambufiber**. Dosorna tillverkas av **90 % återvunnen plast** och är
+ISCC+-certifierade, vilket är värt att nämna för kunder som frågar om förpackningen.`,
+    blendingNotes: `## Styrkor i vårt sortiment
+
+Vi har X på **9 och 10 mg per portion**. Märket säljs i Medium, Strong och Extra
+Strong, men i vårt sortiment ligger de tätt ihop i styrka.
+
+## Smaker
+
+Tre linjer: **Cold Blast** (pepparmynta och mentol), **Berry Fresh** (mynta och
+svarta vinbär) och **Cosmic Blast** (röda bär och vanilj).
+
+> X numrerar en del varianter med **#3** och **#4**. Högre siffra är starkare, på
+> samma sätt som hos flera andra märken.`,
+  },
+  {
+    name: "Smålands Brukssnus",
+    countryOfOrigin: "Sverige",
+    websiteUrl: "https://skruf.se/vara-produkter/brukssnus/",
+    shortDescription:
+      "Traditionellt brunt snus från Skruf, lanserat 2012 och prissatt för att vara vardagssnuset snarare än premiumvalet. Tillverkas i Sävsjö som resten av Skrufs sortiment.",
+    manufacturingProcess: `## Var det görs
+
+Samma fabrik i **Sävsjö** som Skruf och Knox, och samma process — malning, blandning,
+pastörisering, mognad och packning. Den beskrivs på [Skrufs sida](/staff/brands/skruf).
+
+Det här är **tobakssnus**, inte en nikotinpåse.`,
+    blendingNotes: `## Styrkor i vårt sortiment
+
+Milt i sammanhanget: **8,4 och 9,88 mg per portion**. Klart under Knox, som börjar
+på 10,5.
+
+## Format
+
+**Lös**, **portion** och **vit portion**. Ett litet sortiment — tre varianter hos oss
+— så det är lätt att ha koll på hela hyllan.`,
   },
 ];
 

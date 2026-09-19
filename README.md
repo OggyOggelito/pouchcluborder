@@ -342,13 +342,21 @@ notes, logo/hero image, and the brand's active flavours pulled live from the cat
 
 ### Where the first three pages came from
 
-Skruf, Velo and XQS have content written by hand (`npm run seed:brand-content`).
+Skruf, Knox, ZONE, X, Smålands Brukssnus, Velo and XQS have content written by hand (`npm run seed:brand-content`).
 The text is ours, written from factual sources — Skruf's own account of its
 production in Sävsjö, manufacturer figures, and the strength spread in our catalog.
 No marketing copy from a brand's or a competitor's site is reproduced, and that is
 the line to keep when adding the rest: take the facts, write the words.
 
-Re-running that script overwrites those three brands, so once you have edited a page
+Knox, ZONE, X and Smålands Brukssnus all come out of Skruf's plant in Sävsjö, so
+their pages link back to the Skruf page for the production detail instead of
+repeating it. That was checked, not assumed: X's own site names Sävsjö, and the
+enriched catalog independently lists "Skruf Snus" as the manufacturer for all four.
+
+Long-form fields render GitHub-flavoured markdown, tables included (`remark-gfm`) —
+the ZONE page uses one for its strength key.
+
+Re-running that script overwrites those brands, so once you have edited a page
 at `/admin/brands/[id]`, edit it there rather than in the script.
 
 ### Editing brand content
