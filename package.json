@@ -17,7 +17,8 @@
     "seed:users": "tsx prisma/seed-users.ts",
     "fetch:snusbolaget": "tsx scripts/fetch-snusbolaget.ts",
     "enrich:strengths": "tsx scripts/enrich-strengths.ts",
-    "crosscheck": "tsx scripts/crosscheck-assortment.ts"
+    "crosscheck": "tsx scripts/crosscheck-assortment.ts",
+    "seed:brand-content": "tsx scripts/seed-brand-content.ts"
   },
   "prisma": {
     "seed": "tsx --env-file-if-exists=.env prisma/seed.ts"

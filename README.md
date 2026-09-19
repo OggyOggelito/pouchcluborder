@@ -340,6 +340,17 @@ under each, with that category's own product count, so it is findable either way
 `/staff/brands/[slug]` is one brand: description, manufacturing process, blending
 notes, logo/hero image, and the brand's active flavours pulled live from the catalog.
 
+### Where the first three pages came from
+
+Skruf, Velo and XQS have content written by hand (`npm run seed:brand-content`).
+The text is ours, written from factual sources — Skruf's own account of its
+production in Sävsjö, manufacturer figures, and the strength spread in our catalog.
+No marketing copy from a brand's or a competitor's site is reproduced, and that is
+the line to keep when adding the rest: take the facts, write the words.
+
+Re-running that script overwrites those three brands, so once you have edited a page
+at `/admin/brands/[id]`, edit it there rather than in the script.
+
 ### Editing brand content
 
 `/admin/brands` lists every brand with its draft/published state; `/admin/brands/[id]`
