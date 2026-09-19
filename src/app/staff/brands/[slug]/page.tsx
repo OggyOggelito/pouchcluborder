@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Markdown from "@/components/Markdown";
 import { categoryLabel } from "@/lib/categories";
-import { getPublishedBrandBySlug, hasContent } from "@/lib/repositories/brands";
+import { getBrandFacts, getPublishedBrandBySlug, hasContent } from "@/lib/repositories/brands";
 import { listActiveProductsForBrand } from "@/lib/repositories/products";
 
 export const dynamic = "force-dynamic";
@@ -17,19 +17,42 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
+function mg(value: number): string {
+  return value.toLocaleString("sv-SE", { maximumFractionDigits: 2 });
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-wrap gap-x-2">
+      <dt className="text-zinc-500">{label}</dt>
+      <dd className="font-medium text-zinc-900">{value}</dd>
+    </div>
+  );
+}
+
 export default async function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const brand = await getPublishedBrandBySlug(slug);
 
   if (!brand) notFound();
 
-  const products = await listActiveProductsForBrand(brand.id);
+  const [products, facts] = await Promise.all([
+    listActiveProductsForBrand(brand.id),
+    getBrandFacts(brand.id),
+  ]);
 
   // Flavor -> variants, so the stock list reads as prose rather than a table.
-  const byFlavor = new Map<string, { strength: string; format: string }[]>();
+  const byFlavor = new Map<
+    string,
+    { strength: string; format: string; nicotineMgPerPortion: number | null }[]
+  >();
   for (const product of products) {
     const variants = byFlavor.get(product.flavor) ?? [];
-    variants.push({ strength: product.strength, format: product.format });
+    variants.push({
+      strength: product.strength,
+      format: product.format,
+      nicotineMgPerPortion: product.nicotineMgPerPortion,
+    });
     byFlavor.set(product.flavor, variants);
   }
 
@@ -123,6 +146,44 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
         </p>
       ) : null}
 
+      {facts.manufacturers.length > 0 || facts.strengthRange || facts.formats.length > 0 ? (
+        <section className="mt-10 border-t border-zinc-200 pt-6">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            Snabbfakta
+          </h2>
+          <dl className="mt-3 space-y-2 text-[17px]">
+            {facts.manufacturers.length > 0 ? (
+              <Fact label="Tillverkare" value={facts.manufacturers.join(", ")} />
+            ) : null}
+            {facts.strengthRange ? (
+              <Fact
+                label="Nikotin per portion"
+                value={
+                  facts.strengthRange.min === facts.strengthRange.max
+                    ? `${mg(facts.strengthRange.min)} mg`
+                    : `${mg(facts.strengthRange.min)}–${mg(facts.strengthRange.max)} mg`
+                }
+              />
+            ) : null}
+            {facts.formats.length > 0 ? (
+              <Fact label="Format" value={facts.formats.join(", ")} />
+            ) : null}
+            {facts.portionsPerCan.length > 0 ? (
+              <Fact
+                label="Portioner per dosa"
+                value={facts.portionsPerCan.sort((a, b) => a - b).join(" / ")}
+              />
+            ) : null}
+          </dl>
+          {facts.sources.length > 0 ? (
+            <p className="mt-3 text-xs text-zinc-400">
+              Nikotinvärden för {facts.enrichedCount} av {facts.variantCount} varianter hämtade
+              från {facts.sources.join(", ")}.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
       <section className="mt-10 border-t border-zinc-200 pt-6">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
           Det här har vi i sortimentet
@@ -141,11 +202,16 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
                   <p className="font-medium">{flavor}</p>
                   <p className="text-sm text-zinc-500">
                     {variants
-                      .map((variant) =>
-                        variant.strength
-                          ? `${variant.strength} · ${variant.format}`
-                          : variant.format
-                      )
+                      .map((variant) => {
+                        const strength =
+                          variant.strength ||
+                          (variant.nicotineMgPerPortion !== null
+                            ? `~${variant.nicotineMgPerPortion.toLocaleString("sv-SE", {
+                                maximumFractionDigits: 2,
+                              })} mg`
+                            : "");
+                        return strength ? `${strength} · ${variant.format}` : variant.format;
+                      })
                       .join(" — ")}
                   </p>
                 </li>

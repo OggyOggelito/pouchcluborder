@@ -43,6 +43,8 @@ the seed again updates existing rows instead of duplicating them.
 | `npm run seed:users` | Create the ADMIN + one OWNER per store (idempotent) |
 | `npm run backfill:brands` | Create/link a `Brand` row per catalog brand |
 | `npm run backfill:brands -- --publish` | Same, and publish brands that have stock |
+| `npm run fetch:snusbolaget` | Crawl snusbolaget.se specs into `data/snusbolaget-facts.json` |
+| `npm run enrich:strengths` | Match those facts onto the catalog by EAN (dry run) |
 
 ---
 
@@ -198,6 +200,71 @@ existing product are left alone.
 
 Products are **never hard-deleted**, only deactivated (`active = false`). Past orders
 point at them, and an old order has to stay re-exportable.
+
+---
+
+## Filling strength gaps from snusbolaget.se
+
+The supplier masterdoc states no nicotine strength for most nicotine pouches —
+on the 2026-09-14 file, only 308 of 1099 names carry an mg value. snusbolaget.se
+publishes the manufacturer's figures as structured data, and both sides carry the
+manufacturer's **EAN**, so the two catalogues can be joined exactly rather than by
+fuzzy name matching.
+
+```bash
+npm run fetch:snusbolaget        # crawl the product sitemap -> data/snusbolaget-facts.json
+npm run enrich:strengths         # dry run: what would be filled, and from where
+npm run enrich:strengths -- --apply
+```
+
+### What is taken, and what is not
+
+Taken — factual specifications: EAN/gtin13, article name, brand name, manufacturer,
+format, product type, weight, portions per can, and the manufacturer's nicotine
+content (mg per portion and mg per gram).
+
+**Not** taken: the product and brand descriptions, which are snusbolaget's own
+written copy, and "Snusbolagets styrka", which is their editorial rating rather than
+a manufacturer fact. Nothing they wrote is copied into our brand pages — the staff
+guide's content is written by us.
+
+### What the 2026-09-19 run found
+
+| | |
+| --- | --- |
+| Their products | 1 024 (0 fetch failures) |
+| Our active products | 1 088 |
+| Matched on EAN | 541 |
+| — blank strengths filled | **133** |
+| Ours they do not list | 547 (145 of those still have no strength) |
+| Theirs we do not stock | 483 |
+
+`npm run crosscheck` writes the full comparison to
+`data/assortment-crosscheck.json`, including which of their brands we carry nothing
+from — Swedsnus (30), Zeronito (25), Übbs Pouches (23), FIX (16) lead that list.
+
+### Crawling politely
+
+`robots.txt` (checked 2026-09-19) disallows only `/sok?` and advertises the product
+sitemap, which is what the crawler reads. Requests go out one at a time with a 700 ms
+delay and a User-Agent naming the bot and a contact address. Every page is cached
+outside the repo, so a re-run costs them nothing and only fetches what is new.
+
+> The live site is **snusbolaget.se**. `snusbolaget.com` is parked on DNS Made Easy
+> and serves a certificate for another domain.
+
+### Why the figures do not go into `strength`
+
+`strength` is part of `@@unique([brand, flavor, strength, format])`, which is how the
+importer finds an existing product. Writing a scraped mg value into it would mean the
+next catalog import no longer matched that row: it would create a duplicate at the
+blank strength and leave the enriched row deactivated.
+
+So the figures live in their own columns — `nicotineMgPerPortion`, `nicotineMgPerGram`,
+`portionsPerCan`, `nicotineSource`, `nicotineCheckedAt` — which no import path writes,
+so they survive a re-import untouched. Where a product has no strength of its own, the
+order page and the brand page show the matched figure prefixed with `~` and marked as
+coming from snusbolaget.se, rather than presenting it as something the supplier stated.
 
 ---
 

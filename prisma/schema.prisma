@@ -141,6 +141,28 @@ model Product {
   needsReview Boolean @default(false)
   reviewNotes String?
 
+  // ---------------------------------------------------------------
+  // Facts matched in from snusbolaget.se by EAN (npm run enrich:strengths).
+  //
+  // Deliberately NOT written into `strength`: that field is part of
+  // @@unique([brand, flavor, strength, format]), which is how the importer
+  // finds an existing product. Changing it would make the next import miss
+  // the row, create a duplicate, and leave this one deactivated. These are
+  // additive, and no import path writes them.
+  // ---------------------------------------------------------------
+
+  /// Manufacturer's nicotine content per portion, e.g. 9 for "9 mg/portion".
+  nicotineMgPerPortion Float?
+  /// Manufacturer's nicotine content per gram.
+  nicotineMgPerGram Float?
+  portionsPerCan    Int?
+  /// Who actually makes it, e.g. "Swedish Match". Distinct from
+  /// `manufacturerCode`, which is the masterdoc's distributor code.
+  manufacturer String?
+  /// Where the figures came from, e.g. "snusbolaget.se".
+  nicotineSource String?
+  nicotineCheckedAt DateTime?
+
   /// Link to the editorial Brand record. Backfilled from `brand` by
   /// `npm run backfill:brands`; the importer keeps it in sync on every import.
   brandId  String?

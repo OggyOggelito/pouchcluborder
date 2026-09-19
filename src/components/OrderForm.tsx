@@ -11,6 +11,11 @@ import type { CatalogProduct } from "@/lib/repositories/products";
 import type { StoreSummary } from "@/lib/repositories/stores";
 import { forgetStore } from "@/lib/store-selection";
 
+/** 4.4 -> "4,4", 9 -> "9" — Swedish decimal comma, no trailing zeroes. */
+function formatMg(value: number): string {
+  return value.toLocaleString("sv-SE", { maximumFractionDigits: 2 });
+}
+
 type Quantities = Record<string, number>;
 
 type Submitted = { id: string; totalQuantity: number; totalSek: number };
@@ -309,15 +314,30 @@ export default function OrderForm({
                                         <span className="font-medium">{variant.strength}</span>
                                         <span className="text-zinc-400"> · </span>
                                       </>
+                                    ) : variant.nicotineMgPerPortion !== null ? (
+                                      <>
+                                        {/* Not from the masterdoc — matched in by
+                                            EAN — so it is marked rather than shown
+                                            as if the supplier had stated it. */}
+                                        <span
+                                          className="font-medium text-zinc-500"
+                                          title="Nikotinhalt från snusbolaget.se, matchad på EAN"
+                                        >
+                                          ~{formatMg(variant.nicotineMgPerPortion)} mg
+                                        </span>
+                                        <span className="text-zinc-400"> · </span>
+                                      </>
                                     ) : null}
                                     <span
                                       className={
-                                        variant.strength ? "text-zinc-600" : "font-medium"
+                                        variant.strength || variant.nicotineMgPerPortion !== null
+                                          ? "text-zinc-600"
+                                          : "font-medium"
                                       }
                                     >
                                       {variant.format}
                                     </span>
-                                    {!variant.strength ? (
+                                    {!variant.strength && variant.nicotineMgPerPortion === null ? (
                                       <span className="text-zinc-400"> · styrka saknas</span>
                                     ) : null}
                                   </p>

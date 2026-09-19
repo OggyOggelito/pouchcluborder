@@ -210,3 +210,52 @@ function toSummary(brand: {
     productCountByCategory,
   };
 }
+
+export type BrandFacts = {
+  manufacturers: string[];
+  /** mg per portion across the brand's active products. */
+  strengthRange: { min: number; max: number } | null;
+  formats: string[];
+  portionsPerCan: number[];
+  variantCount: number;
+  /** How many of the brand's variants we have external figures for. */
+  enrichedCount: number;
+  sources: string[];
+};
+
+/**
+ * Factual summary of a brand, aggregated from its own products.
+ *
+ * Derived here rather than stored, so it cannot drift from the catalog, and
+ * kept strictly separate from the written fields — the manufacturing and
+ * blending notes are Pouch Club's own words, not anyone else's copy.
+ */
+export async function getBrandFacts(brandId: string): Promise<BrandFacts> {
+  const products = await prisma.product.findMany({
+    where: { brandId, active: true },
+    select: {
+      format: true,
+      manufacturer: true,
+      nicotineMgPerPortion: true,
+      portionsPerCan: true,
+      nicotineSource: true,
+    },
+  });
+
+  const strengths = products
+    .map((product) => product.nicotineMgPerPortion)
+    .filter((value): value is number => value !== null);
+
+  return {
+    manufacturers: [...new Set(products.map((p) => p.manufacturer).filter(Boolean))] as string[],
+    strengthRange:
+      strengths.length > 0
+        ? { min: Math.min(...strengths), max: Math.max(...strengths) }
+        : null,
+    formats: [...new Set(products.map((p) => p.format).filter(Boolean))].sort(),
+    portionsPerCan: [...new Set(products.map((p) => p.portionsPerCan).filter(Boolean))] as number[],
+    variantCount: products.length,
+    enrichedCount: strengths.length,
+    sources: [...new Set(products.map((p) => p.nicotineSource).filter(Boolean))] as string[],
+  };
+}

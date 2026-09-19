@@ -14,7 +14,10 @@
     "parse:check": "tsx scripts/dry-run-parse.ts",
     "parse:collisions": "tsx scripts/dry-run-collisions.ts",
     "backfill:brands": "tsx scripts/backfill-brands.ts",
-    "seed:users": "tsx prisma/seed-users.ts"
+    "seed:users": "tsx prisma/seed-users.ts",
+    "fetch:snusbolaget": "tsx scripts/fetch-snusbolaget.ts",
+    "enrich:strengths": "tsx scripts/enrich-strengths.ts",
+    "crosscheck": "tsx scripts/crosscheck-assortment.ts"
   },
   "prisma": {
     "seed": "tsx --env-file-if-exists=.env prisma/seed.ts"
