@@ -141,7 +141,8 @@ function mapColumns(headers: string[]): Partial<Record<keyof ProductInput, numbe
   return index;
 }
 
-function detectDelimiter(text: string): string {
+/** Exported so the shift import reuses the same delimiter handling. */
+export function detectDelimiter(text: string): string {
   const firstLine = text.split("\n", 1)[0] ?? "";
   const counts = [",", ";", "\t"].map((candidate) => ({
     candidate,
@@ -152,7 +153,8 @@ function detectDelimiter(text: string): string {
 }
 
 /** Minimal RFC 4180 reader: quoted fields, "" escapes, newlines inside quotes. */
-function parseDelimited(text: string, delimiter: string): string[][] {
+/** Exported so the shift import reuses the same quoting/BOM handling. */
+export function parseDelimited(text: string, delimiter: string): string[][] {
   const records: string[][] = [];
   let record: string[] = [];
   let field = "";

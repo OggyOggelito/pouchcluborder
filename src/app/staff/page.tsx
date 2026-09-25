@@ -1,5 +1,6 @@
 import { listPublishedBrands } from "@/lib/repositories/brands";
 import BrandDirectory from "@/components/BrandDirectory";
+import NewsWidget from "@/components/NewsWidget";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,10 @@ export default async function StaffPage() {
       <p className="mt-1 text-zinc-600">
         Hur produkterna tillverkas, hur nikotinet blandas och vad som skiljer märkena åt.
       </p>
+
+      {/* Signed-in staff see the latest announcements here; signed-out
+          visitors see nothing extra and the guide stays public. */}
+      <NewsWidget />
 
       {brands.length === 0 ? (
         <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">

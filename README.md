@@ -41,6 +41,7 @@ the seed again updates existing rows instead of duplicating them.
 | `npm run parse:check <file.xlsx>` | Dry-run the name parser over a masterdoc |
 | `npm run parse:collisions <file.xlsx>` | List articles that parse to the same variant |
 | `npm run seed:users` | Create the ADMIN + one OWNER per store (idempotent) |
+| `npm run seed:schedule` | Give stores a region and users a placeholder phone |
 | `npm run backfill:brands` | Create/link a `Brand` row per catalog brand |
 | `npm run backfill:brands -- --publish` | Same, and publish brands that have stock |
 | `npm run fetch:snusbolaget` | Crawl snusbolaget.se specs into `data/snusbolaget-facts.json` |
@@ -268,6 +269,105 @@ coming from snusbolaget.se, rather than presenting it as something the supplier 
 
 ---
 
+## Schema (Part A)
+
+Staff see their own shifts at **`/my-schedule`**; managers see coverage across their
+region at **`/team-schedule`**. Both are read-only — there is no shift-swap workflow.
+A manager who wants cover phones or emails the person, so their contact details are in
+the grid.
+
+### The provider seam
+
+Nothing in the UI knows where shifts come from. Every page goes through one interface:
+
+```ts
+interface ScheduleProvider {
+  getShifts(userIds: string[], range: DateRange): Promise<ShiftEntry[]>;
+}
+```
+
+`ShiftEntry` is `{ userId, storeId, date, startTime, endTime }`. Times are **local
+wall-clock strings**, never instants — converting to UTC and back is how an import
+quietly moves a shift by an hour.
+
+Which implementation is live is one value, `SCHEDULE_PROVIDER` in `.env`:
+
+| Value | Implementation | State |
+| --- | --- | --- |
+| `manual` (default) | `ManualImportScheduleProvider` | **Working.** Reads shifts uploaded at `/admin/schedule`. |
+| `tooeasy` | `TooEasyApiScheduleProvider` | **Stub — throws.** No API docs yet. |
+
+An unrecognised value throws rather than falling back, so a typo cannot silently
+serve data from a different source than the one asked for.
+
+### Importing shifts today
+
+`/admin/schedule` (ADMIN only) takes a **CSV** or **`.ics`** export from TooEasy or
+anywhere else. The format is detected from the file's contents, not its extension,
+because exports are routinely saved with the wrong one.
+
+CSV columns — Swedish header names work too (`e-post`, `datum`, `starttid`, `sluttid`,
+`butik`):
+
+| Column | Example |
+| --- | --- |
+| `email` | `linkoping@pouchclub.se` |
+| `date` | `2026-09-25`, `25/09/2026` or `20260925` |
+| `start` | `07:30`, `7.30` or `0730` |
+| `end` | `16:00` |
+| `store` | store name or slug, case-insensitive |
+
+The `.ics` reader handles folded lines, `TZID` parameters and `ATTENDEE:mailto:`, and
+falls back to finding an address in the description. It is deliberately not a full
+RFC 5545 implementation — no recurrence, no timezone database — since scheduling
+exports are flat lists of dated events.
+
+**Re-uploading the same period replaces it.** Every shift for the people in the file,
+inside the file's own date range, is cleared before the new rows land — so uploading a
+corrected roster twice is safe. Rows whose email or store does not match are skipped
+and listed back, rather than failing the whole import.
+
+### Wiring up TooEasy later
+
+`TooEasyApiScheduleProvider` in `src/lib/schedule/tooeasy-provider.ts` is a stub that
+throws, with the full checklist in its doc comment. It needs, from TooEasy:
+
+1. **Base URL**, and whether test and production differ → `TOOEASY_BASE_URL`
+2. **Auth method** — bearer token or API key header; if OAuth2 client-credentials,
+   also the token endpoint and somewhere to cache the token → `TOOEASY_API_KEY`
+3. **The roster endpoint** — path, whether the date range goes in the query or the
+   body, page size and paging style
+4. **Employee identity** — if they key on anything other than email, we store their id
+   on `User` (e.g. `tooEasyEmployeeId`) and map it in the provider
+5. **Location identity** — likewise, probably `tooEasyLocationId` on `Store`
+6. **Whether times are local wall-clock or UTC** — `ShiftEntry` carries local
+   wall-clock, so a UTC feed is converted *in the provider*, not downstream
+7. **Rate limits**, to decide whether to cache
+
+When it lands, the change is that one file plus `SCHEDULE_PROVIDER=tooeasy`.
+**No page, component or query touches a vendor**, so no UI code changes.
+
+---
+
+## Nyheter (Part B)
+
+**`/news`** is the feed for any signed-in staff member: pinned items first, then newest
+first, filterable by category (`NewProduct` / `NewStore` / `General`). Bodies are
+markdown, rendered with the same component as the brand pages.
+
+**`/admin/announcements`** (ADMIN only) creates, edits, pins, publishes and deletes.
+An item with no `publishedAt` is a draft and never reaches the feed. Editing a
+published item keeps its original publish date, so fixing a typo does not bounce it
+back to the top.
+
+The three newest also appear as a widget on **`/staff`**. That page is public by
+design, so the widget checks for a session itself and renders nothing when signed out —
+the brand guide stays readable without an account.
+
+No email or push notifications: in-app only.
+
+---
+
 ## Accounts and access
 
 Ordering requires a login. The staff knowledge guide (`/staff`) does not — that is
@@ -439,6 +539,7 @@ src/
   auth.ts                Auth.js config (credentials provider, JWT)
   proxy.ts               Optimistic redirect for signed-out users
   lib/
+    schedule/            ScheduleProvider seam + CSV/ICS import
     session.ts           requireUser / requireAdmin / store access checks
     roles.ts             OWNER | ADMIN
     repositories/        The ONLY place that touches Prisma

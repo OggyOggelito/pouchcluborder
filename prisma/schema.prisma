@@ -19,9 +19,14 @@ model Store {
   name   String  @unique
   slug   String  @unique
   city   String?
+  /// Groups stores a manager looks after together, e.g. "Stockholm".
+  /// Free text rather than an enum so a region can be added without a migration.
+  region String?
   orders Order[]
   access StoreAccess[]
+  shifts Shift[]
 
+  @@index([region])
   @@map("stores")
 }
 
@@ -38,10 +43,71 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  storeAccess StoreAccess[]
-  orders      Order[]
+  /// Shown to managers looking for shift cover — there is no in-app messaging,
+  /// so they phone or email the person directly.
+  phone String?
+
+  storeAccess   StoreAccess[]
+  orders        Order[]
+  shifts        Shift[]
+  announcements Announcement[]
 
   @@map("users")
+}
+
+/// One scheduled shift for one person.
+///
+/// Written only by the manual import (`ManualImportScheduleProvider`); read
+/// only through `ScheduleProvider`, never directly from a component.
+model Shift {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// Local calendar date, midnight UTC, so a day is one value to group by.
+  date DateTime
+  /// "07:30" / "16:00" — local wall-clock, kept as text so an import cannot
+  /// shift a shift by an hour through a timezone conversion.
+  startTime String
+  endTime   String
+
+  /// Which import produced it, e.g. "csv" or "ics".
+  source     String
+  /// Batch marker, so re-importing the same file replaces rather than duplicates.
+  importBatch String?
+  importedAt DateTime @default(now())
+
+  /// One person cannot hold two shifts starting at the same time on a day.
+  @@unique([userId, date, startTime])
+  @@index([storeId, date])
+  @@index([date])
+  @@map("shifts")
+}
+
+/// Internal announcements. Drafts have no publishedAt.
+model Announcement {
+  id       String  @id @default(cuid())
+  title    String
+  /// Markdown, rendered with the same component as brand content.
+  body     String
+  /// NewProduct | NewStore | General — validated in src/lib/announcements.ts.
+  category String  @default("General")
+  pinned   Boolean @default(false)
+
+  /// Null while it is a draft.
+  publishedAt DateTime?
+
+  authorId String?
+  author   User?   @relation(fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([publishedAt])
+  @@index([pinned])
+  @@map("announcements")
 }
 
 /// Which stores a user may order for. A join table rather than a column on
