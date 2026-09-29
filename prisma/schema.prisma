@@ -22,6 +22,9 @@ model Store {
   /// Groups stores a manager looks after together, e.g. "Stockholm".
   /// Free text rather than an enum so a region can be added without a migration.
   region String?
+  /// TooEasy's `StoreNumber`. Needed as well as the employee mapping: a shift
+  /// comes back keyed by TooEasy's store, and ShiftEntry carries ours.
+  tooEasyStoreNumber String? @unique
   orders Order[]
   access StoreAccess[]
   shifts Shift[]
@@ -46,6 +49,11 @@ model User {
   /// Shown to managers looking for shift cover — there is no in-app messaging,
   /// so they phone or email the person directly.
   phone String?
+
+  /// TooEasy WFM's `EmployeeId` (their string identifier, not their numeric PK).
+  /// Mapped by hand at /admin/tooeasy — emails and names do not match cleanly
+  /// between the two systems, so this is never inferred.
+  tooEasyEmployeeId String? @unique
 
   storeAccess   StoreAccess[]
   orders        Order[]

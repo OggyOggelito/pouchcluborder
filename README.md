@@ -295,7 +295,7 @@ Which implementation is live is one value, `SCHEDULE_PROVIDER` in `.env`:
 | Value | Implementation | State |
 | --- | --- | --- |
 | `manual` (default) | `ManualImportScheduleProvider` | **Working.** Reads shifts uploaded at `/admin/schedule`. |
-| `tooeasy` | `TooEasyApiScheduleProvider` | **Stub — throws.** No API docs yet. |
+| `tooeasy` | `TooEasyApiScheduleProvider` | **Implemented**, but off until the demo-vs-production question below is settled. Throws if selected without credentials. |
 
 An unrecognised value throws rather than falling back, so a typo cannot silently
 serve data from a different source than the one asked for.
@@ -327,25 +327,81 @@ inside the file's own date range, is cleared before the new rows land — so upl
 corrected roster twice is safe. Rows whose email or store does not match are skipped
 and listed back, rather than failing the whole import.
 
-### Wiring up TooEasy later
+### What the TooEasy spec says
 
-`TooEasyApiScheduleProvider` in `src/lib/schedule/tooeasy-provider.ts` is a stub that
-throws, with the full checklist in its doc comment. It needs, from TooEasy:
+Read from `{base}/swagger/v1/swagger.json` on **2026-09-29** — OpenAPI 3.0.4, title
+`tooeasy.External.WebAPI`, version `v1`, 78 paths. The Swagger UI page itself does not
+name the spec file; the path is in its `SwaggerUIBundle` config in the page source.
 
-1. **Base URL**, and whether test and production differ → `TOOEASY_BASE_URL`
-2. **Auth method** — bearer token or API key header; if OAuth2 client-credentials,
-   also the token endpoint and somewhere to cache the token → `TOOEASY_API_KEY`
-3. **The roster endpoint** — path, whether the date range goes in the query or the
-   body, page size and paging style
-4. **Employee identity** — if they key on anything other than email, we store their id
-   on `User` (e.g. `tooEasyEmployeeId`) and map it in the provider
-5. **Location identity** — likewise, probably `tooEasyLocationId` on `Store`
-6. **Whether times are local wall-clock or UTC** — `ShiftEntry` carries local
-   wall-clock, so a UTC feed is converted *in the provider*, not downstream
-7. **Rate limits**, to decide whether to cache
+**Auth** — HTTP bearer, JWT, applied globally:
 
-When it lands, the change is that one file plus `SCHEDULE_PROVIDER=tooeasy`.
-**No page, component or query touches a vendor**, so no UI code changes.
+```
+POST /api/RequestNewToken/AcquireToken     body { userName, userPw }  ->  JWT
+```
+
+Credentials come from `TOOEASY_USERNAME` / `TOOEASY_PASSWORD` and the base URL from
+`TOOEASY_BASE_URL`. Nothing is hardcoded, the provider is server-only, and a failed
+auth response is never echoed into an error message.
+
+> Two gaps in the spec worth knowing. The token response is documented only as
+> `200 OK` with **no schema**, so the field holding the token is a guess — the client
+> accepts a bare string or `token` / `access_token` / `accessToken` / `Token` / `jwt`
+> and throws loudly if none match. And `AcquireToken` inherits the global Bearer
+> requirement, which cannot be right for the endpoint that issues tokens; presumably
+> it allows anonymous access.
+
+**Shifts** — `GET /api/Schedule/GetItemsForAction`, query `startDate`,
+`numberOfDaysBack`, `storeId`, `employeeNo`. The response nests four levels deep:
+
+```
+stores[]        Butik      StoreNumber, StoreName
+  employees[]   Anstalld   EmployeeId, Firstname, Lastname
+    days[]      Dag        Date
+      actions[] Pass       StartTime, EndTime, ...
+```
+
+> `Pass` also carries `TotalCost`, `OBCost`, `PayrollTaxes` and `CostExPayrollTax`.
+> Those are payroll figures and are **dropped in the provider**, never mapped into
+> `ShiftEntry` — otherwise salary data would flow into a grid every store manager can
+> open.
+
+Two behaviours to verify against a live account, both flagged in the code:
+
+1. The endpoint looks **backwards** (`numberOfDaysBack`), so a forward range is
+   fetched by anchoring `startDate` on the end of the range and reaching back across
+   it. Whether the window is inclusive at both ends is assumed, not documented.
+2. `StartTime` / `EndTime` are `date-time`. The provider takes the **literal** time out
+   of the string rather than parsing to an instant, because parsing and reformatting
+   applies the server's timezone and can move a shift by an hour. If TooEasy returns
+   UTC instants rather than local wall-clock, that conversion belongs in the provider.
+
+**Identity** — `GET /api/Employee/employees` returns `EmployeeMDL` with `EmployeeId`,
+names and `Email`. We do **not** call it: the same record carries
+`PersonalIdentityNum` and `ProtectedIdentity`, and there is no reason to pull
+personnummer just to guess at a match. Mapping is entered by hand at
+**`/admin/tooeasy`** — `User.tooEasyEmployeeId` and `Store.tooEasyStoreNumber`. A shift
+from an unmapped store is skipped rather than attached to a guessed store.
+
+### Demo or production? — unresolved
+
+The Swagger URL we were given is on **`tooeasyDemoNew`**:
+
+```
+https://apps4.2ezy.se/tooeasyDemoNew/tooeasy.External.WebAPI
+```
+
+That path says demo. It is **not confirmed** whether it is throwaway demo data, a
+sandbox mirroring production, or our real account. Until TooEasy confirms:
+
+- `SCHEDULE_PROVIDER` stays **`manual`**, so the app runs on the CSV/ICS import.
+- `TOOEASY_USERNAME` / `TOOEASY_PASSWORD` are **empty**, and no request has been made
+  against the API — only the public spec was read.
+- Selecting `tooeasy` without credentials throws a clear error rather than returning
+  an empty schedule, so it cannot be switched on by accident and look merely quiet.
+
+When the environment is confirmed: set the three `TOOEASY_*` variables, map identities
+at `/admin/tooeasy`, then set `SCHEDULE_PROVIDER=tooeasy`. **No UI code changes** —
+every page reads through `ScheduleProvider`.
 
 ---
 

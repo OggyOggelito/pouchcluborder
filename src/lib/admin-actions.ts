@@ -118,3 +118,34 @@ export async function setStoreAccessAction(formData: FormData) {
   revalidatePath("/admin/users");
   redirect("/admin/users");
 }
+
+/**
+ * Maps our users and stores to TooEasy's identifiers.
+ *
+ * Entered by hand on purpose: the brief is explicit that emails and names do
+ * not match cleanly between the two systems, so nothing here is inferred.
+ * Blank clears a mapping.
+ */
+export async function saveTooEasyMappingAction(formData: FormData) {
+  await requireAdmin();
+
+  for (const [key, value] of formData.entries()) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim() || null;
+
+    if (key.startsWith("user:")) {
+      await prisma.user.update({
+        where: { id: key.slice(5) },
+        data: { tooEasyEmployeeId: trimmed },
+      });
+    } else if (key.startsWith("store:")) {
+      await prisma.store.update({
+        where: { id: key.slice(6) },
+        data: { tooEasyStoreNumber: trimmed },
+      });
+    }
+  }
+
+  revalidatePath("/admin/tooeasy");
+  redirect("/admin/tooeasy");
+}

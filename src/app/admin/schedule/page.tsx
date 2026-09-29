@@ -33,9 +33,12 @@ export default async function AdminSchedulePage() {
         <ShiftImport />
       </div>
 
-      <p className="mt-6 text-sm">
+      <p className="mt-6 flex flex-wrap gap-4 text-sm">
         <Link href="/team-schedule" className="underline underline-offset-4">
           Visa teamschemat
+        </Link>
+        <Link href="/admin/tooeasy" className="underline underline-offset-4">
+          TooEasy-koppling
         </Link>
       </p>
     </main>
