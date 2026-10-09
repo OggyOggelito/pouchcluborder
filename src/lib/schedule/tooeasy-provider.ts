@@ -3,10 +3,17 @@ import { prisma } from "@/lib/db";
 import {
   isoDate,
   mapShiftsResponse,
-  parseTokenResponse,
   toDateWindow,
   type TooEasyShiftsResponse,
 } from "@/lib/schedule/tooeasy-mapper";
+import {
+  SHIFTS_PATH,
+  acquireToken,
+  missingTooEasyConfig,
+  readTooEasyConfig,
+  type AcquiredToken,
+  type TooEasyConfig,
+} from "@/lib/schedule/tooeasy-client";
 import { cacheAgeMs, cacheKey, readCache, writeCache } from "@/lib/schedule/cache";
 import { recordError, recordSuccess } from "@/lib/schedule/status";
 import type { DateRange, ScheduleProvider, ShiftEntry } from "@/lib/schedule/types";
@@ -30,78 +37,15 @@ import type { DateRange, ScheduleProvider, ShiftEntry } from "@/lib/schedule/typ
  * fixtures instead of a live account.
  */
 
-export const TOKEN_PATH = "/api/RequestNewToken/AcquireToken";
-export const SHIFTS_PATH = "/api/Schedule/GetItemsForAction";
-export const EMPLOYEES_PATH = "/api/Employee/employees";
-
 /** Renew this long before the token's own expiry. */
 const RENEW_MARGIN_MS = 60_000;
-/** Used only when the response carries no expiry and the JWT has no `exp`. */
-const FALLBACK_TTL_MS = 50 * 60 * 1000;
 
-type CachedToken = { token: string; expiresAt: number };
+type CachedToken = AcquiredToken;
 let cachedToken: CachedToken | null = null;
 
 /** Exported for tests and for the probe. */
 export function resetTokenCache(): void {
   cachedToken = null;
-}
-
-export type TooEasyConfig = {
-  baseUrl: string;
-  userName: string;
-  password: string;
-};
-
-export function readTooEasyConfig(): TooEasyConfig {
-  return {
-    baseUrl: (process.env.TOOEASY_BASE_URL ?? "").replace(/\/$/, ""),
-    userName: process.env.TOOEASY_USERNAME ?? "",
-    password: process.env.TOOEASY_PASSWORD ?? "",
-  };
-}
-
-export function missingTooEasyConfig(config = readTooEasyConfig()): string[] {
-  return [
-    !config.baseUrl && "TOOEASY_BASE_URL",
-    !config.userName && "TOOEASY_USERNAME",
-    !config.password && "TOOEASY_PASSWORD",
-  ].filter((value): value is string => Boolean(value));
-}
-
-/** "…/tooeasyDemoNew/…" -> demo. Reported in the admin panel. */
-export function describeEnvironment(baseUrl: string): "demo" | "production" | "unknown" {
-  if (!baseUrl) return "unknown";
-  if (/demo|sandbox|test/i.test(baseUrl)) return "demo";
-  return "production";
-}
-
-export async function acquireToken(config: TooEasyConfig): Promise<CachedToken> {
-  const response = await fetch(`${config.baseUrl}${TOKEN_PATH}`, {
-    method: "POST",
-    headers: { "content-type": "application/json", accept: "application/json" },
-    body: JSON.stringify({ userName: config.userName, userPw: config.password }),
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    // The body is deliberately not echoed: a failed auth response can repeat
-    // back what was sent.
-    throw new Error(`TooEasy token request failed (HTTP ${response.status}).`);
-  }
-
-  const parsed = parseTokenResponse(await response.text());
-  if (!parsed) {
-    throw new Error(
-      "TooEasy returned no recognisable token. Run `npm run tooeasy:probe` to see the " +
-        "response shape — the spec documents it only as `200 OK` with no schema."
-    );
-  }
-
-  return {
-    token: parsed.token,
-    expiresAt: parsed.expiresAt ?? Date.now() + FALLBACK_TTL_MS,
-  };
 }
 
 async function getToken(config: TooEasyConfig, forceNew = false): Promise<string> {
@@ -231,3 +175,14 @@ export class TooEasyApiScheduleProvider implements ScheduleProvider {
 }
 
 export { cacheAgeMs, cacheKey };
+
+export {
+  EMPLOYEES_PATH,
+  SHIFTS_PATH,
+  TOKEN_PATH,
+  acquireToken,
+  describeEnvironment,
+  missingTooEasyConfig,
+  readTooEasyConfig,
+} from "@/lib/schedule/tooeasy-client";
+export type { TooEasyConfig } from "@/lib/schedule/tooeasy-client";

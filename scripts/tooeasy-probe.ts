@@ -15,6 +15,9 @@
  * reports the token shape and the payload structure, but cannot pin down the
  * date-window semantics.
  */
+// Imports the CLI-safe client, not the provider: the provider is marked
+// `server-only`, which only Next's bundler can resolve, so importing it here
+// makes this script impossible to run.
 import {
   acquireToken,
   describeEnvironment,
@@ -22,7 +25,7 @@ import {
   readTooEasyConfig,
   SHIFTS_PATH,
   TOKEN_PATH,
-} from "../src/lib/schedule/tooeasy-provider";
+} from "../src/lib/schedule/tooeasy-client";
 import { expFromJwt, hasUtcOffset } from "../src/lib/schedule/tooeasy-mapper";
 
 /** Keys whose values must never be printed, at any depth. */
