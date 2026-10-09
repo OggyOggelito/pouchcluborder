@@ -19,7 +19,9 @@
     "enrich:strengths": "tsx scripts/enrich-strengths.ts",
     "crosscheck": "tsx scripts/crosscheck-assortment.ts",
     "seed:brand-content": "tsx scripts/seed-brand-content.ts",
-    "seed:schedule": "tsx prisma/seed-schedule.ts"
+    "seed:schedule": "tsx prisma/seed-schedule.ts",
+    "tooeasy:probe": "tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/tooeasy-probe.ts",
+    "test": "node --import tsx --test tests/*.test.ts"
   },
   "prisma": {
     "seed": "tsx --env-file-if-exists=.env prisma/seed.ts"

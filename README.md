@@ -327,31 +327,24 @@ inside the file's own date range, is cleared before the new rows land — so upl
 corrected roster twice is safe. Rows whose email or store does not match are skipped
 and listed back, rather than failing the whole import.
 
-### What the TooEasy spec says
+### TooEasy API findings
 
 Read from `{base}/swagger/v1/swagger.json` on **2026-09-29** — OpenAPI 3.0.4, title
-`tooeasy.External.WebAPI`, version `v1`, 78 paths. The Swagger UI page itself does not
-name the spec file; the path is in its `SwaggerUIBundle` config in the page source.
+`tooeasy.External.WebAPI`, version `v1`, 78 paths. The Swagger UI page does not name
+the spec file; the path is in its `SwaggerUIBundle` config in the page source.
 
-**Auth** — HTTP bearer, JWT, applied globally:
+**Auth** — HTTP bearer JWT, applied globally:
 
 ```
 POST /api/RequestNewToken/AcquireToken     body { userName, userPw }  ->  JWT
 ```
 
-Credentials come from `TOOEASY_USERNAME` / `TOOEASY_PASSWORD` and the base URL from
-`TOOEASY_BASE_URL`. Nothing is hardcoded, the provider is server-only, and a failed
-auth response is never echoed into an error message.
-
-> Two gaps in the spec worth knowing. The token response is documented only as
-> `200 OK` with **no schema**, so the field holding the token is a guess — the client
-> accepts a bare string or `token` / `access_token` / `accessToken` / `Token` / `jwt`
-> and throws loudly if none match. And `AcquireToken` inherits the global Bearer
-> requirement, which cannot be right for the endpoint that issues tokens; presumably
-> it allows anonymous access.
+Credentials come from `TOOEASY_USERNAME` / `TOOEASY_PASSWORD`, the base URL from
+`TOOEASY_BASE_URL`. Nothing is hardcoded, the client is server-only, and a failed auth
+response is never echoed into an error message.
 
 **Shifts** — `GET /api/Schedule/GetItemsForAction`, query `startDate`,
-`numberOfDaysBack`, `storeId`, `employeeNo`. The response nests four levels deep:
+`numberOfDaysBack`, `storeId`, `employeeNo`. The response nests four levels:
 
 ```
 stores[]        Butik      StoreNumber, StoreName
@@ -360,48 +353,73 @@ stores[]        Butik      StoreNumber, StoreName
       actions[] Pass       StartTime, EndTime, ...
 ```
 
-> `Pass` also carries `TotalCost`, `OBCost`, `PayrollTaxes` and `CostExPayrollTax`.
-> Those are payroll figures and are **dropped in the provider**, never mapped into
-> `ShiftEntry` — otherwise salary data would flow into a grid every store manager can
-> open.
+#### The three open questions — still open
 
-Two behaviours to verify against a live account, both flagged in the code:
+They cannot be answered without a live account, and **no live call has been made**:
+`.env.local` was not present, so `TOOEASY_BASE_URL`, `TOOEASY_USERNAME` and
+`TOOEASY_PASSWORD` are unset.
 
-1. The endpoint looks **backwards** (`numberOfDaysBack`), so a forward range is
-   fetched by anchoring `startDate` on the end of the range and reaching back across
-   it. Whether the window is inclusive at both ends is assumed, not documented.
-2. `StartTime` / `EndTime` are `date-time`. The provider takes the **literal** time out
-   of the string rather than parsing to an instant, because parsing and reformatting
-   applies the server's timezone and can move a shift by an hour. If TooEasy returns
-   UTC instants rather than local wall-clock, that conversion belongs in the provider.
+`npm run tooeasy:probe -- --employee <EmployeeId> --date <YYYY-MM-DD>` answers all
+three in one read-only run and prints structure only — field names, shapes, counts and
+dates. It never prints the token, credentials, names, personnummer or cost figures;
+every value goes through a `describe()` that reports a type, and a forbidden-key list
+redacts the rest.
 
-**Identity** — `GET /api/Employee/employees` returns `EmployeeMDL` with `EmployeeId`,
-names and `Email`. We do **not** call it: the same record carries
-`PersonalIdentityNum` and `ProtectedIdentity`, and there is no reason to pull
-personnummer just to guess at a match. Mapping is entered by hand at
-**`/admin/tooeasy`** — `User.tooEasyEmployeeId` and `Store.tooEasyStoreNumber`. A shift
-from an unmapped store is skipped rather than attached to a guessed store.
+| # | Question | Current behaviour | How the probe settles it |
+| --- | --- | --- | --- |
+| 1 | Which field holds the JWT? | The spec documents the response only as `200 OK` with **no schema**, so the client accepts a bare string or `token` / `access_token` / `accessToken` / `Token` / `jwt`, strips a `Bearer` prefix, and throws if none match. Expiry is read from `expires_in` / `expiresAt` or decoded from the JWT's own `exp`, falling back to 50 minutes; it renews a minute early and retries **once** on a 401 before failing. | Prints the response's field names and the `exp` claim. Narrow `TOKEN_FIELDS` to the real one afterwards. |
+| 2 | What does `numberOfDaysBack` mean? | **Assumed** inclusive at both ends, so a forward range is anchored on its last day and counts back across it (`toDateWindow`). Results are also clipped to the requested range, so a wrong assumption cannot widen the window. | Requests `numberOfDaysBack` of 0, 1 and 2 against a known date and prints which days come back. |
+| 3 | Are times local or UTC? | **Assumed** local wall-clock. `wallClock()` slices the literal `HH:MM` out of the string rather than parsing to an instant, because parsing and reformatting applies the server's timezone and moves a shift — by a different amount either side of a DST change. A value carrying `Z` or an offset is **rejected**, not mis-read. | Prints whether `StartTime` carries an offset and says which handling is correct. |
 
-### Demo or production? — unresolved
+Everything above is covered by tests (`npm test`, 27 cases) using hand-written
+fixtures with fake names — no recorded live data. They lock in token parsing, the date
+window, DST-safe time slicing, unmapped store and employee skipping, and the data
+minimisation rules below.
 
-The Swagger URL we were given is on **`tooeasyDemoNew`**:
+#### Data minimisation
 
-```
-https://apps4.2ezy.se/tooeasyDemoNew/tooeasy.External.WebAPI
-```
+`Pass` also carries `TotalCost`, `OBCost`, `PayrollTaxes` and `CostExPayrollTax`. Those
+are payroll figures: the mapper never reads them, and a test fails if any of those
+names — or their values — reach `ShiftEntry`.
 
-That path says demo. It is **not confirmed** whether it is throwaway demo data, a
-sandbox mirroring production, or our real account. Until TooEasy confirms:
+`EmployeeMDL` has 76 fields including `PersonalIdentityNum` and `ProtectedIdentity`.
+The mapping dropdown is the only thing that reads it, server-side, and
+`stripEmployeeRows()` reduces each record to an employee number and a display name
+before anything leaves the server. Anyone flagged `ProtectedIdentity` is **excluded
+entirely** and only counted, so their name never reaches a page — the admin page says
+how many were withheld and that they must be mapped by hand. Tests assert that no
+personnummer, email or protected name survives.
 
-- `SCHEDULE_PROVIDER` stays **`manual`**, so the app runs on the CSV/ICS import.
-- `TOOEASY_USERNAME` / `TOOEASY_PASSWORD` are **empty**, and no request has been made
-  against the API — only the public spec was read.
-- Selecting `tooeasy` without credentials throws a clear error rather than returning
-  an empty schedule, so it cannot be switched on by accident and look merely quiet.
+Nothing personal from TooEasy appears in the schedule views: the phone and email a
+manager sees come from our own `User` record.
 
-When the environment is confirmed: set the three `TOOEASY_*` variables, map identities
-at `/admin/tooeasy`, then set `SCHEDULE_PROVIDER=tooeasy`. **No UI code changes** —
-every page reads through `ScheduleProvider`.
+### Demo or production? — still unresolved
+
+The Swagger URL we were given is on **`tooeasyDemoNew`**. That path says demo, and it
+is not confirmed whether it is throwaway data, a sandbox mirroring production, or the
+real account. Until TooEasy confirms:
+
+- `SCHEDULE_PROVIDER` stays **`manual`** in both `.env` and `.env.example`.
+- Selecting `tooeasy` without credentials throws a clear error, and the schedule pages
+  show a **distinct error state** saying the schedule could not be reached — never an
+  empty grid, which would read as everyone being off.
+- `/admin/tooeasy` shows a status panel: active provider, whether credentials are
+  configured, which environment the URL implies, last successful fetch, and the last
+  error message (message only — no secrets, no personal data).
+
+### Caching
+
+Shift fetches are cached in-process for **5 minutes**, keyed by user set and range, so
+a dozen managers opening the grid at opening time do not each hit TooEasy. Both
+schedule pages have an **Uppdatera** link that bypasses it (`?refresh=1`).
+
+### Scope
+
+Scope is decided on the server from the signed-in user's own record, never from the
+request. An ADMIN sees every region; an OWNER sees only the regions of the stores
+granted to them in `StoreAccess`. Shifts for a store outside that scope are dropped
+even if the provider returns them, and the off-day filter can only name a day inside
+the window.
 
 ---
 

@@ -2,7 +2,12 @@ import { ManualImportScheduleProvider } from "@/lib/schedule/manual-import-provi
 import { TooEasyApiScheduleProvider } from "@/lib/schedule/tooeasy-provider";
 import type { ScheduleProvider } from "@/lib/schedule/types";
 
-export type { DateRange, ScheduleProvider, ShiftEntry } from "@/lib/schedule/types";
+export type {
+  DateRange,
+  GetShiftsOptions,
+  ScheduleProvider,
+  ShiftEntry,
+} from "@/lib/schedule/types";
 
 /**
  * The single switch. `SCHEDULE_PROVIDER=manual` (the default) or `tooeasy`.

@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/db";
-import type { DateRange, ScheduleProvider, ShiftEntry } from "@/lib/schedule/types";
+import type {
+  DateRange,
+  GetShiftsOptions,
+  ScheduleProvider,
+  ShiftEntry,
+} from "@/lib/schedule/types";
 
 /**
  * Reads the shifts put into our own database by the admin CSV/ICS upload.
@@ -11,7 +16,13 @@ import type { DateRange, ScheduleProvider, ShiftEntry } from "@/lib/schedule/typ
 export class ManualImportScheduleProvider implements ScheduleProvider {
   readonly name = "Manuell import (CSV/ICS)";
 
-  async getShifts(userIds: string[], range: DateRange): Promise<ShiftEntry[]> {
+  // `options` is accepted for interface parity; this provider reads our own
+  // database, so there is no upstream cache to bypass.
+  async getShifts(
+    userIds: string[],
+    range: DateRange,
+    _options: GetShiftsOptions = {}
+  ): Promise<ShiftEntry[]> {
     if (userIds.length === 0) return [];
 
     const shifts = await prisma.shift.findMany({

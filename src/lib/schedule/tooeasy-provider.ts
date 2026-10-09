@@ -1,107 +1,167 @@
+import "server-only";
 import { prisma } from "@/lib/db";
+import {
+  isoDate,
+  mapShiftsResponse,
+  parseTokenResponse,
+  toDateWindow,
+  type TooEasyShiftsResponse,
+} from "@/lib/schedule/tooeasy-mapper";
+import { cacheAgeMs, cacheKey, readCache, writeCache } from "@/lib/schedule/cache";
+import { recordError, recordSuccess } from "@/lib/schedule/status";
 import type { DateRange, ScheduleProvider, ShiftEntry } from "@/lib/schedule/types";
 
 /**
- * TooEasy WFM, built against the OpenAPI spec at
- * {base}/swagger/v1/swagger.json (read 2026-09-29, openapi 3.0.4,
- * title "tooeasy.External.WebAPI", version v1).
+ * TooEasy WFM, built against the OpenAPI spec at {base}/swagger/v1/swagger.json
+ * (read 2026-09-29, openapi 3.0.4, title "tooeasy.External.WebAPI", v1).
  *
- * Auth: HTTP bearer, JWT. A token comes from
- *   POST /api/RequestNewToken/AcquireToken   body { userName, userPw }
- * Credentials come from the environment and are never logged or sent to the
- * client — this module is server-only, imported solely by the provider factory.
+ *   POST /api/RequestNewToken/AcquireToken   { userName, userPw } -> JWT
+ *   GET  /api/Schedule/GetItemsForAction     startDate, numberOfDaysBack,
+ *                                            storeId, employeeNo
  *
- * Shifts: GET /api/Schedule/GetItemsForAction
- *   query: startDate, numberOfDaysBack, storeId, employeeNo
- * The response nests
- *   stores[] (Butik: StoreNumber, StoreName)
- *     -> employees[] (Anstalld: EmployeeId, Firstname, Lastname)
- *        -> days[] (Dag: Date)
- *           -> actions[] (Pass: StartTime, EndTime, ...)
+ * Read-only: one token POST plus GETs. Nothing here creates, updates or
+ * deletes anything in TooEasy.
  *
- * `Pass` also carries TotalCost, OBCost, PayrollTaxes and CostExPayrollTax.
- * Those are payroll figures and are deliberately dropped here rather than
- * carried into ShiftEntry, so cost data cannot leak into a schedule grid that
- * every store manager can open.
+ * Credentials come from the environment, are never logged, never included in
+ * an error message, and never leave the server — this module is server-only
+ * and reached solely through the provider factory.
+ *
+ * All payload mapping lives in tooeasy-mapper.ts so it can be tested against
+ * fixtures instead of a live account.
  */
 
-const TOKEN_PATH = "/api/RequestNewToken/AcquireToken";
-const SHIFTS_PATH = "/api/Schedule/GetItemsForAction";
+export const TOKEN_PATH = "/api/RequestNewToken/AcquireToken";
+export const SHIFTS_PATH = "/api/Schedule/GetItemsForAction";
+export const EMPLOYEES_PATH = "/api/Employee/employees";
 
-/** Refresh a little before the hour, so a long request cannot straddle expiry. */
-const TOKEN_TTL_MS = 50 * 60 * 1000;
+/** Renew this long before the token's own expiry. */
+const RENEW_MARGIN_MS = 60_000;
+/** Used only when the response carries no expiry and the JWT has no `exp`. */
+const FALLBACK_TTL_MS = 50 * 60 * 1000;
 
 type CachedToken = { token: string; expiresAt: number };
 let cachedToken: CachedToken | null = null;
 
+/** Exported for tests and for the probe. */
+export function resetTokenCache(): void {
+  cachedToken = null;
+}
+
+export type TooEasyConfig = {
+  baseUrl: string;
+  userName: string;
+  password: string;
+};
+
+export function readTooEasyConfig(): TooEasyConfig {
+  return {
+    baseUrl: (process.env.TOOEASY_BASE_URL ?? "").replace(/\/$/, ""),
+    userName: process.env.TOOEASY_USERNAME ?? "",
+    password: process.env.TOOEASY_PASSWORD ?? "",
+  };
+}
+
+export function missingTooEasyConfig(config = readTooEasyConfig()): string[] {
+  return [
+    !config.baseUrl && "TOOEASY_BASE_URL",
+    !config.userName && "TOOEASY_USERNAME",
+    !config.password && "TOOEASY_PASSWORD",
+  ].filter((value): value is string => Boolean(value));
+}
+
+/** "…/tooeasyDemoNew/…" -> demo. Reported in the admin panel. */
+export function describeEnvironment(baseUrl: string): "demo" | "production" | "unknown" {
+  if (!baseUrl) return "unknown";
+  if (/demo|sandbox|test/i.test(baseUrl)) return "demo";
+  return "production";
+}
+
+export async function acquireToken(config: TooEasyConfig): Promise<CachedToken> {
+  const response = await fetch(`${config.baseUrl}${TOKEN_PATH}`, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ userName: config.userName, userPw: config.password }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    // The body is deliberately not echoed: a failed auth response can repeat
+    // back what was sent.
+    throw new Error(`TooEasy token request failed (HTTP ${response.status}).`);
+  }
+
+  const parsed = parseTokenResponse(await response.text());
+  if (!parsed) {
+    throw new Error(
+      "TooEasy returned no recognisable token. Run `npm run tooeasy:probe` to see the " +
+        "response shape — the spec documents it only as `200 OK` with no schema."
+    );
+  }
+
+  return {
+    token: parsed.token,
+    expiresAt: parsed.expiresAt ?? Date.now() + FALLBACK_TTL_MS,
+  };
+}
+
+async function getToken(config: TooEasyConfig, forceNew = false): Promise<string> {
+  if (!forceNew && cachedToken && cachedToken.expiresAt - RENEW_MARGIN_MS > Date.now()) {
+    return cachedToken.token;
+  }
+  cachedToken = await acquireToken(config);
+  return cachedToken.token;
+}
+
 export class TooEasyApiScheduleProvider implements ScheduleProvider {
   readonly name = "TooEasy WFM API";
 
-  private readonly baseUrl: string;
-  private readonly userName: string;
-  private readonly password: string;
+  async getShifts(
+    userIds: string[],
+    range: DateRange,
+    options: { skipCache?: boolean } = {}
+  ): Promise<ShiftEntry[]> {
+    if (userIds.length === 0) return [];
 
-  constructor() {
-    this.baseUrl = (process.env.TOOEASY_BASE_URL ?? "").replace(/\/$/, "");
-    this.userName = process.env.TOOEASY_USERNAME ?? "";
-    this.password = process.env.TOOEASY_PASSWORD ?? "";
-  }
-
-  private assertConfigured() {
-    const missing = [
-      !this.baseUrl && "TOOEASY_BASE_URL",
-      !this.userName && "TOOEASY_USERNAME",
-      !this.password && "TOOEASY_PASSWORD",
-    ].filter(Boolean);
-
+    const missing = missingTooEasyConfig();
     if (missing.length > 0) {
       throw new Error(
         `TooEasy is not configured: ${missing.join(", ")} missing. ` +
           `Set SCHEDULE_PROVIDER=manual to use the CSV/ICS import instead.`
       );
     }
-  }
+    const config = readTooEasyConfig();
 
-  private async getToken(): Promise<string> {
-    if (cachedToken && cachedToken.expiresAt > Date.now()) return cachedToken.token;
-
-    const response = await fetch(`${this.baseUrl}${TOKEN_PATH}`, {
-      method: "POST",
-      headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ userName: this.userName, userPw: this.password }),
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      // Deliberately does not echo the body: a failed auth response can repeat
-      // back what was sent.
-      throw new Error(`TooEasy token request failed (HTTP ${response.status}).`);
+    const key = cacheKey(userIds, range.from, range.to);
+    if (!options.skipCache) {
+      const cached = readCache(key);
+      if (cached) return cached;
     }
 
-    const token = extractToken(await response.text());
-    if (!token) {
-      throw new Error(
-        "TooEasy returned no recognisable token. The spec documents this response only " +
-          "as `200 OK` with no schema, so the field name is a guess — see the README."
-      );
+    try {
+      const entries = await this.fetchShifts(config, userIds, range);
+      writeCache(key, entries);
+      recordSuccess(entries.length);
+      return entries;
+    } catch (error) {
+      recordError(error);
+      throw error;
     }
-
-    cachedToken = { token, expiresAt: Date.now() + TOKEN_TTL_MS };
-    return token;
   }
 
-  async getShifts(userIds: string[], range: DateRange): Promise<ShiftEntry[]> {
-    if (userIds.length === 0) return [];
-    this.assertConfigured();
-
-    // Only people who have actually been mapped can be asked about.
+  private async fetchShifts(
+    config: TooEasyConfig,
+    userIds: string[],
+    range: DateRange
+  ): Promise<ShiftEntry[]> {
+    // Only mapped people can be asked about; an unmapped user simply has no
+    // counterpart in TooEasy.
     const users = await prisma.user.findMany({
       where: { id: { in: userIds }, tooEasyEmployeeId: { not: null } },
       select: { id: true, tooEasyEmployeeId: true },
     });
     if (users.length === 0) return [];
 
-    const ourUserByEmployeeId = new Map(
+    const userByEmployeeId = new Map(
       users.map((user) => [user.tooEasyEmployeeId!.trim(), user.id])
     );
 
@@ -109,35 +169,48 @@ export class TooEasyApiScheduleProvider implements ScheduleProvider {
       where: { tooEasyStoreNumber: { not: null } },
       select: { id: true, tooEasyStoreNumber: true },
     });
-    const ourStoreByNumber = new Map(
+    const storeByNumber = new Map(
       stores.map((store) => [store.tooEasyStoreNumber!.trim(), store.id])
     );
 
-    const token = await this.getToken();
-
-    // The endpoint takes `startDate` plus `numberOfDaysBack`, i.e. it looks
-    // backwards from a date. To cover a forward range we anchor on its end and
-    // reach back across it.
-    //
-    // ASSUMPTION, unverified against a live account: that the window is
-    // inclusive of both ends. Confirm against real data before trusting the
-    // edges — see the README.
-    const days = Math.max(
-      1,
-      Math.round((range.to.getTime() - range.from.getTime()) / 86_400_000) + 1
-    );
-
+    const window = toDateWindow(range.from, range.to);
     const entries: ShiftEntry[] = [];
-    const seenUnmappedStores = new Set<string>();
+    const unmappedStores = new Set<string>();
 
-    // One request per employee: the endpoint's employeeNo is singular, and
-    // fetching whole stores would pull back colleagues we were not asked about.
-    for (const [employeeNo, ourUserId] of ourUserByEmployeeId) {
-      const url = new URL(`${this.baseUrl}${SHIFTS_PATH}`);
-      url.searchParams.set("startDate", isoDate(range.to));
-      url.searchParams.set("numberOfDaysBack", String(days));
+    for (const employeeNo of userByEmployeeId.keys()) {
+      const url = new URL(`${config.baseUrl}${SHIFTS_PATH}`);
+      url.searchParams.set("startDate", window.startDate);
+      url.searchParams.set("numberOfDaysBack", String(window.numberOfDaysBack));
       url.searchParams.set("employeeNo", employeeNo);
 
+      const payload = await this.getJson<TooEasyShiftsResponse>(config, url);
+      const mapped = mapShiftsResponse(payload, { userByEmployeeId, storeByNumber });
+
+      entries.push(...mapped.entries);
+      mapped.unmappedStoreNumbers.forEach((number) => unmappedStores.add(number));
+    }
+
+    if (unmappedStores.size > 0) {
+      console.warn(
+        `TooEasy returned shifts for unmapped store number(s): ${[...unmappedStores].join(", ")}. ` +
+          `Map them at /admin/tooeasy.`
+      );
+    }
+
+    // Defensive: the range request is backwards-counting, so clip to what was
+    // actually asked for rather than trusting the window arithmetic.
+    const from = isoDate(range.from);
+    const to = isoDate(range.to);
+    return entries.filter((entry) => {
+      const day = isoDate(entry.date);
+      return day >= from && day <= to;
+    });
+  }
+
+  /** GET with one retry on 401, re-acquiring the token first, then failing. */
+  private async getJson<T>(config: TooEasyConfig, url: URL): Promise<T> {
+    for (const attempt of [0, 1]) {
+      const token = await getToken(config, attempt === 1);
       const response = await fetch(url, {
         headers: { authorization: `Bearer ${token}`, accept: "application/json" },
         cache: "no-store",
@@ -145,122 +218,16 @@ export class TooEasyApiScheduleProvider implements ScheduleProvider {
 
       if (response.status === 401) {
         cachedToken = null;
-        throw new Error("TooEasy rejected the token (401).");
+        if (attempt === 0) continue;
+        throw new Error("TooEasy rejected the token twice (401).");
       }
       if (!response.ok) {
-        throw new Error(`TooEasy shift request failed (HTTP ${response.status}).`);
+        throw new Error(`TooEasy request failed (HTTP ${response.status}).`);
       }
-
-      const payload = (await response.json()) as TooEasyShiftsResponse;
-
-      for (const store of payload?.stores ?? []) {
-        const storeNumber = (store.StoreNumber ?? "").trim();
-        const ourStoreId = ourStoreByNumber.get(storeNumber);
-
-        if (!ourStoreId) {
-          // A store we have not mapped: skip rather than invent an id.
-          if (storeNumber) seenUnmappedStores.add(storeNumber);
-          continue;
-        }
-
-        for (const employee of store.employees ?? []) {
-          // Trust our own mapping over the echoed employee id.
-          const userId =
-            ourUserByEmployeeId.get((employee.EmployeeId ?? "").trim()) ?? ourUserId;
-
-          for (const day of employee.days ?? []) {
-            for (const action of day.actions ?? []) {
-              const start = wallClock(action.StartTime);
-              const end = wallClock(action.EndTime);
-              const date = calendarDate(action.StartTime ?? day.Date);
-              if (!start || !end || !date) continue;
-
-              entries.push({
-                userId,
-                storeId: ourStoreId,
-                date,
-                startTime: start,
-                endTime: end,
-              });
-            }
-          }
-        }
-      }
+      return (await response.json()) as T;
     }
-
-    if (seenUnmappedStores.size > 0) {
-      console.warn(
-        `TooEasy returned shifts for unmapped store number(s): ${[...seenUnmappedStores].join(", ")}. ` +
-          `Map them at /admin/tooeasy.`
-      );
-    }
-
-    return entries;
+    throw new Error("TooEasy request failed.");
   }
 }
 
-type TooEasyShiftsResponse = {
-  stores?: {
-    StoreNumber?: string | null;
-    StoreName?: string | null;
-    employees?: {
-      EmployeeId?: string | null;
-      days?: {
-        Date?: string | null;
-        actions?: { StartTime?: string | null; EndTime?: string | null }[] | null;
-      }[] | null;
-    }[] | null;
-  }[] | null;
-};
-
-/**
- * The token response has no schema in the spec — it is documented only as
- * "200 OK" — so the shape is unknown. This accepts a bare string or the field
- * names an ASP.NET service is most likely to use, and fails loudly rather than
- * silently returning nothing.
- */
-function extractToken(raw: string): string | null {
-  const text = raw.trim();
-  if (!text) return null;
-
-  // A bare quoted or unquoted JWT.
-  if (!text.startsWith("{")) return text.replace(/^"|"$/g, "") || null;
-
-  try {
-    const body = JSON.parse(text) as Record<string, unknown>;
-    for (const key of ["token", "access_token", "accessToken", "Token", "jwt"]) {
-      const value = body[key];
-      if (typeof value === "string" && value) return value;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-/**
- * "2026-09-25T07:30:00" -> "07:30", taken literally.
- *
- * Deliberately string slicing rather than `new Date(...)`: parsing to an
- * instant and formatting back applies the server's timezone and can move a
- * shift by an hour. ShiftEntry carries local wall-clock, which is what the
- * schedule shows.
- */
-function wallClock(value: string | null | undefined): string | null {
-  if (!value) return null;
-  const match = value.match(/T(\d{2}):(\d{2})/);
-  return match ? `${match[1]}:${match[2]}` : null;
-}
-
-/** "2026-09-25T07:30:00" -> Date at midnight UTC, matching the manual import. */
-function calendarDate(value: string | null | undefined): Date | null {
-  if (!value) return null;
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!match) return null;
-  const date = new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00.000Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function isoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
+export { cacheAgeMs, cacheKey };

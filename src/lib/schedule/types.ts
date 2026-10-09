@@ -22,9 +22,18 @@ export type DateRange = {
   to: Date;
 };
 
+export type GetShiftsOptions = {
+  /** Bypass any server-side cache — the "Uppdatera" button. */
+  skipCache?: boolean;
+};
+
 export interface ScheduleProvider {
   /** Name shown in the admin UI so it is obvious which one is live. */
   readonly name: string;
   /** Shifts for these users in this range. An empty userIds list returns []. */
-  getShifts(userIds: string[], range: DateRange): Promise<ShiftEntry[]>;
+  getShifts(
+    userIds: string[],
+    range: DateRange,
+    options?: GetShiftsOptions
+  ): Promise<ShiftEntry[]>;
 }
