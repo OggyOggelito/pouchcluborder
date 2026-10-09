@@ -359,8 +359,17 @@ They cannot be answered without a live account, and **no live call has been made
 `.env.local` was not present, so `TOOEASY_BASE_URL`, `TOOEASY_USERNAME` and
 `TOOEASY_PASSWORD` are unset.
 
-`npm run tooeasy:probe -- --employee <EmployeeId> --date <YYYY-MM-DD>` answers all
-three in one read-only run and prints structure only — field names, shapes, counts and
+```bash
+# Question 1 only — needs nothing but credentials:
+npm run tooeasy:probe
+
+# All three — EMP-1234 and the date are examples, replace them with real ones.
+# Note: no angle brackets. In zsh `<` and `>` are redirects and a pasted
+# placeholder like <EmployeeId> fails with "parse error near \n".
+npm run tooeasy:probe -- --employee EMP-1234 --date 2026-10-20
+```
+
+That answers all three in one read-only run and prints structure only — field names, shapes, counts and
 dates. It never prints the token, credentials, names, personnummer or cost figures;
 every value goes through a `describe()` that reports a type, and a forbidden-key list
 redacts the rest.
