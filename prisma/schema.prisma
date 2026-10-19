@@ -211,6 +211,11 @@ model Product {
   stockMax  Int?
   /// Raw Benämning, kept so a bad parse can always be traced back.
   sourceName String?
+
+  /// Supplier flavour description, shown under the flavour on the brand page.
+  /// Filled from content/source/* by `npm run brands:import`; no import path
+  /// from the masterdoc writes it.
+  description String?
   /// Set when the name parser was not confident; see reviewNotes.
   needsReview Boolean @default(false)
   reviewNotes String?

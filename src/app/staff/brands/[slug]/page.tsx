@@ -46,7 +46,14 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
     string,
     { strength: string; format: string; nicotineMgPerPortion: number | null }[]
   >();
+  // Supplier flavour text is the same across a flavour's strengths, so it is
+  // shown once under the flavour rather than repeated per variant.
+  const descriptionByFlavor = new Map<string, string>();
+
   for (const product of products) {
+    if (product.description && !descriptionByFlavor.has(product.flavor)) {
+      descriptionByFlavor.set(product.flavor, product.description);
+    }
     const variants = byFlavor.get(product.flavor) ?? [];
     variants.push({
       strength: product.strength,
@@ -200,7 +207,12 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
               {[...byFlavor.entries()].map(([flavor, variants]) => (
                 <li key={flavor}>
                   <p className="font-medium">{flavor}</p>
-                  <p className="text-sm text-zinc-500">
+                  {descriptionByFlavor.has(flavor) ? (
+                    <p className="mt-0.5 text-[15px] leading-relaxed text-zinc-600">
+                      {descriptionByFlavor.get(flavor)}
+                    </p>
+                  ) : null}
+                  <p className="mt-0.5 text-sm text-zinc-500">
                     {variants
                       .map((variant) => {
                         const strength =

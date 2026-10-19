@@ -10,6 +10,8 @@ export type CatalogProduct = {
   category: string | null;
   /** Filled from snusbolaget.se by EAN; shown when `strength` is blank. */
   nicotineMgPerPortion: number | null;
+  /** Supplier flavour text, shown on the brand page. */
+  description: string | null;
 };
 
 export type ProductInput = {
@@ -83,6 +85,7 @@ export async function listActiveProducts(): Promise<CatalogProduct[]> {
       pricePerStock: true,
       category: true,
       nicotineMgPerPortion: true,
+      description: true,
     },
   });
 }
@@ -208,6 +211,7 @@ export async function listActiveProductsForBrand(brandId: string): Promise<Catal
       pricePerStock: true,
       category: true,
       nicotineMgPerPortion: true,
+      description: true,
     },
   });
 }

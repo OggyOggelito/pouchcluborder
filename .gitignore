@@ -14,3 +14,6 @@ prisma/*.db-journal
 .DS_Store
 *.log
 /src/generated/
+
+# Supplier source documents (PDFs, images) — reference material, not code.
+content/source/
