@@ -21,6 +21,23 @@ function mg(value: number): string {
   return value.toLocaleString("sv-SE", { maximumFractionDigits: 2 });
 }
 
+function LongSection({ heading, markdown }: { heading: string; markdown: string | null }) {
+  return (
+    <section>
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{heading}</h2>
+      {markdown ? (
+        <div className="mt-3">
+          <Markdown>{markdown}</Markdown>
+        </div>
+      ) : (
+        <p className="mt-3 rounded-2xl border border-dashed border-zinc-300 p-4 text-center text-sm text-zinc-500">
+          Innehåll kommer snart.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-wrap gap-x-2">
@@ -116,27 +133,12 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
             <p className="text-lg leading-relaxed text-zinc-700">{brand.shortDescription}</p>
           ) : null}
 
-          {brand.manufacturingProcess ? (
-            <section>
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                Så tillverkas de
-              </h2>
-              <div className="mt-3">
-                <Markdown>{brand.manufacturingProcess}</Markdown>
-              </div>
-            </section>
-          ) : null}
-
-          {brand.blendingNotes ? (
-            <section>
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                Blandning och dosering
-              </h2>
-              <div className="mt-3">
-                <Markdown>{brand.blendingNotes}</Markdown>
-              </div>
-            </section>
-          ) : null}
+          {/* A missing long-form section is shown rather than omitted. Dropping
+              it silently leaves staff unable to tell "we have no information"
+              from "someone forgot to write it" — which matters for XQS, where
+              none of the supplier material describes manufacturing. */}
+          <LongSection heading="Så tillverkas de" markdown={brand.manufacturingProcess} />
+          <LongSection heading="Blandning och dosering" markdown={brand.blendingNotes} />
         </div>
       )}
 
