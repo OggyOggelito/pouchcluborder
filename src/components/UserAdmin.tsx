@@ -9,7 +9,7 @@ import {
 } from "@/lib/admin-actions";
 import type { StoreSummary } from "@/lib/repositories/stores";
 import type { UserRecord } from "@/lib/repositories/users";
-import { ROLE_LABELS, ROLES } from "@/lib/roles";
+import { ROLE_DESCRIPTIONS, ROLE_LABELS, ROLES } from "@/lib/roles";
 
 const FIELD =
   "mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-[15px] outline-none transition focus:border-zinc-400";
@@ -70,10 +70,10 @@ export default function UserAdmin({
               <label htmlFor="role" className="block text-sm font-medium text-zinc-700">
                 Roll
               </label>
-              <select id="role" name="role" defaultValue="OWNER" className={FIELD}>
+              <select id="role" name="role" defaultValue="STAFF" className={FIELD}>
                 {ROLES.map((role) => (
                   <option key={role} value={role}>
-                    {ROLE_LABELS[role]}
+                    {ROLE_LABELS[role]} — {ROLE_DESCRIPTIONS[role]}
                   </option>
                 ))}
               </select>
@@ -121,7 +121,7 @@ export default function UserAdmin({
                 </span>
               </div>
 
-              {user.role === "OWNER" ? (
+              {user.role !== "ADMIN" ? (
                 <form action={setStoreAccessAction} className="mt-3">
                   <input type="hidden" name="userId" value={user.id} />
                   <StoreCheckboxes

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { logoutAction } from "@/lib/auth-actions";
-import { canAccessAllStores } from "@/lib/roles";
+import { canAccessAdmin, canPlaceOrders, canViewTeamSchedule } from "@/lib/roles";
 import { getSessionUser } from "@/lib/session";
 
 const LINK =
@@ -17,16 +17,21 @@ const LINK =
  */
 export default async function SiteNav() {
   const user = await getSessionUser();
-  const isAdmin = user ? canAccessAllStores(user.role) : false;
+  const isAdmin = user ? canAccessAdmin(user.role) : false;
 
   const links = [
     { href: "/staff", label: "Guide" },
+    { href: "/staff/finder", label: "Produktsök" },
     ...(user
       ? [
           { href: "/news", label: "Nyheter" },
+          { href: "/staff/checklists", label: "Checklistor" },
+          { href: "/staff/quizzes", label: "Quiz" },
+          { href: "/my-onboarding", label: "Introduktion" },
           { href: "/my-schedule", label: "Schema" },
-          { href: "/team-schedule", label: "Team" },
-          { href: "/orders", label: "Tidigare" },
+          // Ordering and the coverage grid are not for STAFF.
+          ...(canViewTeamSchedule(user.role) ? [{ href: "/team-schedule", label: "Team" }] : []),
+          ...(canPlaceOrders(user.role) ? [{ href: "/orders", label: "Tidigare" }] : []),
           ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
         ]
       : []),
@@ -37,6 +42,9 @@ export default async function SiteNav() {
       <nav className="flex shrink-0 items-center gap-1 text-sm">
         <Link href="/staff" className={LINK}>
           Guide
+        </Link>
+        <Link href="/staff/finder" className={LINK}>
+          Produktsök
         </Link>
         <Link href="/login" className={LINK}>
           Logga in

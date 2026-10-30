@@ -3,12 +3,12 @@ import OrderForm from "@/components/OrderForm";
 import StorePicker from "@/components/StorePicker";
 import { resolveOrderingStore } from "@/lib/current-store";
 import { listActiveProducts } from "@/lib/repositories/products";
-import { requireUser } from "@/lib/session";
+import { requireOrderingUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function OrderPage() {
-  const user = await requireUser("/");
+  const user = await requireOrderingUser("/");
   const resolution = await resolveOrderingStore(user);
 
   if (resolution.kind === "none") {

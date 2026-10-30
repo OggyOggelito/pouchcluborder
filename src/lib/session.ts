@@ -4,7 +4,12 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getUserById, type UserRecord } from "@/lib/repositories/users";
 import { listStores, type StoreSummary } from "@/lib/repositories/stores";
-import { canAccessAllStores } from "@/lib/roles";
+import {
+  canAccessAdmin,
+  canAccessAllStores,
+  canActOnStore,
+  canPlaceOrders,
+} from "@/lib/roles";
 
 /**
  * The real authorization check, done in the data layer rather than in proxy.ts.
@@ -40,8 +45,13 @@ export const storesForUser = cache(async (user: UserRecord): Promise<StoreSummar
 });
 
 export async function canOrderForStore(user: UserRecord, storeId: string): Promise<boolean> {
-  if (canAccessAllStores(user.role)) return true;
-  return user.stores.some((store) => store.id === storeId);
+  // Delegates to the pure rule in roles.ts, which is what the permission tests
+  // exercise — so the tested logic is the logic that runs.
+  return canActOnStore(
+    user.role,
+    user.stores.map((store) => store.id),
+    storeId
+  );
 }
 
 /**
@@ -50,7 +60,19 @@ export async function canOrderForStore(user: UserRecord, storeId: string): Promi
  */
 export async function requireAdmin(): Promise<UserRecord> {
   const user = await requireUser("/admin");
-  if (!canAccessAllStores(user.role)) {
+  if (!canAccessAdmin(user.role)) {
+    notFound();
+  }
+  return user;
+}
+
+/**
+ * For the ordering flow. STAFF can read the guide and their own schedule but
+ * cannot order, so they get a 404 rather than a redirect loop.
+ */
+export async function requireOrderingUser(next?: string): Promise<UserRecord> {
+  const user = await requireUser(next);
+  if (!canPlaceOrders(user.role)) {
     notFound();
   }
   return user;

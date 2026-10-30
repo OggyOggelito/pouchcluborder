@@ -42,6 +42,9 @@ the seed again updates existing rows instead of duplicating them.
 | `npm run parse:collisions <file.xlsx>` | List articles that parse to the same variant |
 | `npm run seed:users` | Create the ADMIN + one OWNER per store (idempotent) |
 | `npm run seed:schedule` | Give stores a region and users a placeholder phone |
+| `npm run seed:shopfloor` | EXEMPEL checklist templates and a placeholder quiz |
+| `npm run flavors:retag` | Derive flavour groups (skips hand-edited rows) |
+| `npm test` | Run the test suite |
 | `npm run backfill:brands` | Create/link a `Brand` row per catalog brand |
 | `npm run backfill:brands -- --publish` | Same, and publish brands that have stock |
 | `npm run fetch:snusbolaget` | Crawl snusbolaget.se specs into `data/snusbolaget-facts.json` |
@@ -448,6 +451,135 @@ design, so the widget checks for a session itself and renders nothing when signe
 the brand guide stays readable without an account.
 
 No email or push notifications: in-app only.
+
+---
+
+## Butiksverktyg (shop floor tools)
+
+Four staff-facing tools: a product finder, checklists, onboarding and quizzes.
+
+### The STAFF role
+
+`ROLES` is now `STAFF | OWNER | ADMIN` (`src/lib/roles.ts`). There was no
+staff-like role before — only OWNER and ADMIN — so this one is new.
+
+| | STAFF | OWNER | ADMIN |
+| --- | --- | --- | --- |
+| `/staff/*`, finder, `/news`, `/my-schedule`, checklists, quizzes | yes | yes | yes |
+| `/` and `/orders` (ordering) | **no** | yes | yes |
+| `/team-schedule` | **no** | yes | yes |
+| `/admin/*` | **no** | **no** | yes |
+
+Pages and routes ask the capability helpers (`canPlaceOrders`,
+`canViewTeamSchedule`, `canAccessAdmin`, `canActOnStore`) rather than comparing
+role strings, so a fourth role means editing one file. Checks are server-side;
+a hidden nav link is not a permission. Verified end to end — a STAFF account
+gets **404** on `/`, `/orders` and `/team-schedule`.
+
+Create staff accounts at `/admin/users`. Every non-ADMIN account needs at least
+one store, or it has no checklists and no schedule to show.
+
+### Product finder — `/staff/finder`
+
+Open without a login, like the brand pages, and `noindex`.
+
+Filters: category, nicotine strength, format, flavour group and free text.
+Strength uses four fixed ranges from `src/lib/strength.ts` — **up to 6**,
+**7–11**, **12–16**, **17 and above** mg. There are deliberately no labels of
+our own like "mild" or "strong": brands use those words with their own
+meanings, so the card shows the brand's own wording ("Regular", "Extra Strong")
+verbatim alongside the milligrams.
+
+**No stock information anywhere.** We have no live stock data, and implying it
+would have staff promising what the shelf cannot back up.
+
+### Flavour groups
+
+All rules live in `src/lib/flavor-tags.ts`. Keywords are Swedish and English,
+because flavour names are parsed from supplier product names and mix both.
+Groups: mint, fruit, berry, citrus, tropical, cola, liquorice, sweet.
+
+A flavour can be in several groups — "Blueberry Mint" is berry *and* mint. One
+that matches nothing gets **no tags at all** rather than a fallback group, so
+"nobody has sorted this yet" stays distinguishable from a guess.
+
+Two mechanisms stop short keywords misfiring, both of which the tests pin down:
+
+- **Whole-word matching** for keywords short enough to hide inside other words.
+  `ice` is inside *juice*, `pear` inside *spearmint*, `one` inside *lemonade*.
+- **Specific compounds** resolved first and then removed from the string:
+  *körsbär* ends in "bär" but is a fruit, *grapefruit* contains both "grape"
+  and "fruit" but is citrus, *pineapple* ends in "apple" but is tropical.
+
+```bash
+npm run flavors:retag          # derive tags; skips hand-edited rows
+npm run flavors:retag -- --force
+```
+
+`Product.tagsEditedByAdmin` is set when an admin sorts a product by hand at
+**`/admin/flavor-tags`**, and the re-tagging job skips those rows — so a
+catalog re-import can never undo hand-sorting.
+
+### Checklists and onboarding
+
+Four types: `ONBOARDING`, `STORE_OPENING`, `DAILY_OPEN`, `DAILY_CLOSE`.
+
+**A run copies the template's items when it is created.** `ChecklistRunItem`
+holds its own title, description, link and required flag, so editing,
+reordering or deleting template items afterwards never rewrites a list someone
+has already started. That is the behaviour the snapshot tests exist to protect.
+
+Daily runs are one per store per day, created the first time someone opens the
+list that day — so a day nobody worked leaves no empty run behind. The date key
+is **Europe/Stockholm**, not UTC: a closing list worked at 23:30 local in summer
+is already "tomorrow" in UTC, which would split one evening across two runs.
+
+Ticking records who and when. Unticking is allowed for whoever ticked it, or an
+admin, so one person cannot quietly undo another's work on a shared store list.
+Each run item takes a free-text note.
+
+- `/staff/checklists` — daily lists for the stores you work in
+- `/my-onboarding` — your own introduction
+- `/admin/checklists` — templates, items, reordering, assigning onboarding
+- `/admin/checklists/today` — per store, today's progress, plus onboarding per person
+
+### Quizzes
+
+- `/staff/quizzes` — login required, so attempts can be attributed
+- `/admin/quizzes` — write and reorder questions, publish
+- `/admin/quizzes/results` — best and latest per person and quiz, filterable by store
+
+One question at a time, with the answer and explanation revealed immediately.
+Retakes are unlimited and every attempt is kept; the list shows best and latest.
+Before a quiz starts, staff are told their result is visible to their manager.
+
+Results are visible to the person and to ADMINs only — `listAttemptSummaries`
+takes the scope as an argument and the staff page always passes its own user id.
+The score is recomputed on the server from the stored answers, so the browser
+cannot report a score it did not earn.
+
+### Starter content
+
+```bash
+npm run seed:shopfloor     # idempotent
+```
+
+Four checklist templates and one quiz, every title and item prefixed
+**"EXEMPEL –"** and deliberately generic — nothing legal, nothing about age
+checks or tobacco and nicotine rules, nothing about brands. The quiz is seeded
+**unpublished** and asks about ordering terms in this app. Replace it before
+anyone relies on it.
+
+### Tests
+
+```bash
+npm test     # node --test, no new dependency
+```
+
+Covers flavour tagging (42 real catalog flavour names plus the substring traps),
+strength parsing and range boundaries, the role capability matrix and store
+scoping, and the checklist snapshot behaviour. The checklist tests run against
+a throwaway SQLite file, never `prisma/dev.db`.
 
 ---
 

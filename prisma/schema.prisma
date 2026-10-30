@@ -28,6 +28,7 @@ model Store {
   orders Order[]
   access StoreAccess[]
   shifts Shift[]
+  checklistRuns ChecklistRun[]
 
   @@index([region])
   @@map("stores")
@@ -59,6 +60,9 @@ model User {
   orders        Order[]
   shifts        Shift[]
   announcements Announcement[]
+  checklistRuns ChecklistRun[]
+  checkedItems  ChecklistRunItem[]
+  quizAttempts  QuizAttempt[]
 
   @@map("users")
 }
@@ -167,6 +171,7 @@ model Brand {
   updatedAt DateTime @updatedAt
 
   products Product[]
+  quizzes  Quiz[]
 
   @@index([published])
   @@map("brands")
@@ -216,6 +221,13 @@ model Product {
   /// Filled from content/source/* by `npm run brands:import`; no import path
   /// from the masterdoc writes it.
   description String?
+
+  /// Comma-separated flavour groups from src/lib/flavor-tags.ts, e.g.
+  /// "berry,mint". Derived, except where an admin has set them by hand.
+  flavorTags String?
+  /// True once an admin edits the tags. The re-tagging job skips these rows,
+  /// so a catalog re-import can never undo hand-sorted products.
+  tagsEditedByAdmin Boolean @default(false)
   /// Set when the name parser was not confident; see reviewNotes.
   needsReview Boolean @default(false)
   reviewNotes String?
@@ -296,4 +308,163 @@ model OrderLine {
   @@unique([orderId, productId])
   @@index([productId])
   @@map("order_lines")
+}
+
+// ---------------------------------------------------------------------------
+// Checklists
+// ---------------------------------------------------------------------------
+
+/// ONBOARDING | STORE_OPENING | DAILY_OPEN | DAILY_CLOSE — validated in
+/// src/lib/checklists.ts. A string rather than an enum so a fifth type needs
+/// no migration.
+model ChecklistTemplate {
+  id       String  @id @default(cuid())
+  type     String
+  title    String
+  /// Shown above the items; markdown.
+  intro    String?
+  active   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items ChecklistItem[]
+  runs  ChecklistRun[]
+
+  @@index([type, active])
+  @@map("checklist_templates")
+}
+
+model ChecklistItem {
+  id         String  @id @default(cuid())
+  templateId String
+  template   ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  title       String
+  /// Markdown.
+  description String?
+  /// Internal link, e.g. "/staff/brands/zyn". Relative paths only.
+  linkUrl  String?
+  required Boolean @default(true)
+  position Int     @default(0)
+
+  @@index([templateId, position])
+  @@map("checklist_items")
+}
+
+/// One instance of a template being worked through.
+///
+/// A run copies its items at creation (ChecklistRunItem), so editing a
+/// template never rewrites history for a run already in progress.
+model ChecklistRun {
+  id         String @id @default(cuid())
+  templateId String
+  template   ChecklistTemplate @relation(fields: [templateId], references: [id])
+
+  /// ONBOARDING runs belong to a person.
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Store-scoped runs (STORE_OPENING, DAILY_*).
+  storeId String?
+  store   Store?  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// "2026-10-30" for the daily types; null otherwise. Part of the uniqueness
+  /// that keeps one run per store per day.
+  runDate String?
+
+  /// Copied from the template so a renamed template does not retitle history.
+  title String
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  items ChecklistRunItem[]
+
+  @@unique([templateId, storeId, runDate])
+  @@unique([templateId, userId])
+  @@index([storeId, runDate])
+  @@map("checklist_runs")
+}
+
+model ChecklistRunItem {
+  id    String @id @default(cuid())
+  runId String
+  run   ChecklistRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  /// Snapshot of the template item at the moment the run was created.
+  title       String
+  description String?
+  linkUrl     String?
+  required    Boolean @default(true)
+  position    Int     @default(0)
+
+  checkedAt     DateTime?
+  checkedById   String?
+  checkedBy     User?     @relation(fields: [checkedById], references: [id])
+  /// Free text from whoever worked the list.
+  note String?
+
+  @@index([runId, position])
+  @@map("checklist_run_items")
+}
+
+// ---------------------------------------------------------------------------
+// Quizzes
+// ---------------------------------------------------------------------------
+
+model Quiz {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+  /// Optional link to a brand the quiz is about.
+  brandId String?
+  brand   Brand?  @relation(fields: [brandId], references: [id])
+  published Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([published])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id     String @id @default(cuid())
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  text String
+  /// JSON array of option strings.
+  options String
+  /// Index into `options`.
+  correctOption Int
+  /// Markdown, shown after answering.
+  explanation String?
+  position    Int    @default(0)
+
+  @@index([quizId, position])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id     String @id @default(cuid())
+  quizId String
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  score Int
+  total Int
+  /// JSON: questionId -> chosen option index.
+  answers     String
+  startedAt   DateTime @default(now())
+  completedAt DateTime @default(now())
+
+  @@index([quizId, userId])
+  @@index([userId])
+  @@map("quiz_attempts")
 }

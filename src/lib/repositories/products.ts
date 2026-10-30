@@ -215,3 +215,61 @@ export async function listActiveProductsForBrand(brandId: string): Promise<Catal
     },
   });
 }
+
+export type FinderProduct = {
+  id: string;
+  brand: string;
+  brandSlug: string | null;
+  flavor: string;
+  strength: string;
+  format: string;
+  category: string | null;
+  description: string | null;
+  flavorTags: string | null;
+  nicotineMgPerPortion: number | null;
+};
+
+/** Everything the product finder needs, in one query. */
+export async function listProductsForFinder(): Promise<FinderProduct[]> {
+  const products = await prisma.product.findMany({
+    where: { active: true },
+    orderBy: [{ brand: "asc" }, { flavor: "asc" }],
+    select: {
+      id: true,
+      brand: true,
+      flavor: true,
+      strength: true,
+      format: true,
+      category: true,
+      description: true,
+      flavorTags: true,
+      nicotineMgPerPortion: true,
+      brandRef: { select: { slug: true, published: true } },
+    },
+  });
+
+  return products.map((product) => ({
+    id: product.id,
+    brand: product.brand,
+    // Only link to a brand page that is actually published.
+    brandSlug: product.brandRef?.published ? product.brandRef.slug : null,
+    flavor: product.flavor,
+    strength: product.strength,
+    format: product.format,
+    category: product.category,
+    description: product.description,
+    flavorTags: product.flavorTags,
+    nicotineMgPerPortion: product.nicotineMgPerPortion,
+  }));
+}
+
+/** Products no flavour rule matched — the admin sorting queue. */
+export async function listUntaggedProducts(): Promise<
+  { id: string; brand: string; flavor: string; strength: string; format: string; category: string | null }[]
+> {
+  return prisma.product.findMany({
+    where: { active: true, flavorTags: null },
+    orderBy: [{ brand: "asc" }, { flavor: "asc" }],
+    select: { id: true, brand: true, flavor: true, strength: true, format: true, category: true },
+  });
+}

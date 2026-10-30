@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createOrder, OrderValidationError } from "@/lib/repositories/orders";
 import { canOrderForStore, getSessionUser } from "@/lib/session";
+import { canPlaceOrders } from "@/lib/roles";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,10 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Du måste vara inloggad." }, { status: 401 });
+  }
+  // STAFF may read the guide and their own schedule, but not order.
+  if (!canPlaceOrders(user.role)) {
+    return NextResponse.json({ error: "Din roll kan inte lägga beställningar." }, { status: 403 });
   }
 
   let body: Payload;

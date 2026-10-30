@@ -1,6 +1,7 @@
 import { buildOrderWorkbook, orderFileName } from "@/lib/excel";
 import { getOrder } from "@/lib/repositories/orders";
 import { canOrderForStore, getSessionUser } from "@/lib/session";
+import { canPlaceOrders } from "@/lib/roles";
 
 export const runtime = "nodejs";
 
@@ -9,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getSessionUser();
-  if (!user) {
+  if (!user || !canPlaceOrders(user.role)) {
     return new Response("Unauthorized", { status: 401 });
   }
 

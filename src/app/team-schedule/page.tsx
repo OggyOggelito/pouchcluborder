@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTeamSchedule } from "@/lib/schedule/queries";
-import { canAccessAllStores } from "@/lib/roles";
+import { canViewTeamSchedule } from "@/lib/roles";
 import { requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -27,9 +27,9 @@ export default async function TeamSchedulePage({
 }) {
   const user = await requireUser("/team-schedule");
 
-  // OWNER and ADMIN only. Any future non-managing role gets a 404 rather than
-  // a view of everyone's whereabouts.
-  if (user.role !== "OWNER" && !canAccessAllStores(user.role)) notFound();
+  // OWNER and ADMIN only — STAFF gets a 404 rather than a view of everyone's
+  // whereabouts.
+  if (!canViewTeamSchedule(user.role)) notFound();
 
   const { off, refresh } = await searchParams;
   const outcome = await getTeamSchedule(user, { skipCache: refresh === "1" });

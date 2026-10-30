@@ -71,8 +71,10 @@ export async function createUserAction(
   if (existing) return { error: "Det finns redan ett konto med den e-posten.", message: null };
 
   const role = toRole(formData.get("role"));
-  if (role === "OWNER" && storeIds.length === 0) {
-    return { error: "En butiksägare behöver minst en butik.", message: null };
+  // Both store-scoped roles need at least one store; without one they would see
+  // no checklists and no schedule.
+  if (role !== "ADMIN" && storeIds.length === 0) {
+    return { error: "Kontot behöver minst en butik.", message: null };
   }
 
   await createUser({
@@ -148,4 +150,30 @@ export async function saveTooEasyMappingAction(formData: FormData) {
 
   revalidatePath("/admin/tooeasy");
   redirect("/admin/tooeasy");
+}
+
+/**
+ * Sets a product's flavour groups by hand and marks it as admin-edited, so
+ * `npm run flavors:retag` will not overwrite it after the next catalog import.
+ */
+export async function saveFlavorTagsAction(formData: FormData) {
+  await requireAdmin();
+
+  const productId = formData.get("productId");
+  if (typeof productId !== "string" || !productId) return;
+
+  const groups = formData
+    .getAll("tags")
+    .filter((value): value is string => typeof value === "string");
+
+  await prisma.product.update({
+    where: { id: productId },
+    data: {
+      flavorTags: groups.length > 0 ? groups.join(",") : null,
+      tagsEditedByAdmin: true,
+    },
+  });
+
+  revalidatePath("/admin/flavor-tags");
+  revalidatePath("/staff/finder");
 }

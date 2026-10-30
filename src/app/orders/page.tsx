@@ -4,12 +4,12 @@ import { formatDateTime, formatNumber, formatSek } from "@/lib/format";
 import { resolveOrderingStore } from "@/lib/current-store";
 import { listOrders } from "@/lib/repositories/orders";
 import { canAccessAllStores } from "@/lib/roles";
-import { requireUser, storesForUser } from "@/lib/session";
+import { requireOrderingUser, storesForUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function RecentOrdersPage() {
-  const user = await requireUser("/orders");
+  const user = await requireOrderingUser("/orders");
   const isAdmin = canAccessAllStores(user.role);
 
   // An ADMIN sees every store's history; an OWNER only the store they are in.

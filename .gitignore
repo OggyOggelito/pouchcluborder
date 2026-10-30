@@ -17,3 +17,6 @@ prisma/*.db-journal
 
 # Supplier source documents (PDFs, images) — reference material, not code.
 content/source/
+
+# Local database backups taken before migrations — real data, not code.
+backups/

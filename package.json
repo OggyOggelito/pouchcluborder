@@ -22,7 +22,9 @@
     "seed:schedule": "tsx prisma/seed-schedule.ts",
     "tooeasy:probe": "tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/tooeasy-probe.ts",
     "test": "node --import tsx --test tests/*.test.ts",
-    "brands:import": "tsx scripts/import-brand-content.ts"
+    "brands:import": "tsx scripts/import-brand-content.ts",
+    "flavors:retag": "tsx scripts/retag-flavors.ts",
+    "seed:shopfloor": "tsx prisma/seed-shopfloor.ts"
   },
   "prisma": {
     "seed": "tsx --env-file-if-exists=.env prisma/seed.ts"
