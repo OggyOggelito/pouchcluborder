@@ -22,6 +22,14 @@ export type NavEntry = {
   publicAccess?: boolean;
   /** Offer it in global search / landing lists. */
   searchable?: boolean;
+  /**
+   * Show it in the desktop header bar rather than only behind the menu.
+   *
+   * There are thirteen destinations for a signed-in user now, which no header
+   * fits inline — so the bar carries the handful reached mid-shift and the
+   * menu carries everything.
+   */
+  primary?: boolean;
   visible: (role: Role | null) => boolean;
 };
 
@@ -30,6 +38,7 @@ const signedIn = (role: Role | null): role is Role => role !== null;
 export const NAV_ENTRIES: NavEntry[] = [
   {
     href: "/staff",
+    primary: true,
     label: "Guide",
     description: "Om varumärkena vi säljer.",
     group: "staff",
@@ -39,6 +48,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   },
   {
     href: "/staff/finder",
+    primary: true,
     label: "Produktsök",
     description: "Hitta rätt produkt åt kunden.",
     group: "staff",
@@ -48,6 +58,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   },
   {
     href: "/news",
+    primary: true,
     label: "Nyheter",
     description: "Nya produkter och butiksnyheter.",
     group: "staff",
@@ -66,6 +77,32 @@ export const NAV_ENTRIES: NavEntry[] = [
     href: "/transfers",
     label: "Överföringar",
     description: "Låna produkter mellan butiker.",
+    group: "staff",
+    searchable: true,
+    visible: signedIn,
+  },
+  {
+    href: "/store/notes",
+    primary: true,
+    label: "Anteckningar",
+    description: "Vad nästa skift behöver veta.",
+    group: "staff",
+    searchable: true,
+    visible: signedIn,
+  },
+  {
+    href: "/store/issues",
+    label: "Problem",
+    description: "Skadad vara, fel etikett, trasig utrustning.",
+    group: "staff",
+    searchable: true,
+    visible: signedIn,
+  },
+  {
+    href: "/staff/routines",
+    primary: true,
+    label: "Rutiner",
+    description: "Hur vi gör saker i butik.",
     group: "staff",
     searchable: true,
     visible: signedIn,
@@ -104,6 +141,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   },
   {
     href: "/my-schedule",
+    primary: true,
     label: "Schema",
     description: "Dina pass de närmaste 14 dagarna.",
     group: "staff",
@@ -128,6 +166,7 @@ export const NAV_ENTRIES: NavEntry[] = [
   },
   {
     href: "/admin",
+    primary: true,
     label: "Admin",
     group: "admin",
     visible: (role) => signedIn(role) && canAccessAdmin(role),
@@ -138,6 +177,8 @@ export const NAV_ENTRIES: NavEntry[] = [
 export const ADMIN_ENTRIES: NavEntry[] = [
   { href: "/admin/requests", label: "Kundönskemål", description: "Rankad efterfrågan per butik.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
   { href: "/admin/transfers", label: "Överföringar", description: "Alla överföringar mellan butiker.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
+  { href: "/admin/issues", label: "Problemrapporter", description: "Kö, filter och tilldelning.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
+  { href: "/admin/routines", label: "Rutiner", description: "Skriv rutiner och hantera kategorier.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
   { href: "/admin/brands", label: "Varumärken", description: "Innehåll på varumärkessidorna.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
   { href: "/admin/checklists", label: "Checklistor", description: "Mallar och dagens status.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
   { href: "/admin/quizzes", label: "Quiz", description: "Frågor och resultat.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
@@ -150,6 +191,11 @@ export const ADMIN_ENTRIES: NavEntry[] = [
 
 export function navFor(role: Role | null): NavEntry[] {
   return NAV_ENTRIES.filter((entry) => entry.visible(role));
+}
+
+/** The subset the desktop header bar shows; the menu still lists everything. */
+export function primaryNavFor(role: Role | null): NavEntry[] {
+  return navFor(role).filter((entry) => entry.primary);
 }
 
 /** Everything a role may reach — the basis for a future global search. */

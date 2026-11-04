@@ -56,6 +56,17 @@ export async function userIdsForStores(storeIds: string[]): Promise<string[]> {
   return [...new Set(rows.map((row) => row.userId))];
 }
 
+/**
+ * Everyone holding a role — used for "tell all the admins".
+ *
+ * Role is a string column rather than a relation, so this is a plain equality
+ * filter and the caller passes a value from `ROLES`.
+ */
+export async function userIdsForRole(role: string): Promise<string[]> {
+  const rows = await prisma.user.findMany({ where: { role }, select: { id: true } });
+  return rows.map((row) => row.id);
+}
+
 export async function listNotifications(userId: string, limit = 50): Promise<NotificationView[]> {
   return prisma.notification.findMany({
     where: { userId },

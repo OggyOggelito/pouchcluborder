@@ -5,6 +5,10 @@ import {
   canAccessAdmin,
   canAccessAllStores,
   canActOnStore,
+  canArchiveNotes,
+  canDeleteNotes,
+  canEditRoutines,
+  canManageIssues,
   canPlaceOrders,
   canViewTeamSchedule,
   toRole,
@@ -19,10 +23,41 @@ describe("role capabilities", () => {
     order: boolean;
     teamSchedule: boolean;
     admin: boolean;
+    archiveNotes: boolean;
+    deleteNotes: boolean;
+    manageIssues: boolean;
+    editRoutines: boolean;
   }> = {
-    STAFF: { allStores: false, order: false, teamSchedule: false, admin: false },
-    OWNER: { allStores: false, order: true, teamSchedule: true, admin: false },
-    ADMIN: { allStores: true, order: true, teamSchedule: true, admin: true },
+    STAFF: {
+      allStores: false,
+      order: false,
+      teamSchedule: false,
+      admin: false,
+      archiveNotes: false,
+      deleteNotes: false,
+      manageIssues: false,
+      editRoutines: false,
+    },
+    OWNER: {
+      allStores: false,
+      order: true,
+      teamSchedule: true,
+      admin: false,
+      archiveNotes: true,
+      deleteNotes: false,
+      manageIssues: false,
+      editRoutines: false,
+    },
+    ADMIN: {
+      allStores: true,
+      order: true,
+      teamSchedule: true,
+      admin: true,
+      archiveNotes: true,
+      deleteNotes: true,
+      manageIssues: true,
+      editRoutines: true,
+    },
   };
 
   it("matches the intended capability matrix exactly", () => {
@@ -32,7 +67,26 @@ describe("role capabilities", () => {
       assert.equal(canPlaceOrders(role), expected.order, `${role} order`);
       assert.equal(canViewTeamSchedule(role), expected.teamSchedule, `${role} teamSchedule`);
       assert.equal(canAccessAdmin(role), expected.admin, `${role} admin`);
+      assert.equal(canArchiveNotes(role), expected.archiveNotes, `${role} archiveNotes`);
+      assert.equal(canDeleteNotes(role), expected.deleteNotes, `${role} deleteNotes`);
+      assert.equal(canManageIssues(role), expected.manageIssues, `${role} manageIssues`);
+      assert.equal(canEditRoutines(role), expected.editRoutines, `${role} editRoutines`);
     }
+  });
+
+  it("lets an OWNER archive a shift note but never delete one", () => {
+    // Archiving is how an IMPORTANT handover comes off the top of the feed, so
+    // a shift manager needs it. Deleting is the only destructive action in the
+    // feature and stays with an ADMIN.
+    assert.equal(canArchiveNotes("OWNER"), true);
+    assert.equal(canDeleteNotes("OWNER"), false);
+  });
+
+  it("keeps STAFF out of archiving, the issue queue and the routine editor", () => {
+    assert.equal(canArchiveNotes("STAFF"), false);
+    assert.equal(canDeleteNotes("STAFF"), false);
+    assert.equal(canManageIssues("STAFF"), false);
+    assert.equal(canEditRoutines("STAFF"), false);
   });
 
   it("keeps STAFF out of ordering, the team grid and admin", () => {

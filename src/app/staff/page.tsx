@@ -1,6 +1,7 @@
 import { listPublishedBrands } from "@/lib/repositories/brands";
 import BrandDirectory from "@/components/BrandDirectory";
 import NewsWidget from "@/components/NewsWidget";
+import ShiftNotesWidget from "@/components/ShiftNotesWidget";
 import StaffQuickActions from "@/components/StaffQuickActions";
 
 export const dynamic = "force-dynamic";
@@ -24,9 +25,11 @@ export default async function StaffPage() {
         Hur produkterna tillverkas, hur nikotinet blandas och vad som skiljer märkena åt.
       </p>
 
-      {/* Signed-in staff see the latest announcements here; signed-out
-          visitors see nothing extra and the guide stays public. */}
+      {/* Signed-in staff see their handover feed and the latest announcements
+          here; signed-out visitors see nothing extra and the guide stays
+          public. */}
       <StaffQuickActions />
+      <ShiftNotesWidget />
       <NewsWidget />
 
       {brands.length === 0 ? (

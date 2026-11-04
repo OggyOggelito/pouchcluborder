@@ -1,13 +1,14 @@
 import Link from "next/link";
 import CsvImport from "@/components/CsvImport";
 import SupplierImport from "@/components/SupplierImport";
+import { ADMIN_ENTRIES } from "@/config/navigation";
 import { countProducts, countNeedsReview, listBrands } from "@/lib/repositories/products";
 import { requireAdmin } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  await requireAdmin();
+  const user = await requireAdmin();
 
   const [counts, brands, review] = await Promise.all([
     countProducts(),
@@ -27,6 +28,23 @@ export default async function AdminPage() {
           </>
         ) : null}
       </p>
+
+      {/* The sub-pages, straight from the route registry — the header only
+          links /admin itself, so without this they are URL-only. */}
+      <nav className="mt-5 grid gap-2 sm:grid-cols-2">
+        {ADMIN_ENTRIES.filter((entry) => entry.visible(user.role)).map((entry) => (
+          <Link
+            key={entry.href}
+            href={entry.href}
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm transition active:scale-[0.99] hover:border-zinc-300"
+          >
+            <span className="block font-semibold tracking-tight">{entry.label}</span>
+            {entry.description ? (
+              <span className="block text-sm text-zinc-500">{entry.description}</span>
+            ) : null}
+          </Link>
+        ))}
+      </nav>
 
       <SupplierImport />
       <CsvImport />

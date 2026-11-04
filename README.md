@@ -43,6 +43,7 @@ the seed again updates existing rows instead of duplicating them.
 | `npm run seed:users` | Create the ADMIN + one OWNER per store (idempotent) |
 | `npm run seed:schedule` | Give stores a region and users a placeholder phone |
 | `npm run seed:shopfloor` | EXEMPEL checklist templates and a placeholder quiz |
+| `npm run seed:routines` | One EXEMPEL routine article explaining how to write them |
 | `npm run flavors:retag` | Derive flavour groups (skips hand-edited rows) |
 | `npm test` | Run the test suite |
 | `npm run backfill:brands` | Create/link a `Brand` row per catalog brand |
@@ -538,6 +539,122 @@ reading the same rows.
 hardcoded array in the header. Routes are registered there with who may see
 them, and `SiteNav` reads it. `searchableFor()` exposes the same list for a
 future global search; there is no global search in the app yet.
+
+A signed-in user now reaches thirteen destinations, which no header fits
+inline, so an entry can also be marked `primary`. The desktop bar shows the
+primary ones and a **Meny** button holds everything, grouped by `group`. Below
+`lg` only the button shows. It is a `<details>` disclosure, so `SiteNav` stays
+a server component and the menu works before hydration.
+
+---
+
+## Butikskommunikation (shift notes, problem reports, routines)
+
+Three small tools for what the stores still did in chat groups and on paper:
+hand information between shifts, report problems, and look up "how do we do
+X".
+
+**No personal data, anywhere.** Every free-text box in all three carries the
+same line — *"Skriv inte kunders namn eller personuppgifter."* — from
+`NO_PERSONAL_DATA_SHORT` in `src/lib/privacy.ts`, so the wording cannot drift.
+There are no photo or file uploads.
+
+### Shift notes — `/store/notes`
+
+A feed per store. One-tap input at the top: type, pick `INFO` (the default),
+`IMPORTANT` or `TODO`, send. Capped at 1000 characters.
+
+**`IMPORTANT` notes are pinned on creation**, which is what "stays at the top
+until someone archives it" means in practice. Feed order is pinned, then
+`IMPORTANT`, then newest first — the rule lives in `sortNotes` so it is tested
+once and used everywhere, rather than being an `orderBy` the tests cannot see.
+
+**`TODO` notes carry a checkbox** that records who ticked it and when.
+Un-ticking clears both, because a resolver with no resolution time would be a
+half-truth in the feed.
+
+**Nothing is deleted by age.** A non-pinned note older than `ARCHIVE_AFTER_DAYS`
+(30, a named constant in `src/lib/shift-notes.ts`) moves to the **Arkiv** tab
+and stays there. Archiving also unpins, or a pinned note could never leave.
+
+| | STAFF | OWNER | ADMIN |
+| --- | --- | --- | --- |
+| Read and write notes for their stores | ✓ | ✓ | ✓ (all stores) |
+| Tick a `TODO` | ✓ | ✓ | ✓ |
+| Archive / restore | | ✓ | ✓ |
+| Delete | | | ✓ |
+
+**Entry point:** a card on `/staff` with the latest three notes and the number
+of open `TODO`s, plus the header link. `?store=` narrows the feed for someone
+with several stores; it can never widen it, and an id the account cannot reach
+falls back to all of its own stores.
+
+### Problem reports — `/store/issues`
+
+Damaged goods, a wrong price label, broken equipment, a delivery problem.
+Category, an optional catalog product, a sentence, send — under a minute.
+
+Anyone with access to the store can file one and follow it; status and
+assignment are the admin queue's job. `/admin/issues` is ADMIN-only, filters by
+status, store and category, counts the open ones, and opens a report's controls
+in place via `?issue=`.
+
+Status is `NEW → IN_PROGRESS → RESOLVED`, and **`RESOLVED` can be reopened** —
+a fixed fridge breaks again, and a report closed too early is the likeliest
+thing to need reopening. It reopens to `IN_PROGRESS`, never to `NEW`: nothing
+can become unseen again. The move is checked against the status read inside the
+transaction, so two admins clicking at once cannot both apply a change from the
+same starting point, and a no-op click adds no second event.
+
+`IssueEvent` is an append-only timeline of status changes, assignments and
+comments. Only an ADMIN can be an assignee — checked in the action, because
+`role` is a string column rather than a relation.
+
+Notifications: all admins on a new report (minus whoever filed it), the
+reporter on every status change and on an admin's comment.
+
+**The prefill hook is built but unused.** `/store/issues/new` accepts `store`,
+`product`, `text` and `category` and validates every one of them against the
+account and the catalog, so a "Skapa problemrapport" button on a delivery
+discrepancy is a link away. There is no delivery or goods-receiving feature in
+the app to put it on yet.
+
+### Routines — `/staff/routines`
+
+"How do we do this", separate from the brand pages, which are about products.
+Category chips, search, and "senast uppdaterad" on every article. Signed-in
+users see published articles; a draft is a 404 for anyone but an ADMIN, so an
+unpublished URL cannot be passed around. The article page is print-friendly —
+chrome and links are `print:hidden`.
+
+Search matches title **and** body, ignoring case and Swedish diacritics, so
+"oppning" finds "Öppning" and a word three paragraphs down still finds the
+article. It filters in memory (`filterArticles`): SQLite has no
+case-insensitive `contains` through Prisma, and a routine library is tens of
+articles. If it grows past that, this becomes an FTS table and the signature
+stays.
+
+**A slug is set once, when the article is created.** Retitling a published
+routine keeps its URL, because that URL is what a checklist or a note links to.
+
+`/admin/routines` is the editor: markdown with a preview that uses the same
+`Markdown` component the staff page does, a publish toggle, and category
+management. Deleting a category leaves articles alone — they keep the value
+they were filed under and simply stop matching a chip.
+
+**No real routines ship.** `npm run seed:routines` creates one article,
+"EXEMPEL – ta bort", explaining how to write them. No procedures, no legal,
+compliance, age-check, tobacco or nicotine-rule text, and no categories — the
+taxonomy is Pouch Club's to decide. The script is idempotent.
+
+### Tests
+
+`tests/shift-notes.test.ts`, `tests/issues.test.ts` and
+`tests/knowledge.test.ts` cover the pure rules — the archive cutoff, feed
+order, the status flow, search and slugs. `tests/store-comms.test.ts` is
+database-backed on a throwaway SQLite file and covers store scoping (including
+that an account with no stores sees nothing rather than everything), archiving,
+`TODO` resolution, the issue timeline and two simultaneous status changes.
 
 ---
 

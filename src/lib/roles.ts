@@ -57,6 +57,34 @@ export function canAccessAdmin(role: Role): boolean {
 }
 
 /**
+ * Archiving a shift note — taking an IMPORTANT handover off the top of the
+ * feed. Anyone may write one; deciding it has been dealt with is the shift
+ * manager's call, so STAFF cannot.
+ */
+export function canArchiveNotes(role: Role): boolean {
+  return role === "OWNER" || role === "ADMIN";
+}
+
+/**
+ * Deleting a shift note. ADMIN only, and the only destructive action in the
+ * feature: archiving is what everyone else gets, and an archived note is still
+ * readable.
+ */
+export function canDeleteNotes(role: Role): boolean {
+  return role === "ADMIN";
+}
+
+/** The problem-report queue at /admin/issues, and being assignable to one. */
+export function canManageIssues(role: Role): boolean {
+  return role === "ADMIN";
+}
+
+/** Writing and publishing routine articles. */
+export function canEditRoutines(role: Role): boolean {
+  return role === "ADMIN";
+}
+
+/**
  * Which stores a role may see, given the user's own StoreAccess rows and the
  * full list.
  *

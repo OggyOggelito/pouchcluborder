@@ -33,6 +33,8 @@ model Store {
   transfersRequested StockTransfer[] @relation("requestingStore")
   transfersTargeted  StockTransfer[] @relation("targetStore")
   transfersAccepted  StockTransfer[] @relation("acceptingStore")
+  shiftNotes   ShiftNote[]
+  issueReports IssueReport[]
 
   @@index([region])
   @@map("stores")
@@ -71,6 +73,12 @@ model User {
   transfersCreated StockTransfer[]
   transferEvents   StockTransferEvent[]
   notifications    Notification[]
+  authoredNotes    ShiftNote[]   @relation("authoredNotes")
+  resolvedNotes    ShiftNote[]   @relation("resolvedNotes")
+  reportedIssues   IssueReport[] @relation("reportedIssues")
+  assignedIssues   IssueReport[] @relation("assignedIssues")
+  issueEvents      IssueEvent[]
+  editedArticles   KnowledgeArticle[] @relation("editedArticles")
 
   @@map("users")
 }
@@ -273,6 +281,7 @@ model Product {
   orderLines OrderLine[]
   customerRequests CustomerRequest[]
   transferLines    StockTransferLine[]
+  issueReports     IssueReport[]
 
   // A variant is uniquely identified by these four fields. CSV import upserts on it.
   @@unique([brand, flavor, strength, format])
@@ -633,4 +642,140 @@ model Notification {
   @@index([userId, readAt])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// ---------------------------------------------------------------------------
+// Store communication: shift notes, problem reports, routines
+//
+// What the stores still did in chat groups and on paper. All three are
+// deliberately small, and none of them invites personal data: the UI repeats
+// that under every text box, and there is no name, phone or customer field.
+// ---------------------------------------------------------------------------
+
+/// "What the next shift needs to know."
+///
+/// A feed per store. Notes are hidden into an archive rather than deleted, so
+/// a handover can be looked up afterwards.
+model ShiftNote {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  authorId String?
+  author   User?   @relation("authoredNotes", fields: [authorId], references: [id])
+
+  /// Free text, capped at MAX_NOTE_LENGTH in src/lib/shift-notes.ts.
+  text String
+  /// INFO | IMPORTANT | TODO — validated in src/lib/shift-notes.ts.
+  category String @default("INFO")
+  /// Keeps a note out of the archive regardless of age.
+  pinned Boolean @default(false)
+
+  /// TODO only: who ticked it off, and when.
+  resolvedAt   DateTime?
+  resolvedById String?
+  resolvedBy   User?     @relation("resolvedNotes", fields: [resolvedById], references: [id])
+
+  /// Set by an OWNER or ADMIN, or by age. Archived notes still exist.
+  archivedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId, createdAt])
+  @@index([storeId, archivedAt])
+  @@index([storeId, category, resolvedAt])
+  @@map("shift_notes")
+}
+
+/// Damaged goods, a wrong price label, broken equipment, a delivery problem.
+model IssueReport {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  reporterId String?
+  reporter   User?   @relation("reportedIssues", fields: [reporterId], references: [id])
+
+  /// DAMAGED_GOODS | PRICE_OR_LABEL | EQUIPMENT | DELIVERY | OTHER.
+  category String
+
+  /// Set when the report is about a specific catalog product.
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  text String
+
+  /// NEW | IN_PROGRESS | RESOLVED — validated in src/lib/issues.ts.
+  status String @default("NEW")
+
+  /// An ADMIN who took it on. Enforced in the action, not the schema, because
+  /// role is a string column rather than a relation.
+  assigneeId String?
+  assignee   User?   @relation("assignedIssues", fields: [assigneeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events IssueEvent[]
+
+  @@index([storeId, status])
+  @@index([status, createdAt])
+  @@index([assigneeId])
+  @@map("issue_reports")
+}
+
+/// Append-only timeline: status changes, assignments and comments.
+model IssueEvent {
+  id      String      @id @default(cuid())
+  issueId String
+  issue   IssueReport @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  /// CREATED | STATUS | ASSIGNED | COMMENT.
+  type   String
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+  /// The new status, the assignee's name, or the comment text.
+  detail String?
+
+  createdAt DateTime @default(now())
+
+  @@index([issueId, createdAt])
+  @@map("issue_events")
+}
+
+/// "How do we do X" — separate from the brand pages, which are about products.
+model KnowledgeArticle {
+  id    String @id @default(cuid())
+  title String
+  slug  String @unique
+  /// Markdown, rendered with the same component as brand and news content.
+  body  String
+
+  /// Free text matching a KnowledgeCategory name, so renaming a category does
+  /// not need a migration. Null means uncategorised.
+  category String?
+
+  published Boolean @default(false)
+
+  updatedById String?
+  updatedBy   User?   @relation("editedArticles", fields: [updatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published])
+  @@index([category])
+  @@map("knowledge_articles")
+}
+
+/// The chip list on /staff/routines. Managed by an ADMIN.
+model KnowledgeCategory {
+  id        String @id @default(cuid())
+  name      String @unique
+  sortOrder Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@map("knowledge_categories")
 }
