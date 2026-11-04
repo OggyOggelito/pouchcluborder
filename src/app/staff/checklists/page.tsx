@@ -69,7 +69,7 @@ export default async function StaffChecklistsPage({
             <Link
               key={candidate.id}
               href={`/staff/checklists?store=${candidate.id}&type=${type}`}
-              className={`h-10 shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.5rem] ${
+              className={`min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
                 candidate.id === store.id
                   ? "border-zinc-900 bg-zinc-900 text-white"
                   : "border-zinc-200 bg-white text-zinc-600"
@@ -86,7 +86,7 @@ export default async function StaffChecklistsPage({
           <Link
             key={candidate}
             href={`/staff/checklists?store=${store.id}&type=${candidate}`}
-            className={`h-10 flex-1 rounded-full border text-center text-sm font-medium leading-[2.5rem] ${
+            className={`min-h-tap flex-1 rounded-full border text-center text-sm font-medium leading-[2.75rem] ${
               candidate === type
                 ? "border-zinc-900 bg-zinc-900 text-white"
                 : "border-zinc-200 bg-white text-zinc-600"

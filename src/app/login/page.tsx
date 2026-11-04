@@ -30,7 +30,7 @@ export default async function LoginPage({
         <Link href="/staff" className="text-zinc-600 underline underline-offset-4">
           Till varumärkesguiden
         </Link>{" "}
-        <span className="text-zinc-400">(kräver ingen inloggning)</span>
+        <span className="text-zinc-500">(kräver ingen inloggning)</span>
       </p>
     </main>
   );

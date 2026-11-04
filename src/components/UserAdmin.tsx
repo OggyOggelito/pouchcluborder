@@ -64,7 +64,7 @@ export default function UserAdmin({
                 required
                 className={FIELD}
               />
-              <p className="mt-1 text-xs text-zinc-400">Minst 8 tecken.</p>
+              <p className="mt-1 text-xs text-zinc-500">Minst 8 tecken.</p>
             </div>
             <div>
               <label htmlFor="role" className="block text-sm font-medium text-zinc-700">
@@ -96,7 +96,7 @@ export default function UserAdmin({
           <button
             type="submit"
             disabled={creating}
-            className="h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-400"
+            className="h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
           >
             {creating ? "Skapar…" : "Skapa konto"}
           </button>
@@ -131,7 +131,7 @@ export default function UserAdmin({
                   />
                   <button
                     type="submit"
-                    className="mt-2 h-10 rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50"
+                    className="mt-2 min-h-tap rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50"
                   >
                     Spara butiker
                   </button>
@@ -146,12 +146,12 @@ export default function UserAdmin({
                   minLength={8}
                   placeholder="Nytt lösenord"
                   aria-label={`Nytt lösenord för ${user.email}`}
-                  className="h-10 flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none transition focus:border-zinc-400"
+                  className="min-h-tap flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none transition focus:border-zinc-400"
                 />
                 <button
                   type="submit"
                   disabled={savingPassword}
-                  className="h-10 shrink-0 rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50 disabled:opacity-50"
+                  className="min-h-tap shrink-0 rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50 disabled:opacity-50"
                 >
                   Byt
                 </button>
@@ -188,7 +188,7 @@ function StoreCheckboxes({
     <fieldset>
       {!compact ? (
         <legend className="text-sm font-medium text-zinc-700">
-          Butiker <span className="text-zinc-400">(krävs för butiksägare)</span>
+          Butiker <span className="text-zinc-500">(krävs för butiksägare)</span>
         </legend>
       ) : null}
       <div className="mt-2 flex flex-wrap gap-2">

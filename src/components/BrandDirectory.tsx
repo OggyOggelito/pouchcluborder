@@ -78,12 +78,12 @@ export default function BrandDirectory({ brands }: { brands: BrandSummary[] }) {
                             {brand.shortDescription}
                           </span>
                         ) : (
-                          <span className="mt-0.5 block text-sm text-zinc-400">
+                          <span className="mt-0.5 block text-sm text-zinc-500">
                             Innehåll kommer snart
                           </span>
                         )}
                       </span>
-                      <span className="shrink-0 text-sm text-zinc-400 tabular-nums">
+                      <span className="shrink-0 text-sm text-zinc-500 tabular-nums">
                         {brand.productCountByCategory[section.category] ?? brand.productCount}
                       </span>
                     </Link>

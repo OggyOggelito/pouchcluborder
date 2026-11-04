@@ -44,12 +44,12 @@ export default async function AdminBrandsPage() {
                   {brand.shortDescription ?? "Inget innehåll än"}
                 </span>
                 {brand.categories.length > 0 ? (
-                  <span className="mt-0.5 block text-xs text-zinc-400">
+                  <span className="mt-0.5 block text-xs text-zinc-500">
                     {brand.categories.map(categoryLabel).join(" · ")}
                   </span>
                 ) : null}
               </span>
-              <span className="shrink-0 text-sm text-zinc-400 tabular-nums">
+              <span className="shrink-0 text-sm text-zinc-500 tabular-nums">
                 {brand.productCount}
               </span>
             </Link>

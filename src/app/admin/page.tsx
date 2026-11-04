@@ -1,78 +1,88 @@
 import Link from "next/link";
 import CsvImport from "@/components/CsvImport";
 import SupplierImport from "@/components/SupplierImport";
-import { ADMIN_ENTRIES } from "@/config/navigation";
-import { countProducts, countNeedsReview, listBrands } from "@/lib/repositories/products";
+import Card from "@/components/ui/Card";
+import PageHeader from "@/components/ui/PageHeader";
+import { adminSections } from "@/config/navigation";
+import { countFor, getAdminCounts } from "@/lib/repositories/admin-counts";
+import { countProducts } from "@/lib/repositories/products";
 import { requireAdmin } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
-  const user = await requireAdmin();
+export const metadata = {
+  title: "Admin — Pouch Club",
+};
 
-  const [counts, brands, review] = await Promise.all([
-    countProducts(),
-    listBrands(),
-    countNeedsReview(),
-  ]);
+/**
+ * The admin hub: cards grouped by the job they belong to, each carrying its
+ * own "behöver åtgärd" count.
+ *
+ * Imports live at the bottom rather than the top. They are the rarest thing an
+ * admin does and used to be the first thing on the page.
+ */
+export default async function AdminPage() {
+  await requireAdmin();
+
+  const [counts, products] = await Promise.all([getAdminCounts(), countProducts()]);
+  const sections = adminSections();
+  const outstanding =
+    counts.openIssues + counts.newRequests + counts.openTransfers + counts.needsReview;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6">
-      <h1 className="text-xl font-semibold tracking-tight">Admin</h1>
-      <p className="mt-1 text-zinc-600">
-        {counts.active} aktiva produkter av {counts.total} totalt, {brands.length} märken.
-        {review > 0 ? (
-          <>
-            {" "}
-            <strong className="text-amber-700">{review} behöver granskas.</strong>
-          </>
-        ) : null}
-      </p>
+    <main className="mx-auto max-w-3xl px-4 pb-16 pt-6">
+      <PageHeader
+        title="Admin"
+        description={
+          outstanding === 0
+            ? `${products.active} aktiva produkter. Inget väntar på åtgärd.`
+            : `${products.active} aktiva produkter. ${outstanding} poster behöver åtgärd.`
+        }
+      />
 
-      {/* The sub-pages, straight from the route registry — the header only
-          links /admin itself, so without this they are URL-only. */}
-      <nav className="mt-5 grid gap-2 sm:grid-cols-2">
-        {ADMIN_ENTRIES.filter((entry) => entry.visible(user.role)).map((entry) => (
-          <Link
-            key={entry.href}
-            href={entry.href}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm transition active:scale-[0.99] hover:border-zinc-300"
-          >
-            <span className="block font-semibold tracking-tight">{entry.label}</span>
-            {entry.description ? (
-              <span className="block text-sm text-zinc-500">{entry.description}</span>
-            ) : null}
-          </Link>
-        ))}
-      </nav>
-
-      <SupplierImport />
-      <CsvImport />
-
-      <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold tracking-tight">Märken i katalogen</h2>
-        {brands.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-500">Katalogen är tom.</p>
-        ) : (
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {brands.map((brand) => (
-              <li
-                key={brand}
-                className="rounded-full bg-zinc-100 px-3 py-1 text-sm text-zinc-700"
-              >
-                {brand}
-              </li>
-            ))}
+      {sections.map((section) => (
+        <section key={section.section} className="mb-6">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            {section.label}
+          </h2>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {section.entries.map((entry) => {
+              const count = countFor(entry, counts);
+              return (
+                <li key={entry.href}>
+                  <Card href={entry.href} className="h-full">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="min-w-0">
+                        <span className="block font-semibold tracking-tight">{entry.label}</span>
+                        <span className="block text-sm text-zinc-600">{entry.description}</span>
+                      </span>
+                      {count !== null && count > 0 ? (
+                        <span className="shrink-0 rounded-full bg-brand-700 px-2.5 py-1 text-xs font-bold text-white">
+                          {count}
+                          <span className="sr-only"> behöver åtgärd</span>
+                        </span>
+                      ) : null}
+                    </div>
+                  </Card>
+                </li>
+              );
+            })}
           </ul>
-        )}
+        </section>
+      ))}
+
+      <section className="mt-8 border-t border-zinc-200 pt-6">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          Importera katalog
+        </h2>
+        <SupplierImport />
+        <CsvImport />
       </section>
 
-      <p className="mt-6 text-sm text-zinc-500">
-        Den här sidan är öppen i Phase 1 — ingen inloggning. Se README för var auth ska in.{" "}
-        <Link href="/" className="underline underline-offset-4">
+      <p className="mt-8 text-sm text-zinc-600">
+        <Link href="/order" className="underline underline-offset-4">
           Till beställningen
         </Link>
-        .
       </p>
     </main>
   );

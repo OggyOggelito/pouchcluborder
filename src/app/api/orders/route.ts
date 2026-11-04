@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createOrder, OrderValidationError } from "@/lib/repositories/orders";
+import { deleteDraft } from "@/lib/repositories/order-drafts";
 import { canOrderForStore, getSessionUser } from "@/lib/session";
 import { canPlaceOrders } from "@/lib/roles";
 
@@ -60,6 +61,12 @@ export async function POST(request: Request) {
       note: typeof body.note === "string" ? body.note : null,
       placedByUserId: user.id,
     });
+    // The basket became an order, so the draft has done its job. Dropped
+    // server-side rather than trusting the client to clean up: a browser that
+    // closes on the confirmation screen would otherwise leave the "Fortsätt
+    // beställning" card pointing at an order already sent.
+    await deleteDraft(user.id, body.storeId);
+
     return NextResponse.json({ id: order.id }, { status: 201 });
   } catch (error) {
     if (error instanceof OrderValidationError) {

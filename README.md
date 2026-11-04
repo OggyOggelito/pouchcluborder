@@ -46,6 +46,9 @@ the seed again updates existing rows instead of duplicating them.
 | `npm run seed:routines` | One EXEMPEL routine article explaining how to write them |
 | `npm run flavors:retag` | Derive flavour groups (skips hand-edited rows) |
 | `npm test` | Run the test suite |
+| `npm run ux:shots -- before\|after` | Screenshots of the main screens at 390x844 |
+| `npm run ux:axe` | axe-core accessibility scan; `-- --json` for selectors |
+| `npm run ux:targets` | Tap targets under 44px and sideways scroll |
 | `npm run backfill:brands` | Create/link a `Brand` row per catalog brand |
 | `npm run backfill:brands -- --publish` | Same, and publish brands that have stock |
 | `npm run fetch:snusbolaget` | Crawl snusbolaget.se specs into `data/snusbolaget-facts.json` |
@@ -655,6 +658,194 @@ order, the status flow, search and slugs. `tests/store-comms.test.ts` is
 database-backed on a throwaway SQLite file and covers store scoping (including
 that an account with no stores sees nothing rather than everything), archiving,
 `TODO` resolution, the issue timeline and two simultaneous status changes.
+
+---
+
+## Struktur och navigering
+
+The portal grew from an order form into eleven features, and the risk stopped
+being "missing functionality" and became "too complicated to use in a
+stockroom". This is what the simplification pass changed. The measurements
+behind it are in [`docs/ux/`](./docs/ux/): `audit.md` (before), `after.md`
+(after), and `usability-test.md` (a script for testing it on colleagues).
+
+### "Idag" at `/`
+
+`/` used to be the order form, which calls `requireOrderingUser()` — so **a
+STAFF member opening the app got Next's default English 404**. That was the
+worst thing the audit found, and it is the reason this page exists.
+
+`/` is now a role-aware home. Every card hides completely when it has nothing
+to say or its module is not set up; a greyed-out card is still something to
+read and decide about on a phone.
+
+| Card | Who | Shows when |
+| --- | --- | --- |
+| Ny beställning | OWNER, ADMIN | the catalog has products |
+| Fortsätt beställning | OWNER, ADMIN | an `OrderDraft` has lines |
+| Ditt pass idag | all | the schedule is live and you work today |
+| Checklistor idag | all | your own stores have an unfinished daily list |
+| Olästa nyheter | all | something was published since you last opened `/news` |
+| Väntar på dig | ADMIN | any action count is above zero |
+
+The checklist card uses the user's **own** stores, not every store an ADMIN
+can open — an admin is not personally doing Helsingborgs öppning. It also
+reads existing runs rather than calling `getOrCreateRun`, because a dashboard
+must not create rows just by being looked at.
+
+The order form moved to **`/order`**. Nothing redirects: the brief puts "Idag"
+at `/`, so the two cannot both live there, and the home page's one big button
+is the way in.
+
+### Navigation
+
+Everything renders from `src/config/navigation.ts` — bottom bar, "Mer" sheet,
+sidebar, admin hub and global search. An entry carries its label, route,
+roles, feature flag, group and icon, so a feature added later registers once
+and appears everywhere.
+
+- **Phone:** a bottom bar of at most four (Idag, Beställ, Guide, Nyheter with
+  an unread badge) plus **Mer**, a bottom sheet holding the rest, grouped.
+- **Desktop:** the same groups as a sidebar from `lg` up.
+- **Active state** comes from `activeHref()`, longest match wins, with `/`
+  matching only itself — otherwise the home entry owns every path in the app.
+
+Two rules this file does not break. **Visibility is not permission**: hiding a
+link protects nothing, and every page keeps its own server check. **A module
+with nothing in it hides rather than greys out.**
+
+### Feature flags
+
+`src/lib/features.ts` resolves one set of flags per request. A module hides
+when it is unconfigured *or* empty:
+
+| Flag | On when |
+| --- | --- |
+| `ordering` | the catalog has an active product |
+| `schedule` | `SCHEDULE_PROVIDER=tooeasy` with all three credentials, or `manual` with at least one imported shift |
+| `news`, `routines`, `guide`, `quizzes` | something is published |
+| `checklists` | an active template exists |
+| `push` | `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` are set — they never are, so push settings never appear |
+
+Types live in `src/lib/feature-keys.ts`, separate from the queries, because
+`features.ts` carries `server-only` — a Next bundler alias rather than a real
+package, which a `tsx` test process cannot resolve. Same split as
+`tooeasy-client.ts`.
+
+### Global search
+
+A magnifier in the header at every width, and `/` on desktop. Searches
+products, brands, news, routines and the app's own pages, grouped, scoped by
+role — an OWNER never gets an admin page in the results.
+
+Ranking is in `src/lib/search.ts`: a prefix beats a word start beats a
+mid-word match, ties break on length. Diacritics fold, so **"rape" finds
+"Göteborgs Rapé"** and a phone keyboard without easy å/ä/ö is no handicap.
+Recent searches sit in `localStorage` behind try/catch — blocked storage must
+never break the header.
+
+### One word for one thing
+
+`src/lib/terms.ts` is the glossary. *stock*, *stockar*, *dosa*, *dosor* and
+*antal* were all in use with no definition anywhere; `countOf("stock", 3)`
+gives "3 stockar" and the `?` beside the word on the order screen explains
+what one is. Swedish plurals are irregular enough that callers must not build
+them by appending an "r".
+
+### Admin hub
+
+`/admin` is cards grouped by job — Beställningar, Sortiment, Innehåll,
+Personal, Integrationer — each with a "behöver åtgärd" count, and every admin
+page carries a breadcrumb back.
+
+The count that used to be printed as plain text with nothing behind it now
+has **`/admin/review`**, which lists the products the importer could not parse
+and shows each one's raw `Benämning` beside what was parsed.
+
+Three counts the brief asked for do not exist and are **left out rather than
+faked**: orders to confirm (`Order` has no status column), delivery
+discrepancies (no goods-receiving feature) and catalog previews (the importer
+applies directly).
+
+### Shared components
+
+`src/components/ui/` — `PageHeader`, `Card`, `EmptyState`, `ErrorState`,
+`Skeleton`, `StatusBadge`, `ConfirmButton`, `Toast`, `TermHint`. Plus the
+first `loading.tsx`, `error.tsx` and `not-found.tsx` the app has ever had: a
+slow page was a blank screen and a failure was the framework's English default.
+
+`EmptyState` and `ErrorState` are deliberately different components. An outage
+that renders as "nothing here" is at its worst on a schedule, where an empty
+week and a broken week look identical and only one of them means you are off
+work.
+
+---
+
+## Beställningsflödet
+
+The order screen is the most-used in the app, so it gets the most care.
+
+### Drafts that do not get lost
+
+`OrderDraft` is one row per user and store — someone covering two stores keeps
+a separate basket for each. Lines are a JSON document rather than rows,
+because a draft is written on nearly every change and read whole; rows would
+mean a delete-and-insert per autosave.
+
+Autosave fires **a second after the last change**. Three things can happen:
+
+- **It saves.** Silently. A "Sparat" that never goes away is noise.
+- **It fails.** The local copy in `localStorage` already holds the work — it
+  is written synchronously on every change, so it survives a tab dying before
+  the debounce fires. The banner says *"Sparas inte just nu, försöker igen"*
+  and it retries every five seconds.
+- **It conflicts.** The client sends the `version` it last saw. If the stored
+  version moved on, the same draft was edited somewhere else, and overwriting
+  it would throw away work nobody can get back. The save is **refused**, and
+  the person picks: *Hämta den senaste* or *Fortsätt med min*.
+
+The version check and the write are one transaction, so two tabs saving at the
+same instant cannot both believe they won.
+
+A draft can outlive a catalog re-import, so lines whose product is gone are
+pruned on load and the person is told how many went. The draft is deleted
+**server-side** when the order is submitted — a browser closed on the
+confirmation screen would otherwise leave "Fortsätt beställning" pointing at
+an order already sent.
+
+### Picking, reviewing, sending
+
+Sticky search and category chips, brands collapsed until searched, a
+**"Visa bara valda"** chip once anything is chosen, and the last category
+remembered per device. The −/+ stepper was already 44px and typable.
+
+**Granska** is a separate screen, not a modal: the list is as long as it needs
+to be and the back button behaves. Lines are grouped by brand and editable in
+place. One primary action.
+
+After sending: **Exportera Excel**, **Se beställningen** (`/orders/[id]`, which
+did not exist before — the confirmation could only offer the whole list) and
+**Ny beställning**.
+
+### Beställ samma igen
+
+The most common restock is "the same as last time", which previously meant
+reading the old order and retyping every line. `/orders` now has a one-tap
+**Beställ samma igen** per order: it loads those lines into the draft for that
+store and opens the form. A draft, not an order — the point is to save the
+typing, not to send something nobody looked at.
+
+### Which price the total uses
+
+**`pricePerStock`, which is `Inpris` × `unitsPerStock` — what the store pays,
+not the shelf price.** So the figure under the summary bar is the order's
+**cost** to Pouch Club, and it is now labelled "inköpsvärde" rather than left
+as a bare kr figure.
+
+The calculation is untouched. Whether store staff should see a cost figure at
+all is a decision for you, not for this codebase; if the answer is no, the
+change is to hide `totalSek` in `SummaryBar`, `ReviewStep` and
+`OrderConfirmation`, and the Excel export is unaffected either way.
 
 ---
 

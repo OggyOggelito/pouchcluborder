@@ -86,7 +86,7 @@ export default async function TransferPrintPage({ params }: { params: Promise<{ 
         ))}
       </div>
 
-      <p className="mt-10 text-xs text-zinc-400 print:hidden">
+      <p className="mt-10 text-xs text-zinc-500 print:hidden">
         Skriv ut med webbläsarens utskriftsfunktion.
       </p>
     </main>

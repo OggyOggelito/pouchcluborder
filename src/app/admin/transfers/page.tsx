@@ -24,7 +24,7 @@ export default async function AdminTransfersPage({
   ]);
 
   const chip = (active: boolean) =>
-    `h-10 shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.5rem] ${
+    `min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
       active ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-600"
     }`;
 

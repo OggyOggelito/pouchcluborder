@@ -106,11 +106,11 @@ export default function CsvImport() {
               name="mode"
               checked={mode === "merge"}
               onChange={() => setMode("merge")}
-              className="mt-1"
+              className="mt-1 h-5 w-5"
             />
             <span>
               <span className="block font-medium">Lägg till / uppdatera</span>
-              <span className="block text-sm text-zinc-500">
+              <span className="block text-sm text-zinc-600">
                 Rör inte produkter som saknas i filen.
               </span>
             </span>
@@ -126,11 +126,11 @@ export default function CsvImport() {
               name="mode"
               checked={mode === "replace"}
               onChange={() => setMode("replace")}
-              className="mt-1"
+              className="mt-1 h-5 w-5"
             />
             <span>
               <span className="block font-medium">Ersätt katalogen</span>
-              <span className="block text-sm text-zinc-500">
+              <span className="block text-sm text-zinc-600">
                 Produkter utanför filen döljs (men raderas aldrig).
               </span>
             </span>
@@ -142,7 +142,7 @@ export default function CsvImport() {
         type="button"
         onClick={runImport}
         disabled={busy || csv.trim() === ""}
-        className="mt-4 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-400"
+        className="mt-4 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
       >
         {busy ? "Importerar…" : "Importera"}
       </button>

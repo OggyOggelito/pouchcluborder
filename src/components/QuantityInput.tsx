@@ -49,7 +49,7 @@ export default function QuantityInput({
         className={`h-11 w-16 rounded-xl border text-center text-base font-medium tabular-nums outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 ${
           active
             ? "border-brand-500 bg-brand-50 text-zinc-900"
-            : "border-zinc-200 bg-white text-zinc-400 placeholder:text-zinc-300"
+            : "border-zinc-200 bg-white text-zinc-500 placeholder:text-zinc-400"
         }`}
       />
 

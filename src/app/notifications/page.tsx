@@ -39,7 +39,7 @@ export default async function NotificationsPage() {
               <>
                 <p className={`font-medium ${item.readAt ? "text-zinc-600" : ""}`}>{item.title}</p>
                 {item.body ? <p className="mt-0.5 text-sm text-zinc-500">{item.body}</p> : null}
-                <p className="mt-1 text-xs text-zinc-400">{formatDateTime(item.createdAt)}</p>
+                <p className="mt-1 text-xs text-zinc-500">{formatDateTime(item.createdAt)}</p>
               </>
             );
             const className = `block rounded-2xl border p-4 shadow-sm ${

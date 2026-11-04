@@ -41,7 +41,7 @@ export default async function StaffQuizzesPage() {
                   {quiz.description ? (
                     <p className="mt-0.5 line-clamp-2 text-sm text-zinc-500">{quiz.description}</p>
                   ) : null}
-                  <p className="mt-1 text-sm text-zinc-400">
+                  <p className="mt-1 text-sm text-zinc-500">
                     {quiz.questionCount} frågor
                     {quiz.brandName ? ` · ${quiz.brandName}` : ""}
                     {mine?.best

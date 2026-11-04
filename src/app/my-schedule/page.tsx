@@ -27,7 +27,7 @@ export default async function MySchedulePage({
         <h1 className="text-xl font-semibold tracking-tight">Mitt schema</h1>
         <Link
           href="/my-schedule?refresh=1"
-          className="text-sm text-zinc-500 underline underline-offset-4 transition hover:text-zinc-900"
+          className="inline-flex min-h-tap items-center text-sm text-zinc-600 underline underline-offset-4 transition hover:text-zinc-900"
         >
           Uppdatera
         </Link>
@@ -49,7 +49,7 @@ export default async function MySchedulePage({
           <p className="mt-2 font-mono text-xs text-red-800">{outcome.error}</p>
           <Link
             href="/my-schedule?refresh=1"
-            className="mt-3 inline-flex h-10 items-center rounded-xl border border-red-300 px-4 text-sm font-medium transition hover:bg-red-100"
+            className="mt-3 inline-flex min-h-tap items-center rounded-xl border border-red-300 px-4 text-sm font-medium transition hover:bg-red-100"
           >
             Försök igen
           </Link>
@@ -73,7 +73,7 @@ export default async function MySchedulePage({
               <div className="min-w-0">
                 <p className="font-medium capitalize">
                   {WEEKDAY.format(entry.date)}{" "}
-                  <span className="text-zinc-400">{DAY.format(entry.date)}</span>
+                  <span className="text-zinc-500">{DAY.format(entry.date)}</span>
                 </p>
                 <p className="text-sm text-zinc-500">{entry.storeName}</p>
               </div>
@@ -85,7 +85,7 @@ export default async function MySchedulePage({
         </ul>
       )}
 
-      <p className="mt-6 text-xs text-zinc-400">Källa: {outcome.providerName}.</p>
+      <p className="mt-6 text-xs text-zinc-500">Källa: {outcome.providerName}.</p>
     </main>
   );
 }

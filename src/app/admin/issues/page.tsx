@@ -32,7 +32,7 @@ export const metadata = {
   title: "Problemrapporter — Admin",
 };
 
-const CHIP = "h-10 shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.5rem]";
+const CHIP = "min-h-tap shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.75rem]";
 
 /**
  * The queue. ADMIN only, every store.

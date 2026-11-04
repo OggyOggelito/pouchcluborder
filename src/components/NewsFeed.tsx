@@ -63,7 +63,7 @@ export default function NewsFeed({ items }: { items: Item[] }) {
                   {categoryLabel(item.category)}
                 </span>
                 {item.publishedAt ? (
-                  <time className="text-xs text-zinc-400" dateTime={item.publishedAt}>
+                  <time className="text-xs text-zinc-500" dateTime={item.publishedAt}>
                     {new Date(item.publishedAt).toLocaleDateString("sv-SE", {
                       day: "numeric",
                       month: "long",
@@ -80,7 +80,7 @@ export default function NewsFeed({ items }: { items: Item[] }) {
               </div>
 
               {item.authorName ? (
-                <p className="mt-4 text-xs text-zinc-400">{item.authorName}</p>
+                <p className="mt-4 text-xs text-zinc-500">{item.authorName}</p>
               ) : null}
             </li>
           ))}
@@ -104,7 +104,7 @@ function Chip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`h-9 shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition ${
+      className={`min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition ${
         active
           ? "border-zinc-900 bg-zinc-900 text-white"
           : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"

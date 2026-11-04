@@ -69,7 +69,7 @@ export default async function StoreNotesPage({
     <main className="mx-auto max-w-2xl px-4 pb-20 pt-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h1 className="text-xl font-semibold tracking-tight">Skiftanteckningar</h1>
-        <Link href="/store/issues" className="text-sm font-medium underline underline-offset-4">
+        <Link href="/store/issues" className="inline-flex min-h-tap items-center text-sm font-medium underline underline-offset-4">
           Problemrapporter
         </Link>
       </div>
@@ -88,7 +88,7 @@ export default async function StoreNotesPage({
         <div className="mt-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           <Link
             href={`/store/notes?tab=${tab}`}
-            className={`h-10 shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.5rem] ${
+            className={`min-h-tap shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
               selected ? "border-zinc-200 bg-white text-zinc-600" : "border-zinc-900 bg-zinc-900 text-white"
             }`}
           >
@@ -98,7 +98,7 @@ export default async function StoreNotesPage({
             <Link
               key={store.id}
               href={`/store/notes?tab=${tab}&store=${store.id}`}
-              className={`h-10 shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.5rem] ${
+              className={`min-h-tap shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
                 selected?.id === store.id
                   ? "border-zinc-900 bg-zinc-900 text-white"
                   : "border-zinc-200 bg-white text-zinc-600"
@@ -115,7 +115,7 @@ export default async function StoreNotesPage({
           <Link
             key={candidate.id}
             href={query({ tab: candidate.id })}
-            className={`h-10 flex-1 rounded-full border text-center text-sm font-medium leading-[2.5rem] ${
+            className={`min-h-tap flex-1 rounded-full border text-center text-sm font-medium leading-[2.75rem] ${
               candidate.id === tab
                 ? "border-zinc-900 bg-zinc-900 text-white"
                 : "border-zinc-200 bg-white text-zinc-600"

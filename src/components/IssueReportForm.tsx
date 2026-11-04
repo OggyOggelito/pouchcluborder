@@ -170,7 +170,7 @@ export default function IssueReportForm({
         />
         <div className="mt-1 flex items-baseline justify-between gap-3">
           <p className="text-sm text-zinc-500">{NO_PERSONAL_DATA_SHORT}</p>
-          <span className="shrink-0 text-xs text-zinc-400">
+          <span className="shrink-0 text-xs text-zinc-500">
             {text.length}/{MAX_ISSUE_TEXT_LENGTH}
           </span>
         </div>
@@ -185,7 +185,7 @@ export default function IssueReportForm({
       <button
         type="submit"
         disabled={pending || !text.trim()}
-        className="h-14 w-full rounded-2xl bg-zinc-900 px-6 text-lg font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-400"
+        className="h-14 w-full rounded-2xl bg-zinc-900 px-6 text-lg font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
       >
         {pending ? "Skickar…" : "Skicka rapport"}
       </button>

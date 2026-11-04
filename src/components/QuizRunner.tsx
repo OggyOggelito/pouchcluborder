@@ -84,7 +84,7 @@ export default function QuizRunner({
           type="button"
           onClick={() => setPhase("asking")}
           disabled={questions.length === 0}
-          className="mt-4 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-400"
+          className="mt-4 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
         >
           {questions.length === 0 ? "Inga frågor än" : "Starta"}
         </button>
@@ -195,7 +195,7 @@ export default function QuizRunner({
         type="button"
         onClick={next}
         disabled={chosen === null || saving}
-        className="mt-5 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-400"
+        className="mt-5 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
       >
         {saving
           ? "Sparar…"

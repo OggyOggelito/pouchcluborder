@@ -90,7 +90,7 @@ export default function BrandEditor({ brand }: { brand: BrandDetail }) {
         <button
           type="submit"
           disabled={pending}
-          className="h-12 flex-1 rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-400"
+          className="h-12 flex-1 rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
         >
           {pending ? "Sparar…" : "Spara"}
         </button>
@@ -122,7 +122,7 @@ function Field({
         {label}
       </label>
       <input id={name} name={name} defaultValue={defaultValue ?? ""} className={FIELD} />
-      {hint ? <p className="mt-1 text-xs text-zinc-400">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-xs text-zinc-500">{hint}</p> : null}
     </div>
   );
 }

@@ -29,7 +29,7 @@ export default async function ShiftNotesWidget() {
     <section className="mt-5 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="text-lg font-semibold tracking-tight">Skiftanteckningar</h2>
-        <Link href="/store/notes" className="text-sm font-medium underline underline-offset-4">
+        <Link href="/store/notes" className="inline-flex min-h-tap items-center text-sm font-medium underline underline-offset-4">
           Alla anteckningar
         </Link>
       </div>

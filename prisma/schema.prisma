@@ -35,6 +35,7 @@ model Store {
   transfersAccepted  StockTransfer[] @relation("acceptingStore")
   shiftNotes   ShiftNote[]
   issueReports IssueReport[]
+  orderDrafts  OrderDraft[]
 
   @@index([region])
   @@map("stores")
@@ -79,6 +80,8 @@ model User {
   assignedIssues   IssueReport[] @relation("assignedIssues")
   issueEvents      IssueEvent[]
   editedArticles   KnowledgeArticle[] @relation("editedArticles")
+  orderDrafts      OrderDraft[]
+  preference       UserPreference?
 
   @@map("users")
 }
@@ -778,4 +781,58 @@ model KnowledgeCategory {
   createdAt DateTime @default(now())
 
   @@map("knowledge_categories")
+}
+
+// ---------------------------------------------------------------------------
+// Order drafts and per-user preferences
+// ---------------------------------------------------------------------------
+
+/// An order in progress, so an interrupted order survives a locked phone, a
+/// dropped signal or a closed tab.
+///
+/// One draft per user and store: a person covering two stores keeps a separate
+/// basket for each. Deleted when the order is submitted.
+model OrderDraft {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// JSON: { "<productId>": quantity }. A document rather than rows because a
+  /// draft is written on every keystroke-ish change and read whole; rows would
+  /// mean a delete-and-insert per autosave.
+  lines String @default("{}")
+  note  String?
+
+  /// Bumped on every save. The client sends the version it last saw, so a
+  /// draft edited on another device is reported as a conflict rather than
+  /// silently overwritten.
+  version Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, storeId])
+  @@index([storeId])
+  @@map("order_drafts")
+}
+
+/// Small per-user settings. One row per user, created on first write.
+///
+/// Deliberately not a key/value table: there are a handful of these and a
+/// typed column each is easier to read than a bag of strings.
+model UserPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// When this person last opened /news. Drives the unread badge; there is no
+  /// per-article read tracking and this does not need any.
+  newsReadAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
 }

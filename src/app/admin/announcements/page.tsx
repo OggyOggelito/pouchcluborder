@@ -59,7 +59,7 @@ export default async function AdminAnnouncementsPage() {
                     {item.authorName ? ` · ${item.authorName}` : ""}
                   </span>
                 </span>
-                <span aria-hidden className="text-zinc-400">
+                <span aria-hidden className="text-zinc-500">
                   ›
                 </span>
               </Link>

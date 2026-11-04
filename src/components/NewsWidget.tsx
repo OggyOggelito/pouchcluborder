@@ -21,7 +21,7 @@ export default async function NewsWidget({ limit = 3 }: { limit?: number }) {
     <section className="mt-5 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Nytt</h2>
-        <Link href="/news" className="text-sm text-zinc-500 underline underline-offset-4">
+        <Link href="/news" className="inline-flex min-h-tap items-center text-sm text-zinc-600 underline underline-offset-4">
           Alla nyheter
         </Link>
       </div>
@@ -29,13 +29,13 @@ export default async function NewsWidget({ limit = 3 }: { limit?: number }) {
       <ul className="mt-3 space-y-2">
         {items.map((item) => (
           <li key={item.id}>
-            <Link href="/news" className="group flex items-start gap-2">
+            <Link href="/news" className="group flex min-h-tap items-start gap-2 py-1">
               {item.pinned ? <span aria-label="Fäst">📌</span> : null}
               <span className="min-w-0">
                 <span className="block truncate font-medium group-hover:underline">
                   {item.title}
                 </span>
-                <span className="block text-xs text-zinc-400">
+                <span className="block text-xs text-zinc-500">
                   {categoryLabel(item.category)}
                   {item.publishedAt
                     ? ` · ${item.publishedAt.toLocaleDateString("sv-SE", {

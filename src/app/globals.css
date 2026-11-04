@@ -1,11 +1,29 @@
 @import "tailwindcss";
 
 @theme {
+  /* Brand ramp. 200-400 were missing, so `border-brand-200` in three
+     components resolved to nothing and rendered as currentColor. */
   --color-brand-50: oklch(0.96 0.03 165);
   --color-brand-100: oklch(0.92 0.06 165);
+  --color-brand-200: oklch(0.87 0.08 165);
+  --color-brand-300: oklch(0.81 0.11 165);
+  --color-brand-400: oklch(0.74 0.13 165);
   --color-brand-500: oklch(0.68 0.14 165);
   --color-brand-600: oklch(0.58 0.13 165);
   --color-brand-700: oklch(0.48 0.11 165);
+
+  /* Semantic text shades.
+
+     `--color-muted` replaces text-zinc-400, which is ~2.6:1 on white and was
+     the single cause of every contrast failure in the audit (2320 nodes).
+     zinc-500 clears 4.5:1 on both white and zinc-50. `--color-faint` is for
+     text that is genuinely decorative and never carries meaning. */
+  --color-muted: var(--color-zinc-500);
+  --color-faint: var(--color-zinc-400);
+
+  /* The one tap-target floor. 44px is the smallest comfortable thumb target
+     and what this app's components size to. */
+  --spacing-tap: 2.75rem;
 }
 
 html {
@@ -35,4 +53,25 @@ input[type="search"]::-webkit-search-cancel-button,
 input[type="search"]::-webkit-search-decoration {
   -webkit-appearance: none;
   appearance: none;
+}
+
+/* Focus that is always visible, including for keyboard users on dark
+   surfaces. The default ring disappears against bg-zinc-900 buttons. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Printing a routine or a följesedel: drop the app chrome. */
+@media print {
+  header,
+  nav,
+  [data-print-hidden] {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
 }

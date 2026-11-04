@@ -36,7 +36,7 @@ export default async function QuizResultsPage({
       <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
         <Link
           href="/admin/quizzes/results"
-          className={`h-10 shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.5rem] ${
+          className={`min-h-tap shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
             storeFilter ? "border-zinc-200 bg-white text-zinc-600" : "border-zinc-900 bg-zinc-900 text-white"
           }`}
         >
@@ -46,7 +46,7 @@ export default async function QuizResultsPage({
           <Link
             key={store.id}
             href={`/admin/quizzes/results?store=${encodeURIComponent(store.name)}`}
-            className={`h-10 shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.5rem] ${
+            className={`min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
               storeFilter === store.name
                 ? "border-zinc-900 bg-zinc-900 text-white"
                 : "border-zinc-200 bg-white text-zinc-600"
@@ -88,7 +88,7 @@ export default async function QuizResultsPage({
                     {row.latest ? (
                       <>
                         {row.latest.score}/{row.latest.total}
-                        <span className="block text-xs text-zinc-400">{formatDateTime(row.latest.at)}</span>
+                        <span className="block text-xs text-zinc-500">{formatDateTime(row.latest.at)}</span>
                       </>
                     ) : "—"}
                   </td>

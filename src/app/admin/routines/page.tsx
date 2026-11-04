@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfirmButton from "@/components/ui/ConfirmButton";
 import { createCategoryAction, deleteCategoryAction } from "@/lib/knowledge-actions";
 import { formatDateTime } from "@/lib/format";
 import { listAllArticles, listCategories } from "@/lib/repositories/knowledge";
@@ -22,7 +23,7 @@ export default async function AdminRoutinesPage() {
     <main className="mx-auto max-w-2xl px-4 pb-20 pt-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h1 className="text-xl font-semibold tracking-tight">Rutiner</h1>
-        <Link href="/staff/routines" className="text-sm font-medium underline underline-offset-4">
+        <Link href="/staff/routines" className="inline-flex min-h-tap items-center text-sm font-medium underline underline-offset-4">
           Visa personalsidan
         </Link>
       </div>
@@ -91,12 +92,15 @@ export default async function AdminRoutinesPage() {
                 </span>
                 <form action={deleteCategoryAction}>
                   <input type="hidden" name="id" value={category.id} />
-                  <button
-                    type="submit"
-                    className="h-10 shrink-0 rounded-xl border border-zinc-200 px-3 text-sm font-medium"
+                  <ConfirmButton
+                    title={`Ta bort kategorin ${category.name}?`}
+                    body="Artiklarna är kvar och behåller sin text — de slutar bara matcha ett chip."
+                    confirmLabel="Ta bort"
+                    tone="neutral"
+                    className="min-h-tap shrink-0 rounded-xl border border-zinc-200 px-3 text-sm font-medium"
                   >
                     Ta bort
-                  </button>
+                  </ConfirmButton>
                 </form>
               </li>
             ))}

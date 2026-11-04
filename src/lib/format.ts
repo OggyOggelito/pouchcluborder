@@ -14,12 +14,50 @@ export function formatNumber(value: number): string {
   return plainNumber.format(value);
 }
 
+/**
+ * All dates in this app are Swedish store dates, so every formatter pins the
+ * zone explicitly. Without it the server's zone decides, and a shift at 23:30
+ * can render on the wrong day. `sv-SE` is already a 24-hour locale.
+ */
+const ZONE = "Europe/Stockholm";
+
 export function formatDateTime(value: Date | string): string {
   const date = typeof value === "string" ? new Date(value) : value;
   return new Intl.DateTimeFormat("sv-SE", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: ZONE,
   }).format(date);
+}
+
+const shortDate = new Intl.DateTimeFormat("sv-SE", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  timeZone: ZONE,
+});
+
+/** "ons 4 nov" — the house short form, for cards and lists. */
+export function formatShortDate(value: Date | string): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return shortDate.format(date);
+}
+
+const timeOnly = new Intl.DateTimeFormat("sv-SE", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: ZONE,
+});
+
+/** "07:30" — 24-hour, zero-padded. */
+export function formatTime(value: Date | string): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return timeOnly.format(date);
+}
+
+/** "ons 4 nov 07:30". */
+export function formatShortDateTime(value: Date | string): string {
+  return `${formatShortDate(value)} ${formatTime(value)}`;
 }
 
 export function slugify(value: string): string {

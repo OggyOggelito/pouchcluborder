@@ -118,7 +118,7 @@ export default function AnnouncementEditor({
         <button
           type="submit"
           disabled={pending}
-          className="h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-400"
+          className="h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
         >
           {pending ? "Sparar…" : "Spara"}
         </button>
@@ -129,7 +129,7 @@ export default function AnnouncementEditor({
           <input type="hidden" name="id" value={announcement.id} />
           <button
             type="submit"
-            className="h-10 w-full rounded-xl border border-red-200 text-sm font-medium text-red-700 transition hover:bg-red-50"
+            className="min-h-tap w-full rounded-xl border border-red-200 text-sm font-medium text-red-700 transition hover:bg-red-50"
           >
             Ta bort inlägget
           </button>

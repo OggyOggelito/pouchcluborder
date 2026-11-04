@@ -79,7 +79,7 @@ export default function ShiftImport() {
         type="button"
         onClick={upload}
         disabled={busy || !file}
-        className="mt-4 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-400"
+        className="mt-4 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
       >
         {busy ? "Importerar…" : "Importera schema"}
       </button>

@@ -47,7 +47,7 @@ export default function StorePicker({ stores }: { stores: StoreSummary[] }) {
                   <span className="block text-sm text-zinc-500">{store.city}</span>
                 ) : null}
               </span>
-              <span aria-hidden className="text-zinc-400">
+              <span aria-hidden className="text-zinc-500">
                 {busy === store.id ? "…" : "→"}
               </span>
             </button>

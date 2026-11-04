@@ -185,7 +185,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
             ) : null}
           </dl>
           {facts.sources.length > 0 ? (
-            <p className="mt-3 text-xs text-zinc-400">
+            <p className="mt-3 text-xs text-zinc-500">
               Nikotinvärden för {facts.enrichedCount} av {facts.variantCount} varianter hämtade
               från {facts.sources.join(", ")}.
             </p>
@@ -202,7 +202,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
           <p className="mt-3 text-zinc-500">Inget aktivt i katalogen just nu.</p>
         ) : (
           <>
-            <p className="mt-1 text-sm text-zinc-400">
+            <p className="mt-1 text-sm text-zinc-500">
               {products.length} {products.length === 1 ? "variant" : "varianter"}
             </p>
             <ul className="mt-4 space-y-3">

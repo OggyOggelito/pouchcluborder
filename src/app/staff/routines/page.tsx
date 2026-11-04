@@ -75,7 +75,7 @@ export default async function RoutinesPage({
         <div className="mt-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           <Link
             href={chipHref({ category: null })}
-            className={`h-10 shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.5rem] ${
+            className={`min-h-tap shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
               active ? "border-zinc-200 bg-white text-zinc-600" : "border-zinc-900 bg-zinc-900 text-white"
             }`}
           >
@@ -85,7 +85,7 @@ export default async function RoutinesPage({
             <Link
               key={row.id}
               href={chipHref({ category: row.name })}
-              className={`h-10 shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.5rem] ${
+              className={`min-h-tap shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
                 active === row.name
                   ? "border-zinc-900 bg-zinc-900 text-white"
                   : "border-zinc-200 bg-white text-zinc-600"

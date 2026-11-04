@@ -35,7 +35,7 @@ export default async function TransfersPage({
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h1 className="text-xl font-semibold tracking-tight">Överföringar</h1>
         {mayCreate ? (
-          <Link href="/transfers/new" className="text-sm font-medium underline underline-offset-4">
+          <Link href="/transfers/new" className="inline-flex min-h-tap items-center text-sm font-medium underline underline-offset-4">
             Ny förfrågan
           </Link>
         ) : null}
@@ -47,7 +47,7 @@ export default async function TransfersPage({
           <Link
             key={candidate.id}
             href={`/transfers?tab=${candidate.id}`}
-            className={`h-10 flex-1 rounded-full border text-center text-sm font-medium leading-[2.5rem] ${
+            className={`min-h-tap flex-1 rounded-full border text-center text-sm font-medium leading-[2.75rem] ${
               candidate.id === tab
                 ? "border-zinc-900 bg-zinc-900 text-white"
                 : "border-zinc-200 bg-white text-zinc-600"

@@ -82,7 +82,7 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
                     defaultValue={question.options[optionIndex] ?? ""}
                     placeholder={`Alternativ ${optionIndex + 1}`}
                     aria-label={`Alternativ ${optionIndex + 1}`}
-                    className="h-10 flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none focus:border-zinc-400"
+                    className="min-h-tap flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none focus:border-zinc-400"
                   />
                 </div>
               ))}
@@ -94,7 +94,7 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
                 aria-label="Förklaring"
                 className={`${FIELD} font-mono text-sm`}
               />
-              <button type="submit" className="h-10 rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50">
+              <button type="submit" className="min-h-tap rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50">
                 Spara fråga
               </button>
             </form>
@@ -132,7 +132,7 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
           {[0, 1, 2, 3].map((optionIndex) => (
             <div key={optionIndex} className="flex items-center gap-2">
               <input type="radio" name="correctOption" value={optionIndex} defaultChecked={optionIndex === 0} aria-label={`Rätt svar ${optionIndex + 1}`} className="h-5 w-5" />
-              <input name={`option${optionIndex}`} placeholder={`Alternativ ${optionIndex + 1}`} aria-label={`Alternativ ${optionIndex + 1}`} className="h-10 flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none focus:border-zinc-400" />
+              <input name={`option${optionIndex}`} placeholder={`Alternativ ${optionIndex + 1}`} aria-label={`Alternativ ${optionIndex + 1}`} className="min-h-tap flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none focus:border-zinc-400" />
             </div>
           ))}
           <textarea name="explanation" rows={2} placeholder="Förklaring (valfri)" aria-label="Förklaring" className={`${FIELD} font-mono text-sm`} />

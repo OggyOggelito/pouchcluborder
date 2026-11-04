@@ -49,7 +49,7 @@ export default async function TeamSchedulePage({
           <p className="mt-2 font-mono text-xs text-red-800">{outcome.error}</p>
           <Link
             href="/team-schedule?refresh=1"
-            className="mt-3 inline-flex h-10 items-center rounded-xl border border-red-300 px-4 text-sm font-medium transition hover:bg-red-100"
+            className="mt-3 inline-flex min-h-tap items-center rounded-xl border border-red-300 px-4 text-sm font-medium transition hover:bg-red-100"
           >
             Försök igen
           </Link>
@@ -73,7 +73,7 @@ export default async function TeamSchedulePage({
         <h1 className="text-xl font-semibold tracking-tight">Teamschema</h1>
         <Link
           href={`/team-schedule?refresh=1${offDay ? `&off=${offDay.key}` : ""}`}
-          className="text-sm text-zinc-500 underline underline-offset-4 transition hover:text-zinc-900"
+          className="inline-flex min-h-tap items-center text-sm text-zinc-600 underline underline-offset-4 transition hover:text-zinc-900"
         >
           Uppdatera
         </Link>
@@ -190,7 +190,7 @@ export default async function TeamSchedulePage({
                         }`}
                       >
                         {isOff ? (
-                          <span className="text-xs font-medium text-zinc-400">Ledig</span>
+                          <span className="text-xs font-medium text-zinc-500">Ledig</span>
                         ) : (
                           shifts.map((shift) => (
                             <span
@@ -214,7 +214,7 @@ export default async function TeamSchedulePage({
         </div>
       )}
 
-      <p className="mt-4 text-xs text-zinc-400">
+      <p className="mt-4 text-xs text-zinc-500">
         Källa: {outcome.providerName}. Kontaktuppgifter kommer från våra egna konton.
       </p>
     </main>

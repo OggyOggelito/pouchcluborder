@@ -1,206 +1,491 @@
-import type { Role } from "@/lib/roles";
-import { canAccessAdmin, canPlaceOrders, canViewTeamSchedule } from "@/lib/roles";
+import type { FeatureKey, Features } from "@/lib/feature-keys";
+import { ROLES, type Role } from "@/lib/roles";
 
 /**
  * The one place routes are registered.
  *
- * There was no central navigation config before this — the header kept a
- * hardcoded array — so this file is new and SiteNav now reads it. Adding a
- * route means adding an entry here, not editing a component.
+ * Everything that renders navigation reads this file: the mobile bottom bar,
+ * the "Mer" sheet, the desktop sidebar, the admin hub and global search. A
+ * feature added later registers here and appears everywhere, in the right
+ * group, for the right roles.
  *
- * `visible` decides who sees the link. It is presentation only: hiding a link
- * is never the permission, and every page still checks on the server.
+ * Two rules this file does not break:
+ *
+ * 1. Visibility is not permission. Hiding a link never protects a route —
+ *    every page keeps its own server-side check, and a hidden entry stays
+ *    reachable by URL for whoever is allowed to open it.
+ * 2. A module with nothing in it hides rather than greys out. `feature` points
+ *    at a flag in src/lib/features.ts; an unconfigured or empty module simply
+ *    is not offered.
  */
+
+/** Sidebar and sheet sections, in the order they are rendered. */
+export const NAV_GROUPS = ["today", "shop", "me", "admin"] as const;
+export type NavGroup = (typeof NAV_GROUPS)[number];
+
+export const NAV_GROUP_LABELS: Record<NavGroup, string> = {
+  today: "Start",
+  shop: "I butiken",
+  me: "Mitt",
+  admin: "Admin",
+};
+
+/** Keys into the icon set in src/components/nav/NavIcon.tsx. */
+export type NavIconName =
+  | "today"
+  | "order"
+  | "guide"
+  | "news"
+  | "search"
+  | "notes"
+  | "issue"
+  | "request"
+  | "transfer"
+  | "routine"
+  | "checklist"
+  | "quiz"
+  | "schedule"
+  | "team"
+  | "history"
+  | "onboarding"
+  | "bell"
+  | "settings"
+  | "admin"
+  | "logout";
+
 export type NavEntry = {
   href: string;
   label: string;
-  /** Short description, used by the staff landing list. */
+  /** One line, used by the home page, the sheet and search results. */
   description?: string;
-  /** Where it appears. */
-  group: "staff" | "manager" | "admin";
-  /** Whether a signed-out visitor can reach it. */
+  /** Roles that may see it. A signed-out visitor sees `publicAccess` entries. */
+  roles: readonly Role[];
+  /** Hidden while this feature flag is false. */
+  feature?: FeatureKey;
+  group: NavGroup;
+  icon: NavIconName;
   publicAccess?: boolean;
-  /** Offer it in global search / landing lists. */
+  /** Offer it in global search's "Sidor" group. */
   searchable?: boolean;
   /**
-   * Show it in the desktop header bar rather than only behind the menu.
-   *
-   * There are thirteen destinations for a signed-in user now, which no header
-   * fits inline — so the bar carries the handful reached mid-shift and the
-   * menu carries everything.
+   * Slot in the mobile bottom bar, lowest first. At most four are rendered;
+   * everything else lives behind "Mer".
    */
-  primary?: boolean;
-  visible: (role: Role | null) => boolean;
+  bottomBar?: number;
 };
 
-const signedIn = (role: Role | null): role is Role => role !== null;
+const ALL_ROLES = ROLES;
+const MANAGERS = ["OWNER", "ADMIN"] as const;
+const ADMIN_ONLY = ["ADMIN"] as const;
 
 export const NAV_ENTRIES: NavEntry[] = [
   {
-    href: "/staff",
-    primary: true,
-    label: "Guide",
-    description: "Om varumärkena vi säljer.",
-    group: "staff",
-    publicAccess: true,
+    href: "/",
+    label: "Idag",
+    description: "Dagens pass, checklistor och nyheter.",
+    roles: ALL_ROLES,
+    group: "today",
+    icon: "today",
+    bottomBar: 1,
     searchable: true,
-    visible: () => true,
   },
   {
-    href: "/staff/finder",
-    primary: true,
-    label: "Produktsök",
-    description: "Hitta rätt produkt åt kunden.",
-    group: "staff",
-    publicAccess: true,
+    href: "/order",
+    label: "Beställ",
+    description: "Lägg en påfyllningsbeställning.",
+    roles: MANAGERS,
+    feature: "ordering",
+    group: "shop",
+    icon: "order",
+    bottomBar: 2,
     searchable: true,
-    visible: () => true,
+  },
+  {
+    href: "/staff",
+    label: "Guide",
+    description: "Om varumärkena vi säljer.",
+    roles: ALL_ROLES,
+    feature: "guide",
+    group: "shop",
+    icon: "guide",
+    publicAccess: true,
+    bottomBar: 3,
+    searchable: true,
   },
   {
     href: "/news",
-    primary: true,
     label: "Nyheter",
     description: "Nya produkter och butiksnyheter.",
-    group: "staff",
+    roles: ALL_ROLES,
+    feature: "news",
+    group: "shop",
+    icon: "news",
+    bottomBar: 4,
     searchable: true,
-    visible: signedIn,
+  },
+  {
+    href: "/staff/finder",
+    label: "Produktsök",
+    description: "Hitta rätt produkt åt kunden.",
+    roles: ALL_ROLES,
+    group: "shop",
+    icon: "search",
+    publicAccess: true,
+    searchable: true,
+  },
+  {
+    href: "/store/notes",
+    label: "Skiftanteckningar",
+    description: "Vad nästa skift behöver veta.",
+    roles: ALL_ROLES,
+    group: "shop",
+    icon: "notes",
+    searchable: true,
+  },
+  {
+    href: "/store/issues",
+    label: "Problemrapporter",
+    description: "Skadad vara, fel etikett, trasig utrustning.",
+    roles: ALL_ROLES,
+    group: "shop",
+    icon: "issue",
+    searchable: true,
   },
   {
     href: "/requests/new",
     label: "Kundönskemål",
     description: "Logga vad kunder frågar efter.",
-    group: "staff",
+    roles: ALL_ROLES,
+    group: "shop",
+    icon: "request",
     searchable: true,
-    visible: signedIn,
   },
   {
     href: "/transfers",
     label: "Överföringar",
     description: "Låna produkter mellan butiker.",
-    group: "staff",
+    roles: ALL_ROLES,
+    group: "shop",
+    icon: "transfer",
     searchable: true,
-    visible: signedIn,
-  },
-  {
-    href: "/store/notes",
-    primary: true,
-    label: "Anteckningar",
-    description: "Vad nästa skift behöver veta.",
-    group: "staff",
-    searchable: true,
-    visible: signedIn,
-  },
-  {
-    href: "/store/issues",
-    label: "Problem",
-    description: "Skadad vara, fel etikett, trasig utrustning.",
-    group: "staff",
-    searchable: true,
-    visible: signedIn,
   },
   {
     href: "/staff/routines",
-    primary: true,
     label: "Rutiner",
     description: "Hur vi gör saker i butik.",
-    group: "staff",
+    roles: ALL_ROLES,
+    feature: "routines",
+    group: "shop",
+    icon: "routine",
     searchable: true,
-    visible: signedIn,
+  },
+  {
+    href: "/orders",
+    label: "Tidigare beställningar",
+    description: "Beställningar butiken har skickat.",
+    roles: MANAGERS,
+    feature: "ordering",
+    group: "shop",
+    icon: "history",
+    searchable: true,
   },
   {
     href: "/staff/checklists",
     label: "Checklistor",
     description: "Öppning och stängning.",
-    group: "staff",
+    roles: ALL_ROLES,
+    feature: "checklists",
+    group: "me",
+    icon: "checklist",
     searchable: true,
-    visible: signedIn,
   },
   {
     href: "/staff/quizzes",
     label: "Quiz",
     description: "Testa dig själv.",
-    group: "staff",
+    roles: ALL_ROLES,
+    feature: "quizzes",
+    group: "me",
+    icon: "quiz",
     searchable: true,
-    visible: signedIn,
+  },
+  {
+    href: "/my-schedule",
+    label: "Mitt schema",
+    description: "Dina pass de närmaste 14 dagarna.",
+    roles: ALL_ROLES,
+    feature: "schedule",
+    group: "me",
+    icon: "schedule",
+    searchable: true,
+  },
+  {
+    href: "/team-schedule",
+    label: "Teamets schema",
+    description: "Vem jobbar och vem är ledig i regionen.",
+    roles: MANAGERS,
+    feature: "schedule",
+    group: "me",
+    icon: "team",
+    searchable: true,
   },
   {
     href: "/my-onboarding",
     label: "Introduktion",
     description: "Din egen introduktion.",
-    group: "staff",
+    roles: ALL_ROLES,
+    feature: "checklists",
+    group: "me",
+    icon: "onboarding",
     searchable: true,
-    visible: signedIn,
   },
   {
     href: "/notifications",
     label: "Aviseringar",
-    description: "Vad som hänt med dina överföringar.",
-    group: "staff",
+    description: "Vad som hänt i dina ärenden.",
+    roles: ALL_ROLES,
+    group: "me",
+    icon: "bell",
     searchable: true,
-    visible: signedIn,
   },
   {
-    href: "/my-schedule",
-    primary: true,
-    label: "Schema",
-    description: "Dina pass de närmaste 14 dagarna.",
-    group: "staff",
+    href: "/settings",
+    label: "Inställningar",
+    description: "Ditt konto och dina butiker.",
+    roles: ALL_ROLES,
+    group: "me",
+    icon: "settings",
     searchable: true,
-    visible: signedIn,
-  },
-  {
-    href: "/team-schedule",
-    label: "Team",
-    description: "Vem jobbar och vem är ledig i regionen.",
-    group: "manager",
-    searchable: true,
-    visible: (role) => signedIn(role) && canViewTeamSchedule(role),
-  },
-  {
-    href: "/orders",
-    label: "Tidigare",
-    description: "Tidigare beställningar.",
-    group: "manager",
-    searchable: true,
-    visible: (role) => signedIn(role) && canPlaceOrders(role),
   },
   {
     href: "/admin",
-    primary: true,
     label: "Admin",
+    description: "Beställningar, sortiment, innehåll och personal.",
+    roles: ADMIN_ONLY,
     group: "admin",
-    visible: (role) => signedIn(role) && canAccessAdmin(role),
+    icon: "admin",
+    searchable: true,
   },
 ];
 
-/** Admin sub-pages, listed on /admin and in search for admins only. */
-export const ADMIN_ENTRIES: NavEntry[] = [
-  { href: "/admin/requests", label: "Kundönskemål", description: "Rankad efterfrågan per butik.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
-  { href: "/admin/transfers", label: "Överföringar", description: "Alla överföringar mellan butiker.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
-  { href: "/admin/issues", label: "Problemrapporter", description: "Kö, filter och tilldelning.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
-  { href: "/admin/routines", label: "Rutiner", description: "Skriv rutiner och hantera kategorier.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
-  { href: "/admin/brands", label: "Varumärken", description: "Innehåll på varumärkessidorna.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
-  { href: "/admin/checklists", label: "Checklistor", description: "Mallar och dagens status.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
-  { href: "/admin/quizzes", label: "Quiz", description: "Frågor och resultat.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
-  { href: "/admin/flavor-tags", label: "Utan smakgrupp", description: "Sortera produkter som ingen regel träffade.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
-  { href: "/admin/users", label: "Konton", description: "Skapa konton och koppla butiker.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
-  { href: "/admin/schedule", label: "Schema", description: "Importera pass.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
-  { href: "/admin/announcements", label: "Nyheter", description: "Skriv och publicera.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
-  { href: "/admin/tooeasy", label: "TooEasy", description: "Schemakoppling och status.", group: "admin", searchable: true, visible: (role) => signedIn(role) && canAccessAdmin(role) },
+// ---------------------------------------------------------------------------
+// Admin hub
+// ---------------------------------------------------------------------------
+
+/** The jobs an admin page belongs to, in hub order. */
+export const ADMIN_SECTIONS = ["orders", "catalog", "content", "people", "integrations"] as const;
+export type AdminSection = (typeof ADMIN_SECTIONS)[number];
+
+export const ADMIN_SECTION_LABELS: Record<AdminSection, string> = {
+  orders: "Beställningar och efterfrågan",
+  catalog: "Sortiment",
+  content: "Innehåll",
+  people: "Personal och behörigheter",
+  integrations: "Integrationer",
+};
+
+export type AdminEntry = {
+  href: string;
+  label: string;
+  description: string;
+  section: AdminSection;
+  /**
+   * Which "behöver åtgärd" count belongs on this card, if any. Resolved in
+   * src/lib/repositories/admin-counts.ts — a key rather than a number so this
+   * file stays a plain config with no queries in it.
+   */
+  actionCount?: "openIssues" | "newRequests" | "openTransfers" | "needsReview" | "draftContent";
+  searchable?: boolean;
+};
+
+export const ADMIN_ENTRIES: AdminEntry[] = [
+  {
+    href: "/admin/requests",
+    label: "Kundönskemål",
+    description: "Rankad efterfrågan per butik.",
+    section: "orders",
+    actionCount: "newRequests",
+    searchable: true,
+  },
+  {
+    href: "/admin/transfers",
+    label: "Överföringar",
+    description: "Alla överföringar mellan butiker.",
+    section: "orders",
+    actionCount: "openTransfers",
+    searchable: true,
+  },
+  {
+    href: "/admin/issues",
+    label: "Problemrapporter",
+    description: "Kö, filter och tilldelning.",
+    section: "orders",
+    actionCount: "openIssues",
+    searchable: true,
+  },
+  {
+    href: "/admin/review",
+    label: "Granskningskö",
+    description: "Produkter importen inte kunde tolka säkert.",
+    section: "catalog",
+    actionCount: "needsReview",
+    searchable: true,
+  },
+  {
+    href: "/admin/flavor-tags",
+    label: "Utan smakgrupp",
+    description: "Sortera produkter som ingen regel träffade.",
+    section: "catalog",
+    searchable: true,
+  },
+  {
+    href: "/admin/brands",
+    label: "Varumärken",
+    description: "Innehåll på varumärkessidorna.",
+    section: "content",
+    actionCount: "draftContent",
+    searchable: true,
+  },
+  {
+    href: "/admin/routines",
+    label: "Rutiner",
+    description: "Skriv rutiner och hantera kategorier.",
+    section: "content",
+    searchable: true,
+  },
+  {
+    href: "/admin/announcements",
+    label: "Nyheter",
+    description: "Skriv och publicera.",
+    section: "content",
+    searchable: true,
+  },
+  {
+    href: "/admin/checklists",
+    label: "Checklistor",
+    description: "Mallar och dagens status.",
+    section: "content",
+    searchable: true,
+  },
+  {
+    href: "/admin/quizzes",
+    label: "Quiz",
+    description: "Frågor och resultat.",
+    section: "content",
+    searchable: true,
+  },
+  {
+    href: "/admin/users",
+    label: "Konton",
+    description: "Skapa konton och koppla butiker.",
+    section: "people",
+    searchable: true,
+  },
+  {
+    href: "/admin/schedule",
+    label: "Schema",
+    description: "Importera pass.",
+    section: "people",
+    searchable: true,
+  },
+  {
+    href: "/admin/tooeasy",
+    label: "TooEasy",
+    description: "Schemakoppling och status.",
+    section: "integrations",
+    searchable: true,
+  },
 ];
 
-export function navFor(role: Role | null): NavEntry[] {
-  return NAV_ENTRIES.filter((entry) => entry.visible(role));
+// ---------------------------------------------------------------------------
+// Selection
+// ---------------------------------------------------------------------------
+
+/** Whether a role may see an entry at all, ignoring feature flags. */
+export function roleMaySee(entry: NavEntry, role: Role | null): boolean {
+  if (role === null) return entry.publicAccess === true;
+  return entry.roles.includes(role);
 }
 
-/** The subset the desktop header bar shows; the menu still lists everything. */
-export function primaryNavFor(role: Role | null): NavEntry[] {
-  return navFor(role).filter((entry) => entry.primary);
+function featureOn(entry: NavEntry, features: Features | null): boolean {
+  if (!entry.feature) return true;
+  if (!features) return true;
+  return features[entry.feature];
 }
 
-/** Everything a role may reach — the basis for a future global search. */
-export function searchableFor(role: Role | null): NavEntry[] {
-  return [...NAV_ENTRIES, ...ADMIN_ENTRIES].filter(
-    (entry) => entry.searchable && entry.visible(role)
-  );
+/** Everything this user should be offered, in config order. */
+export function navFor(role: Role | null, features: Features | null = null): NavEntry[] {
+  return NAV_ENTRIES.filter((entry) => roleMaySee(entry, role) && featureOn(entry, features));
+}
+
+/** The mobile bottom bar: at most four, by slot. */
+export function bottomBarFor(role: Role | null, features: Features | null = null): NavEntry[] {
+  return navFor(role, features)
+    .filter((entry) => entry.bottomBar !== undefined)
+    .sort((a, b) => (a.bottomBar ?? 0) - (b.bottomBar ?? 0))
+    .slice(0, 4);
+}
+
+/** Grouped, for the sidebar and the "Mer" sheet. Empty groups are dropped. */
+export function groupedNavFor(
+  role: Role | null,
+  features: Features | null = null
+): { group: NavGroup; label: string; entries: NavEntry[] }[] {
+  const visible = navFor(role, features);
+  return NAV_GROUPS.map((group) => ({
+    group,
+    label: NAV_GROUP_LABELS[group],
+    entries: visible.filter((entry) => entry.group === group),
+  })).filter((section) => section.entries.length > 0);
+}
+
+/** Admin hub cards, grouped by job. */
+export function adminSections(): { section: AdminSection; label: string; entries: AdminEntry[] }[] {
+  return ADMIN_SECTIONS.map((section) => ({
+    section,
+    label: ADMIN_SECTION_LABELS[section],
+    entries: ADMIN_ENTRIES.filter((entry) => entry.section === section),
+  })).filter((group) => group.entries.length > 0);
+}
+
+/** Pages global search may offer. */
+export function searchablePagesFor(
+  role: Role | null,
+  features: Features | null = null
+): { href: string; label: string; description?: string }[] {
+  const pages = navFor(role, features)
+    .filter((entry) => entry.searchable)
+    .map((entry) => ({ href: entry.href, label: entry.label, description: entry.description }));
+
+  if (role === "ADMIN") {
+    pages.push(
+      ...ADMIN_ENTRIES.filter((entry) => entry.searchable).map((entry) => ({
+        href: entry.href,
+        label: `Admin · ${entry.label}`,
+        description: entry.description,
+      }))
+    );
+  }
+  return pages;
+}
+
+/**
+ * Which nav entry a pathname belongs to, for the active state.
+ *
+ * Longest matching href wins, so /store/issues/new highlights
+ * "Problemrapporter" rather than falling through. "/" only ever matches
+ * exactly, or it would own every path in the app.
+ */
+export function activeHref(pathname: string, entries: NavEntry[]): string | null {
+  let best: string | null = null;
+  for (const entry of entries) {
+    const matches =
+      entry.href === "/"
+        ? pathname === "/"
+        : pathname === entry.href || pathname.startsWith(`${entry.href}/`);
+    if (matches && (best === null || entry.href.length > best.length)) {
+      best = entry.href;
+    }
+  }
+  return best;
 }

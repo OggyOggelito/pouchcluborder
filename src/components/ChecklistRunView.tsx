@@ -57,14 +57,14 @@ export default function ChecklistRunView({ run }: { run: RunView }) {
                 <input type="hidden" name="checked" value={checked ? "0" : "1"} />
                 <button
                   type="submit"
-                  className="flex w-full items-start gap-3 text-left"
+                  className="flex min-h-tap w-full items-start gap-3 py-1 text-left"
                   aria-pressed={checked}
                 >
                   <span
                     aria-hidden
                     className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg border-2 text-sm font-bold ${
                       checked
-                        ? "border-brand-600 bg-brand-600 text-white"
+                        ? "border-brand-700 bg-brand-700 text-white"
                         : "border-zinc-300 text-transparent"
                     }`}
                   >
@@ -110,11 +110,11 @@ export default function ChecklistRunView({ run }: { run: RunView }) {
                   defaultValue={item.note ?? ""}
                   placeholder="Anteckning (valfritt)"
                   aria-label={`Anteckning för ${item.title}`}
-                  className="h-10 flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none transition focus:border-zinc-400"
+                  className="min-h-tap flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none transition focus:border-zinc-400"
                 />
                 <button
                   type="submit"
-                  className="h-10 shrink-0 rounded-xl border border-zinc-200 px-3 text-sm font-medium transition hover:bg-zinc-50"
+                  className="min-h-tap shrink-0 rounded-xl border border-zinc-200 px-3 text-sm font-medium transition hover:bg-zinc-50"
                 >
                   Spara
                 </button>

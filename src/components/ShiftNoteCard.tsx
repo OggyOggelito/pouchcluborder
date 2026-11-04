@@ -1,3 +1,4 @@
+import ConfirmButton from "@/components/ui/ConfirmButton";
 import { archiveNoteAction, deleteNoteAction, toggleTodoAction } from "@/lib/note-actions";
 import { formatDateTime } from "@/lib/format";
 import { NOTE_CATEGORY_LABELS } from "@/lib/shift-notes";
@@ -58,7 +59,7 @@ export default function ShiftNoteCard({
 
       <p
         className={`mt-2 whitespace-pre-wrap text-[17px] leading-relaxed ${
-          resolved ? "text-zinc-400 line-through" : "text-zinc-800"
+          resolved ? "text-zinc-500 line-through" : "text-zinc-800"
         }`}
       >
         {note.text}
@@ -109,7 +110,7 @@ export default function ShiftNoteCard({
               <input type="hidden" name="restore" value={archived ? "1" : "0"} />
               <button
                 type="submit"
-                className="h-10 rounded-xl border border-zinc-200 px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+                className="min-h-tap rounded-xl border border-zinc-200 px-4 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
               >
                 {archived ? "Återställ" : "Arkivera"}
               </button>
@@ -118,12 +119,14 @@ export default function ShiftNoteCard({
           {canDelete ? (
             <form action={deleteNoteAction}>
               <input type="hidden" name="id" value={note.id} />
-              <button
-                type="submit"
-                className="h-10 rounded-xl border border-red-200 px-4 text-sm font-medium text-red-700 transition hover:bg-red-50"
+              <ConfirmButton
+                title="Ta bort anteckningen?"
+                body="Den försvinner för alla och går inte att få tillbaka. Arkivera i stället om den bara ska bort ur flödet."
+                confirmLabel="Ta bort"
+                className="min-h-tap rounded-xl border border-red-200 px-4 text-sm font-medium text-red-700 transition hover:bg-red-50"
               >
                 Ta bort
-              </button>
+              </ConfirmButton>
             </form>
           ) : null}
         </div>

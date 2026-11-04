@@ -156,7 +156,7 @@ export default function ProductFinder({ products }: { products: FinderProduct[] 
                   </p>
                 ) : null}
 
-                <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-400">
+                <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500">
                   {product.category ? <span>{categoryLabel(product.category)}</span> : null}
                   {parseTags(product.flavorTags).map((tag) => (
                     <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-zinc-600">
@@ -196,7 +196,7 @@ function FilterRow({
 
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{label}</p>
       <div className="mt-1 flex gap-2 overflow-x-auto pb-1">
         <Chip active={value === null} onClick={() => onChange(null)}>
           Alla
@@ -229,7 +229,7 @@ function Chip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`h-10 shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition ${
+      className={`min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition ${
         active
           ? "border-zinc-900 bg-zinc-900 text-white"
           : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"

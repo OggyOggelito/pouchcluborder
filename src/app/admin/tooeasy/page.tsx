@@ -16,7 +16,7 @@ import { requireAdmin } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 const SELECT =
-  "h-10 w-full rounded-xl border border-zinc-200 bg-white px-2 text-sm outline-none transition focus:border-zinc-400";
+  "min-h-tap w-full rounded-xl border border-zinc-200 bg-white px-2 text-sm outline-none transition focus:border-zinc-400";
 
 export default async function TooEasyMappingPage() {
   await requireAdmin();
@@ -117,7 +117,7 @@ export default async function TooEasyMappingPage() {
           />
           <Row label="Kopplingar" value={`${mappedUsers}/${users.length} konton, ${mappedStores}/${stores.length} butiker`} />
         </dl>
-        <p className="mt-3 text-xs text-zinc-400">
+        <p className="mt-3 text-xs text-zinc-500">
           Statusen gäller den här serverprocessen och nollställs vid omstart. Inga hemligheter
           eller personuppgifter lagras här.
         </p>
@@ -243,7 +243,7 @@ export default async function TooEasyMappingPage() {
                   <li key={option.employeeId} className="text-zinc-600">
                     {option.displayName}{" "}
                     <code className="font-mono text-xs">{option.employeeId}</code>
-                    {option.inactive ? <span className="text-zinc-400"> (inaktiv)</span> : null}
+                    {option.inactive ? <span className="text-zinc-500"> (inaktiv)</span> : null}
                   </li>
                 ))}
               </ul>

@@ -159,7 +159,7 @@ export default function RoutineEditor({
         <button
           type="submit"
           disabled={pending}
-          className="h-12 flex-1 rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-400"
+          className="h-12 flex-1 rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
         >
           {pending ? "Sparar…" : "Spara"}
         </button>

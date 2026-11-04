@@ -78,7 +78,7 @@ export default async function AdminQuizzesPage() {
                   {quiz.questionCount} frågor{quiz.brandName ? ` · ${quiz.brandName}` : ""}
                 </span>
               </span>
-              <span aria-hidden className="text-zinc-400">›</span>
+              <span aria-hidden className="text-zinc-500">›</span>
             </Link>
           </li>
         ))}

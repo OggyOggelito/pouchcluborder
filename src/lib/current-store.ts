@@ -21,11 +21,24 @@ export type StoreResolution =
  * With several, the remembered cookie is honoured only if it names a store the
  * user still has access to, so a revoked store cannot linger on a device.
  */
-export async function resolveOrderingStore(user: UserRecord): Promise<StoreResolution> {
+export async function resolveOrderingStore(
+  user: UserRecord,
+  /**
+   * An explicit store from the URL, e.g. the home page's "Fortsätt
+   * beställning" card. Honoured only when the account actually reaches it, so
+   * it narrows the choice and can never widen it.
+   */
+  requestedStoreId?: string | null
+): Promise<StoreResolution> {
   const choices = await storesForUser(user);
 
   if (choices.length === 0) return { kind: "none" };
   if (choices.length === 1) return { kind: "store", store: choices[0], choices };
+
+  const requested = requestedStoreId
+    ? choices.find((store) => store.id === requestedStoreId)
+    : undefined;
+  if (requested) return { kind: "store", store: requested, choices };
 
   const jar = await cookies();
   const remembered = jar.get(STORE_COOKIE)?.value;

@@ -4,9 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import QuantityInput from "@/components/QuantityInput";
+import TermHint from "@/components/ui/TermHint";
+import Toast from "@/components/ui/Toast";
 import { formatNumber, formatSek } from "@/lib/format";
 import { brandVariants, filterCatalog, groupCatalog } from "@/lib/grouping";
 import { categoryLabel } from "@/lib/categories";
+import { saveDraftAction } from "@/lib/draft-actions";
+import { pruneToCatalog, type DraftLines } from "@/lib/order-drafts";
+import { countOf, termFor } from "@/lib/terms";
 import type { CatalogProduct } from "@/lib/repositories/products";
 import type { StoreSummary } from "@/lib/repositories/stores";
 import { forgetStore } from "@/lib/store-selection";
@@ -16,79 +21,207 @@ function formatMg(value: number): string {
   return value.toLocaleString("sv-SE", { maximumFractionDigits: 2 });
 }
 
-type Quantities = Record<string, number>;
-
 type Submitted = { id: string; totalQuantity: number; totalSek: number };
+
+type SaveState =
+  | { kind: "idle" }
+  | { kind: "saving" }
+  | { kind: "saved" }
+  | { kind: "retrying" }
+  | { kind: "conflict" };
+
+/** A second after the last change, as the brief asks. */
+const AUTOSAVE_DELAY_MS = 1000;
+const RETRY_DELAY_MS = 5000;
 
 export default function OrderForm({
   store,
   products,
   canSwitchStore = false,
+  initialDraft,
 }: {
   store: StoreSummary;
   products: CatalogProduct[];
   /** False when the account only reaches one store — switching would dead-end. */
   canSwitchStore?: boolean;
+  /** The server-side draft for this user and store, if there is one. */
+  initialDraft: { lines: DraftLines; note: string; version: number } | null;
 }) {
   const router = useRouter();
-  const draftKey = `pc_draft_${store.id}`;
+  const localKey = `pc_draft_${store.id}`;
+  const categoryKey = "pc.lastCategory";
 
-  const [quantities, setQuantities] = useState<Quantities>({});
+  const [quantities, setQuantities] = useState<DraftLines>(() => initialDraft?.lines ?? {});
+  const [note, setNote] = useState(() => initialDraft?.note ?? "");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   const [openBrands, setOpenBrands] = useState<Set<string>>(() => new Set());
-  const [note, setNote] = useState("");
+  const [onlySelected, setOnlySelected] = useState(false);
+  const [step, setStep] = useState<"pick" | "review">("pick");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState<Submitted | null>(null);
-  const draftLoaded = useRef(false);
+  const [saveState, setSaveState] = useState<SaveState>({ kind: "idle" });
+  const [toast, setToast] = useState<string | null>(null);
 
-  // Categories present in the catalog, in catalog order, for the filter chips.
+  const version = useRef(initialDraft?.version ?? 0);
+  const hydrated = useRef(false);
+
+  const priceById = useMemo(
+    () => new Map(products.map((product) => [product.id, product.pricePerStock])),
+    [products]
+  );
+
   const categories = useMemo(() => {
     const seen = new Set<string>();
     for (const product of products) if (product.category) seen.add(product.category);
     return [...seen];
   }, [products]);
 
-  const groups = useMemo(
-    () => groupCatalog(category ? products.filter((p) => p.category === category) : products),
-    [products, category]
-  );
-  const visibleGroups = useMemo(() => filterCatalog(groups, query), [groups, query]);
-  const priceById = useMemo(
-    () => new Map(products.map((product) => [product.id, product.pricePerStock])),
-    [products]
-  );
+  // ---------------------------------------------------------------------
+  // Draft: server first, local storage as the safety net
+  // ---------------------------------------------------------------------
 
-  // Restore an unsent draft (accidental reload, phone locking, tab eviction).
+  /**
+   * On first mount, take whatever the local copy holds if the server had
+   * nothing. That is the "the save failed and then the phone locked" case:
+   * the lines never reached the server, so the server draft is empty and the
+   * local one is the only record of the work.
+   */
+  useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
+
+    if (initialDraft && Object.keys(initialDraft.lines).length > 0) return;
+
+    try {
+      const raw = window.localStorage.getItem(localKey);
+      if (!raw) return;
+      const parsed: unknown = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return;
+
+      const { lines, dropped } = pruneToCatalog(
+        parsed as DraftLines,
+        products.map((product) => product.id)
+      );
+      if (Object.keys(lines).length === 0) return;
+
+      setQuantities(lines);
+      setToast(
+        dropped > 0
+          ? `Återställde din påbörjade beställning. ${dropped} rad(er) finns inte kvar i katalogen.`
+          : "Återställde din påbörjade beställning."
+      );
+    } catch {
+      // Corrupt or blocked storage — start from an empty order.
+    }
+  }, [initialDraft, localKey, products]);
+
+  // The local copy is written on every change, synchronously, so it is there
+  // even if the tab dies before the debounced server save fires.
+  useEffect(() => {
+    if (!hydrated.current) return;
+    try {
+      if (Object.keys(quantities).length === 0) window.localStorage.removeItem(localKey);
+      else window.localStorage.setItem(localKey, JSON.stringify(quantities));
+    } catch {
+      // A draft is a convenience and never a blocker.
+    }
+  }, [localKey, quantities]);
+
+  // Last category, so the next order opens where the last one did.
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(draftKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Quantities;
-        const valid: Quantities = {};
-        for (const [productId, quantity] of Object.entries(parsed)) {
-          if (priceById.has(productId) && Number.isInteger(quantity) && quantity > 0) {
-            valid[productId] = quantity;
-          }
+      const saved = window.localStorage.getItem(categoryKey);
+      if (saved && categories.includes(saved)) setCategory(saved);
+    } catch {
+      // Ignore.
+    }
+    // Categories are derived from the catalog and stable for a session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const chooseCategory = useCallback((next: string | null) => {
+    setCategory(next);
+    try {
+      if (next) window.localStorage.setItem(categoryKey, next);
+      else window.localStorage.removeItem(categoryKey);
+    } catch {
+      // Ignore.
+    }
+  }, []);
+
+  /** One autosave attempt. Shared by the debounce and the retry timer. */
+  const persist = useCallback(
+    async (lines: DraftLines, currentNote: string) => {
+      setSaveState({ kind: "saving" });
+      try {
+        const result = await saveDraftAction({
+          storeId: store.id,
+          lines,
+          note: currentNote,
+          clientVersion: version.current,
+        });
+
+        if (result.kind === "saved") {
+          version.current = result.version;
+          setSaveState({ kind: "saved" });
+          return;
         }
-        if (Object.keys(valid).length > 0) setQuantities(valid);
+        if (result.kind === "conflict") {
+          setSaveState({ kind: "conflict" });
+          return;
+        }
+        setSaveState({ kind: "retrying" });
+      } catch {
+        // Offline, or the server is unreachable. The local copy still holds
+        // the work; say so plainly and try again shortly.
+        setSaveState({ kind: "retrying" });
       }
-    } catch {
-      // Corrupt or unavailable storage — start from an empty order.
-    }
-    draftLoaded.current = true;
-  }, [draftKey, priceById]);
+    },
+    [store.id]
+  );
 
+  // Debounced autosave.
   useEffect(() => {
-    if (!draftLoaded.current) return;
-    try {
-      if (Object.keys(quantities).length === 0) window.localStorage.removeItem(draftKey);
-      else window.localStorage.setItem(draftKey, JSON.stringify(quantities));
-    } catch {
-      // Draft persistence is a convenience, never a blocker.
-    }
-  }, [draftKey, quantities]);
+    if (!hydrated.current) return;
+    if (saveState.kind === "conflict") return;
+
+    const timer = setTimeout(() => {
+      void persist(quantities, note);
+    }, AUTOSAVE_DELAY_MS);
+
+    return () => clearTimeout(timer);
+    // saveState is deliberately not a dependency: it changes as a *result* of
+    // saving, and depending on it would restart the timer on every save.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quantities, note, persist]);
+
+  // Retry loop for a failed save.
+  useEffect(() => {
+    if (saveState.kind !== "retrying") return;
+    const timer = setTimeout(() => {
+      void persist(quantities, note);
+    }, RETRY_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [saveState, persist, quantities, note]);
+
+  // ---------------------------------------------------------------------
+  // Derived catalog
+  // ---------------------------------------------------------------------
+
+  const selectedIds = useMemo(
+    () => new Set(Object.keys(quantities).filter((id) => (quantities[id] ?? 0) > 0)),
+    [quantities]
+  );
+
+  const groups = useMemo(() => {
+    let scope = category ? products.filter((p) => p.category === category) : products;
+    if (onlySelected) scope = scope.filter((product) => selectedIds.has(product.id));
+    return groupCatalog(scope);
+  }, [products, category, onlySelected, selectedIds]);
+
+  const visibleGroups = useMemo(() => filterCatalog(groups, query), [groups, query]);
 
   const totals = useMemo(() => {
     let totalQuantity = 0;
@@ -100,6 +233,20 @@ export default function OrderForm({
     }
     return { totalQuantity, totalSek: Math.round(totalSek * 100) / 100 };
   }, [quantities, priceById]);
+
+  /** The chosen lines, grouped by brand, for the review screen. */
+  const chosen = useMemo(() => {
+    const byBrand = new Map<string, CatalogProduct[]>();
+    for (const product of products) {
+      if (!selectedIds.has(product.id)) continue;
+      const list = byBrand.get(product.brand) ?? [];
+      list.push(product);
+      byBrand.set(product.brand, list);
+    }
+    return [...byBrand.entries()]
+      .sort(([a], [b]) => a.localeCompare(b, "sv"))
+      .map(([brand, items]) => ({ brand, items }));
+  }, [products, selectedIds]);
 
   const setQuantity = useCallback((productId: string, next: number) => {
     setQuantities((current) => {
@@ -162,7 +309,15 @@ export default function OrderForm({
       setQuantities({});
       setNote("");
       setQuery("");
-      setCategory(null);
+      setOnlySelected(false);
+      setStep("pick");
+      version.current = 0;
+      setSaveState({ kind: "idle" });
+      try {
+        window.localStorage.removeItem(localKey);
+      } catch {
+        // Ignore.
+      }
       window.scrollTo({ top: 0 });
       router.refresh();
     } catch (cause) {
@@ -182,22 +337,42 @@ export default function OrderForm({
     );
   }
 
+  if (step === "review") {
+    return (
+      <ReviewStep
+        chosen={chosen}
+        quantities={quantities}
+        note={note}
+        onNote={setNote}
+        onQuantity={setQuantity}
+        totals={totals}
+        storeName={store.name}
+        saving={saving}
+        error={error}
+        onBack={() => setStep("pick")}
+        onSubmit={submitOrder}
+      />
+    );
+  }
+
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-40 pt-4">
+    <main className="mx-auto max-w-3xl px-4 pb-44 pt-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h1 className="text-xl font-semibold tracking-tight">{store.name}</h1>
         {canSwitchStore ? (
           <button
             type="button"
             onClick={changeStore}
-            className="text-sm text-zinc-500 underline underline-offset-4 transition hover:text-zinc-900"
+            className="min-h-11 text-sm text-zinc-600 underline underline-offset-4 transition hover:text-zinc-900"
           >
             Byt butik
           </button>
         ) : null}
       </div>
 
-      <div className="sticky top-[57px] z-20 -mx-4 bg-zinc-50/95 px-4 pb-3 pt-3 backdrop-blur">
+      <DraftStatus state={saveState} onKeepMine={() => void persist(quantities, note)} />
+
+      <div className="sticky top-[53px] z-20 -mx-4 bg-zinc-50/95 px-4 pb-3 pt-3 backdrop-blur">
         <div className="relative">
           <input
             type="search"
@@ -205,48 +380,60 @@ export default function OrderForm({
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Sök märke eller smak…"
             aria-label="Sök märke eller smak"
-            className="h-12 w-full rounded-2xl border border-zinc-200 bg-white pl-4 pr-10 text-base outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="h-12 w-full rounded-2xl border border-zinc-200 bg-white pl-4 pr-12 text-base outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
           />
           {query ? (
             <button
               type="button"
               onClick={() => setQuery("")}
               aria-label="Rensa sökning"
-              className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+              className="absolute right-1 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full text-zinc-600 transition hover:bg-zinc-100"
             >
-              ✕
+              <span aria-hidden>✕</span>
             </button>
           ) : null}
         </div>
 
-        {categories.length > 1 ? (
-          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-            <CategoryChip active={category === null} onClick={() => setCategory(null)}>
-              Alla
-            </CategoryChip>
-            {categories.map((name) => (
-              <CategoryChip
-                key={name}
-                active={category === name}
-                onClick={() => setCategory(category === name ? null : name)}
-              >
-                {categoryLabel(name)}
+        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+          {categories.length > 1 ? (
+            <>
+              <CategoryChip active={category === null} onClick={() => chooseCategory(null)}>
+                Alla
               </CategoryChip>
-            ))}
-          </div>
-        ) : null}
+              {categories.map((name) => (
+                <CategoryChip
+                  key={name}
+                  active={category === name}
+                  onClick={() => chooseCategory(category === name ? null : name)}
+                >
+                  {categoryLabel(name)}
+                </CategoryChip>
+              ))}
+            </>
+          ) : null}
+
+          {selectedIds.size > 0 ? (
+            <CategoryChip active={onlySelected} onClick={() => setOnlySelected((on) => !on)}>
+              Visa bara valda ({selectedIds.size})
+            </CategoryChip>
+          ) : null}
+        </div>
       </div>
 
       {visibleGroups.length === 0 ? (
-        <p className="mt-10 text-center text-zinc-500">
-          Inga produkter matchar <span className="font-medium text-zinc-700">”{query}”</span>.
+        <p className="mt-10 text-center text-zinc-600">
+          {onlySelected
+            ? "Inget valt matchar sökningen."
+            : query.trim()
+              ? `Inga produkter matchar ”${query}”.`
+              : "Inga produkter i katalogen."}
         </p>
       ) : null}
 
       <ul className="mt-1 space-y-2">
         {visibleGroups.map((group) => {
           const brandQuantity = quantityInBrand(group.brand);
-          const expanded = query.trim().length > 0 || openBrands.has(group.brand);
+          const expanded = query.trim().length > 0 || onlySelected || openBrands.has(group.brand);
 
           return (
             <li
@@ -257,27 +444,24 @@ export default function OrderForm({
                 type="button"
                 onClick={() => toggleBrand(group.brand)}
                 aria-expanded={expanded}
-                className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-zinc-50"
+                className="flex min-h-tap w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-zinc-50"
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="truncate text-base font-semibold">{group.brand}</span>
                   {group.categories.length === 1 && group.categories[0].category ? (
-                    <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
+                    <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700">
                       {categoryLabel(group.categories[0].category)}
                     </span>
                   ) : null}
                   {brandQuantity > 0 ? (
-                    <span className="shrink-0 rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white">
+                    <span className="shrink-0 rounded-full bg-brand-700 px-2 py-0.5 text-xs font-semibold text-white">
                       {brandQuantity}
                     </span>
                   ) : null}
                 </span>
-                <span className="flex items-center gap-2 text-sm text-zinc-400">
+                <span className="flex items-center gap-2 text-sm text-zinc-600">
                   <span>{group.variantCount}</span>
-                  <span
-                    aria-hidden
-                    className={`transition-transform ${expanded ? "rotate-90" : ""}`}
-                  >
+                  <span aria-hidden className={`transition-transform ${expanded ? "rotate-90" : ""}`}>
                     ›
                   </span>
                 </span>
@@ -288,17 +472,14 @@ export default function OrderForm({
                   {group.categories.map((categoryGroup) => (
                     <div key={categoryGroup.key}>
                       {group.categories.length > 1 && categoryGroup.category ? (
-                        <p className="bg-zinc-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        <p className="bg-zinc-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-600">
                           {categoryLabel(categoryGroup.category)}
                         </p>
                       ) : null}
 
                       {categoryGroup.flavors.map((flavorGroup) => (
-                        <div
-                          key={flavorGroup.key}
-                          className="border-b border-zinc-100 last:border-b-0"
-                        >
-                          <p className="px-4 pt-3 text-sm font-medium text-zinc-500">
+                        <div key={flavorGroup.key} className="border-b border-zinc-100 last:border-b-0">
+                          <p className="px-4 pt-3 text-sm font-medium text-zinc-600">
                             {flavorGroup.flavor}
                           </p>
                           <ul>
@@ -312,7 +493,7 @@ export default function OrderForm({
                                     {variant.strength ? (
                                       <>
                                         <span className="font-medium">{variant.strength}</span>
-                                        <span className="text-zinc-400"> · </span>
+                                        <span className="text-zinc-500"> · </span>
                                       </>
                                     ) : variant.nicotineMgPerPortion !== null ? (
                                       <>
@@ -320,30 +501,30 @@ export default function OrderForm({
                                             EAN — so it is marked rather than shown
                                             as if the supplier had stated it. */}
                                         <span
-                                          className="font-medium text-zinc-500"
+                                          className="font-medium text-zinc-600"
                                           title="Nikotinhalt från snusbolaget.se, matchad på EAN"
                                         >
                                           ~{formatMg(variant.nicotineMgPerPortion)} mg
                                         </span>
-                                        <span className="text-zinc-400"> · </span>
+                                        <span className="text-zinc-500"> · </span>
                                       </>
                                     ) : null}
                                     <span
                                       className={
                                         variant.strength || variant.nicotineMgPerPortion !== null
-                                          ? "text-zinc-600"
+                                          ? "text-zinc-700"
                                           : "font-medium"
                                       }
                                     >
                                       {variant.format}
                                     </span>
                                     {!variant.strength && variant.nicotineMgPerPortion === null ? (
-                                      <span className="text-zinc-400"> · styrka saknas</span>
+                                      <span className="text-zinc-600"> · styrka saknas</span>
                                     ) : null}
                                   </p>
-                                  <p className="text-sm text-zinc-400">
+                                  <p className="text-sm text-zinc-600">
                                     {variant.pricePerStock > 0
-                                      ? `${formatSek(variant.pricePerStock)} / stock`
+                                      ? `${formatSek(variant.pricePerStock)} / ${termFor("stock", 1)}`
                                       : "Pris saknas"}
                                   </p>
                                 </div>
@@ -366,29 +547,65 @@ export default function OrderForm({
         })}
       </ul>
 
-      <div className="mt-6">
-        <label htmlFor="note" className="block text-sm font-medium text-zinc-600">
-          Meddelande till lagret (valfritt)
-        </label>
-        <textarea
-          id="note"
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-          rows={2}
-          maxLength={500}
-          placeholder="T.ex. ”brådskande, slut i hyllan”"
-          className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-3 text-base outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-        />
-      </div>
-
       <SummaryBar
         totalQuantity={totals.totalQuantity}
         totalSek={totals.totalSek}
-        saving={saving}
-        error={error}
-        onSubmit={submitOrder}
+        onReview={() => {
+          setStep("review");
+          window.scrollTo({ top: 0 });
+        }}
       />
+
+      <Toast message={toast} onDone={() => setToast(null)} />
     </main>
+  );
+}
+
+/**
+ * The autosave indicator.
+ *
+ * Silent while things are fine — a "Sparat" that never goes away is noise.
+ * Loud only when a save is failing or a draft moved on somewhere else, which
+ * are the two cases where someone could lose work.
+ */
+function DraftStatus({ state, onKeepMine }: { state: SaveState; onKeepMine: () => void }) {
+  if (state.kind === "idle" || state.kind === "saving" || state.kind === "saved") return null;
+
+  if (state.kind === "retrying") {
+    return (
+      <p
+        role="status"
+        className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900"
+      >
+        Sparas inte just nu, försöker igen. Det du har lagt till finns kvar i telefonen.
+      </p>
+    );
+  }
+
+  return (
+    <div role="alert" className="mt-3 rounded-xl bg-amber-50 px-3 py-3 text-sm text-amber-900">
+      <p className="font-medium">Beställningen har ändrats någon annanstans</p>
+      <p className="mt-1">
+        Samma utkast har redigerats på en annan enhet. Ladda om för att hämta den versionen, eller
+        fortsätt med din och skriv över den.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="min-h-11 rounded-xl bg-amber-900 px-4 text-sm font-semibold text-white"
+        >
+          Hämta den senaste
+        </button>
+        <button
+          type="button"
+          onClick={onKeepMine}
+          className="min-h-11 rounded-xl border border-amber-300 px-4 text-sm font-medium"
+        >
+          Fortsätt med min
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -406,10 +623,10 @@ function CategoryChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`h-9 shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition ${
+      className={`min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition ${
         active
           ? "border-zinc-900 bg-zinc-900 text-white"
-          : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+          : "border-zinc-200 bg-white text-zinc-700"
       }`}
     >
       {children}
@@ -417,48 +634,170 @@ function CategoryChip({
   );
 }
 
+/** The one primary action on the picking screen: go and check it. */
 function SummaryBar({
   totalQuantity,
   totalSek,
-  saving,
-  error,
-  onSubmit,
+  onReview,
 }: {
   totalQuantity: number;
   totalSek: number;
+  onReview: () => void;
+}) {
+  const empty = totalQuantity === 0;
+
+  return (
+    <div className="fixed inset-x-0 bottom-[4.25rem] z-30 px-4 lg:bottom-4">
+      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white/95 p-3 shadow-lg backdrop-blur">
+        <div className="min-w-0">
+          <p className="truncate text-base font-semibold tabular-nums">
+            {formatNumber(totalQuantity)} {termFor("stock", totalQuantity)}
+            {totalQuantity === 0 ? <TermHint term="stock" /> : null}
+          </p>
+          <p className="truncate text-sm text-zinc-600 tabular-nums">
+            {formatSek(totalSek)} inköpsvärde
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onReview}
+          disabled={empty}
+          className="h-12 shrink-0 rounded-2xl bg-brand-700 px-6 text-base font-semibold text-white transition active:scale-[0.98] disabled:bg-zinc-200 disabled:text-zinc-500"
+        >
+          Granska
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * "Granska" — everything chosen, grouped by brand, editable in place.
+ *
+ * A separate screen rather than a modal, so the list can be as long as it
+ * needs to be and the back button behaves. One primary action.
+ */
+function ReviewStep({
+  chosen,
+  quantities,
+  note,
+  onNote,
+  onQuantity,
+  totals,
+  storeName,
+  saving,
+  error,
+  onBack,
+  onSubmit,
+}: {
+  chosen: { brand: string; items: CatalogProduct[] }[];
+  quantities: DraftLines;
+  note: string;
+  onNote: (value: string) => void;
+  onQuantity: (productId: string, next: number) => void;
+  totals: { totalQuantity: number; totalSek: number };
+  storeName: string;
   saving: boolean;
   error: string | null;
+  onBack: () => void;
   onSubmit: () => void;
 }) {
+  const empty = chosen.length === 0;
+
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto max-w-3xl px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-        {error ? (
-          <p role="alert" className="mb-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </p>
-        ) : null}
-        <div className="flex items-center justify-between gap-3">
+    <main className="mx-auto max-w-2xl px-4 pb-44 pt-4">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex min-h-11 items-center gap-1 text-sm text-zinc-600 transition hover:text-zinc-900"
+      >
+        <span aria-hidden>‹</span> Tillbaka till sortimentet
+      </button>
+
+      <h1 className="mt-2 text-2xl font-semibold tracking-tight">Granska beställningen</h1>
+      <p className="mt-1 text-zinc-600">
+        {storeName} · {countOf("stock", totals.totalQuantity)}
+      </p>
+
+      {empty ? (
+        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-600">
+          Du har inte valt något än.
+        </p>
+      ) : (
+        <ul className="mt-5 space-y-3">
+          {chosen.map((group) => (
+            <li
+              key={group.brand}
+              className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"
+            >
+              <p className="border-b border-zinc-100 px-4 py-3 font-semibold">{group.brand}</p>
+              <ul>
+                {group.items.map((product) => (
+                  <li
+                    key={product.id}
+                    className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-2 last:border-b-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-[15px]">{product.flavor}</p>
+                      <p className="truncate text-sm text-zinc-600">
+                        {[product.strength, product.format].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                    <QuantityInput
+                      value={quantities[product.id] ?? 0}
+                      onChange={(next) => onQuantity(product.id, next)}
+                      label={`${product.brand} ${product.flavor} ${product.strength} ${product.format}`}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-6">
+        <label htmlFor="note" className="block text-sm font-medium text-zinc-700">
+          Meddelande till lagret (valfritt)
+        </label>
+        <textarea
+          id="note"
+          value={note}
+          onChange={(event) => onNote(event.target.value)}
+          rows={2}
+          maxLength={500}
+          placeholder="T.ex. ”brådskande, slut i hyllan”"
+          className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-3 text-base outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+        />
+      </div>
+
+      {error ? (
+        <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="fixed inset-x-0 bottom-[4.25rem] z-30 px-4 lg:bottom-4">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white/95 p-3 shadow-lg backdrop-blur">
           <div className="min-w-0">
-            <p className="text-lg font-semibold tabular-nums">
-              {formatNumber(totalQuantity)}{" "}
-              <span className="text-sm font-normal text-zinc-500">
-                {totalQuantity === 1 ? "stock" : "stockar"}
-              </span>
+            <p className="truncate text-base font-semibold tabular-nums">
+              {formatNumber(totals.totalQuantity)} {termFor("stock", totals.totalQuantity)}
             </p>
-            <p className="truncate text-sm text-zinc-500 tabular-nums">{formatSek(totalSek)}</p>
+            <p className="truncate text-sm text-zinc-600 tabular-nums">
+              {formatSek(totals.totalSek)} inköpsvärde
+            </p>
           </div>
           <button
             type="button"
             onClick={onSubmit}
-            disabled={totalQuantity === 0 || saving}
-            className="h-12 shrink-0 rounded-2xl bg-brand-600 px-6 text-base font-semibold text-white transition active:scale-[0.98] disabled:bg-zinc-200 disabled:text-zinc-400"
+            disabled={saving || empty}
+            className="h-12 shrink-0 rounded-2xl bg-brand-700 px-6 text-base font-semibold text-white transition active:scale-[0.98] disabled:bg-zinc-200 disabled:text-zinc-500"
           >
             {saving ? "Skickar…" : "Skicka beställning"}
           </button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -472,38 +811,38 @@ function OrderConfirmation({
   onNewOrder: () => void;
 }) {
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
+    <main className="mx-auto max-w-2xl px-4 py-10">
       <div className="rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-sm">
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand-50 text-2xl text-brand-700">
           ✓
         </div>
         <h1 className="mt-4 text-xl font-semibold tracking-tight">Beställningen är skickad</h1>
-        <p className="mt-1 text-zinc-600">
-          {storeName} · {formatNumber(submitted.totalQuantity)} stockar ·{" "}
+        <p className="mt-1 text-zinc-700">
+          {storeName} · {countOf("stock", submitted.totalQuantity)} ·{" "}
           {formatSek(submitted.totalSek)}
         </p>
 
         <a
           href={`/api/orders/${submitted.id}/export`}
-          className="mt-6 flex h-12 items-center justify-center rounded-2xl bg-zinc-900 px-6 text-base font-semibold text-white transition active:scale-[0.98]"
+          className="mt-6 flex min-h-12 items-center justify-center rounded-2xl bg-zinc-900 px-6 text-base font-semibold text-white transition active:scale-[0.98]"
         >
-          Exportera till Excel
+          Exportera Excel
         </a>
 
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <Link
+            href={`/orders/${submitted.id}`}
+            className="flex min-h-12 flex-1 items-center justify-center rounded-2xl border border-zinc-200 px-4 font-medium transition hover:bg-zinc-50"
+          >
+            Se beställningen
+          </Link>
           <button
             type="button"
             onClick={onNewOrder}
-            className="h-12 flex-1 rounded-2xl border border-zinc-200 px-4 font-medium transition hover:bg-zinc-50"
+            className="min-h-12 flex-1 rounded-2xl border border-zinc-200 px-4 font-medium transition hover:bg-zinc-50"
           >
             Ny beställning
           </button>
-          <Link
-            href="/orders"
-            className="flex h-12 flex-1 items-center justify-center rounded-2xl border border-zinc-200 px-4 font-medium transition hover:bg-zinc-50"
-          >
-            Tidigare beställningar
-          </Link>
         </div>
       </div>
     </main>

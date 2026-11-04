@@ -21,7 +21,7 @@ export default function TransferCard({ transfer }: { transfer: TransferView }) {
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="font-semibold tracking-tight">
           {transfer.requestingStore.name}
-          <span className="font-normal text-zinc-400"> söker från </span>
+          <span className="font-normal text-zinc-500"> söker från </span>
           {transfer.targetStore?.name ?? transfer.acceptingStore?.name ?? "regionen"}
         </p>
         <span
@@ -37,17 +37,17 @@ export default function TransferCard({ transfer }: { transfer: TransferView }) {
         {transfer.lines.slice(0, 3).map((line) => (
           <li key={line.id}>
             {line.quantity} {TRANSFER_UNIT_LABELS[line.unit]} · {line.brand} {line.flavor}{" "}
-            <span className="text-zinc-400">
+            <span className="text-zinc-500">
               {line.strength} {line.format}
             </span>
           </li>
         ))}
         {transfer.lines.length > 3 ? (
-          <li className="text-zinc-400">+{transfer.lines.length - 3} rader till</li>
+          <li className="text-zinc-500">+{transfer.lines.length - 3} rader till</li>
         ) : null}
       </ul>
 
-      <p className="mt-2 text-xs text-zinc-400">{formatDateTime(transfer.createdAt)}</p>
+      <p className="mt-2 text-xs text-zinc-500">{formatDateTime(transfer.createdAt)}</p>
     </Link>
   );
 }

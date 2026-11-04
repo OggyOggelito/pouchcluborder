@@ -197,6 +197,42 @@ export async function countNeedsReview(): Promise<number> {
   return prisma.product.count({ where: { active: true, needsReview: true } });
 }
 
+export type ReviewProduct = {
+  id: string;
+  brand: string;
+  flavor: string;
+  strength: string;
+  format: string;
+  sku: string | null;
+  sourceName: string | null;
+  reviewNotes: string | null;
+};
+
+/**
+ * Products the importer could not parse confidently.
+ *
+ * The count has been on /admin since the importer shipped, with nothing behind
+ * it — this is the list it now links to.
+ */
+export async function listNeedsReview(limit = 200): Promise<ReviewProduct[]> {
+  const rows = await prisma.product.findMany({
+    where: { active: true, needsReview: true },
+    orderBy: [{ brand: "asc" }, { flavor: "asc" }],
+    take: limit,
+    select: {
+      id: true,
+      brand: true,
+      flavor: true,
+      strength: true,
+      format: true,
+      sku: true,
+      sourceName: true,
+      reviewNotes: true,
+    },
+  });
+  return rows;
+}
+
 /** A brand's active catalog, for its staff page. */
 export async function listActiveProductsForBrand(brandId: string): Promise<CatalogProduct[]> {
   return prisma.product.findMany({

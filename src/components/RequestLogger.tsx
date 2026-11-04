@@ -237,7 +237,7 @@ export default function RequestLogger({
                   formAction={bumpAction}
                   name="requestId"
                   value={row.id}
-                  className="h-10 shrink-0 rounded-xl bg-amber-900 px-4 text-sm font-semibold text-white"
+                  className="min-h-tap shrink-0 rounded-xl bg-amber-900 px-4 text-sm font-semibold text-white"
                 >
                   +1 till
                 </button>
@@ -254,7 +254,7 @@ export default function RequestLogger({
       <button
         type="submit"
         disabled={logging}
-        className="h-14 w-full rounded-2xl bg-zinc-900 px-6 text-lg font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-400"
+        className="h-14 w-full rounded-2xl bg-zinc-900 px-6 text-lg font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
       >
         {logging ? "Sparar…" : "Logga önskemålet"}
       </button>

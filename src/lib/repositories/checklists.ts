@@ -269,3 +269,73 @@ export async function listOnboardingRunsForUser(userId: string) {
     progress: progressOf(run.items),
   }));
 }
+
+export type TodayChecklist = {
+  templateId: string;
+  title: string;
+  type: ChecklistType;
+  storeId: string;
+  storeName: string;
+  done: number;
+  total: number;
+  complete: boolean;
+};
+
+/**
+ * Today's daily checklists for these stores, read-only.
+ *
+ * `getOrCreateRun` writes a run the first time a list is opened, which is
+ * right for the checklist page and wrong for a home-screen card: a dashboard
+ * must not create rows just by being looked at. So this reads whatever runs
+ * exist and reports a template with no run as nothing done yet.
+ */
+export async function getTodayChecklists(input: {
+  storeIds: string[];
+  /** Europe/Stockholm date key, e.g. "2026-11-04". */
+  dateKey: string;
+}): Promise<TodayChecklist[]> {
+  if (input.storeIds.length === 0) return [];
+
+  const [templates, stores, runs] = await Promise.all([
+    prisma.checklistTemplate.findMany({
+      where: { active: true, type: { in: ["DAILY_OPEN", "DAILY_CLOSE"] } },
+      orderBy: { title: "asc" },
+      select: { id: true, title: true, type: true, _count: { select: { items: true } } },
+    }),
+    prisma.store.findMany({
+      where: { id: { in: input.storeIds } },
+      select: { id: true, name: true },
+    }),
+    prisma.checklistRun.findMany({
+      where: { storeId: { in: input.storeIds }, runDate: input.dateKey },
+      select: {
+        templateId: true,
+        storeId: true,
+        items: { select: { checkedAt: true } },
+      },
+    }),
+  ]);
+
+  const runByKey = new Map(runs.map((run) => [`${run.templateId}|${run.storeId}`, run]));
+  const storeName = new Map(stores.map((store) => [store.id, store.name]));
+
+  const out: TodayChecklist[] = [];
+  for (const store of stores) {
+    for (const template of templates) {
+      const run = runByKey.get(`${template.id}|${store.id}`);
+      const total = template._count.items;
+      const done = run ? run.items.filter((item) => item.checkedAt !== null).length : 0;
+      out.push({
+        templateId: template.id,
+        title: template.title,
+        type: toChecklistType(template.type),
+        storeId: store.id,
+        storeName: storeName.get(store.id) ?? "",
+        done,
+        total,
+        complete: total > 0 && done >= total,
+      });
+    }
+  }
+  return out;
+}

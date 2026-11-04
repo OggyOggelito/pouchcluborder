@@ -99,7 +99,7 @@ export default async function EditChecklistTemplatePage({
                   <input type="checkbox" name="required" defaultChecked={item.required} className="h-5 w-5 rounded" />
                   <span className="text-sm">Obligatorisk</span>
                 </label>
-                <button type="submit" className="h-10 rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50">
+                <button type="submit" className="min-h-tap rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50">
                   Spara
                 </button>
               </div>

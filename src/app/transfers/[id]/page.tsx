@@ -75,7 +75,7 @@ export default async function TransferDetailPage({
       <div className="mt-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h1 className="text-xl font-semibold tracking-tight">
           {transfer.requestingStore.name}
-          <span className="font-normal text-zinc-400"> söker från </span>
+          <span className="font-normal text-zinc-500"> söker från </span>
           {transfer.targetStore?.name ?? transfer.acceptingStore?.name ?? "regionen"}
         </h1>
         <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium">
@@ -180,9 +180,9 @@ export default async function TransferDetailPage({
             <span>
               {TRANSFER_STATUS_LABELS[event.type as keyof typeof TRANSFER_STATUS_LABELS] ?? "Skapad"}
               {event.detail ? <span className="text-zinc-500"> · {event.detail}</span> : null}
-              {event.userName ? <span className="text-zinc-400"> · {event.userName}</span> : null}
+              {event.userName ? <span className="text-zinc-500"> · {event.userName}</span> : null}
             </span>
-            <span className="shrink-0 text-xs text-zinc-400">{formatDateTime(event.at)}</span>
+            <span className="shrink-0 text-xs text-zinc-500">{formatDateTime(event.at)}</span>
           </li>
         ))}
       </ol>

@@ -22,6 +22,9 @@
     "seed:schedule": "tsx prisma/seed-schedule.ts",
     "tooeasy:probe": "tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/tooeasy-probe.ts",
     "test": "node --import tsx --test tests/*.test.ts",
+    "ux:shots": "tsx scripts/ux/shots.ts",
+    "ux:axe": "tsx scripts/ux/axe.ts",
+    "ux:targets": "tsx scripts/ux/targets.ts",
     "brands:import": "tsx scripts/import-brand-content.ts",
     "flavors:retag": "tsx scripts/retag-flavors.ts",
     "seed:shopfloor": "tsx prisma/seed-shopfloor.ts",
@@ -43,10 +46,12 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.5.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "playwright": "^1.64.1",
     "postcss": "^8.5.28",
     "prisma": "^7.10.0",
     "tailwindcss": "^4.3.3",

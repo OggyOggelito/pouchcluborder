@@ -39,7 +39,7 @@ export default async function AdminRequestsPage({
   }).toString();
 
   const chip = (active: boolean) =>
-    `h-10 shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.5rem] ${
+    `min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
       active ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-600"
     }`;
 
@@ -134,7 +134,7 @@ export default async function AdminRequestsPage({
                   name="status"
                   defaultValue={row.status}
                   aria-label={`Status för ${row.brandText ?? row.id}`}
-                  className="h-10 rounded-xl border border-zinc-200 px-2 text-sm"
+                  className="min-h-tap rounded-xl border border-zinc-200 px-2 text-sm"
                 >
                   {REQUEST_STATUSES.map((status) => (
                     <option key={status} value={status}>{REQUEST_STATUS_LABELS[status]}</option>
@@ -145,9 +145,9 @@ export default async function AdminRequestsPage({
                   defaultValue={row.statusNote ?? ""}
                   placeholder="Notering (valfri)"
                   aria-label="Notering"
-                  className="h-10 rounded-xl border border-zinc-200 px-3 text-sm"
+                  className="min-h-tap rounded-xl border border-zinc-200 px-3 text-sm"
                 />
-                <button type="submit" className="h-10 rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50">
+                <button type="submit" className="min-h-tap rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50">
                   Spara
                 </button>
               </form>

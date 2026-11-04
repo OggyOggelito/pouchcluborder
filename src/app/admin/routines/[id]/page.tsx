@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import RoutineEditor from "@/components/RoutineEditor";
+import ConfirmButton from "@/components/ui/ConfirmButton";
 import { deleteArticleAction } from "@/lib/knowledge-actions";
 import { getArticleById, listCategories } from "@/lib/repositories/knowledge";
 import { requireAdmin } from "@/lib/session";
@@ -47,12 +48,14 @@ export default async function AdminRoutineEditorPage({
       {article ? (
         <form action={deleteArticleAction} className="mt-10 border-t border-zinc-100 pt-5">
           <input type="hidden" name="id" value={article.id} />
-          <button
-            type="submit"
-            className="h-11 rounded-xl border border-red-200 px-4 text-sm font-medium text-red-700 transition hover:bg-red-50"
+          <ConfirmButton
+            title="Ta bort artikeln?"
+            body="Rutinen försvinner för all personal och länkar till den slutar fungera."
+            confirmLabel="Ta bort"
+            className="min-h-tap rounded-xl border border-red-200 px-4 text-sm font-medium text-red-700 transition hover:bg-red-50"
           >
             Ta bort artikeln
-          </button>
+          </ConfirmButton>
           <p className="mt-2 text-sm text-zinc-500">
             Avpublicera i stället om den bara ska bort tillfälligt.
           </p>
