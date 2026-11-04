@@ -27,6 +27,8 @@ export type BrandDetail = {
   heroImageUrl: string | null;
   websiteUrl: string | null;
   published: boolean;
+  /** MG_PER_G | MG_PER_POUCH | null — see src/lib/strength-units.ts. */
+  strengthUnit: string | null;
 };
 
 export type BrandContentInput = {
@@ -160,6 +162,20 @@ export async function getPublishedBrandBySlug(slug: string): Promise<BrandDetail
   return brand?.published ? brand : null;
 }
 
+/**
+ * A brand page including drafts.
+ *
+ * The caller decides who may see a draft — the page gives it to an ADMIN with
+ * a banner and 404s for everyone else, the same way /staff/routines/[slug]
+ * does. Without this there is no way to read supplier content before
+ * publishing it, which is exactly what the import asks a human to do.
+ */
+export async function getBrandBySlugIncludingDrafts(
+  slug: string
+): Promise<BrandDetail | null> {
+  return prisma.brand.findUnique({ where: { slug }, select: DETAIL_SELECT });
+}
+
 export async function updateBrandContent(
   id: string,
   input: BrandContentInput
@@ -180,6 +196,7 @@ const DETAIL_SELECT = {
   heroImageUrl: true,
   websiteUrl: true,
   published: true,
+  strengthUnit: true,
 } as const;
 
 function toSummary(brand: {

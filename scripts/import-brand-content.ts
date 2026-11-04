@@ -15,11 +15,12 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "../src/lib/db";
+import { foldFlavor } from "../src/lib/flavor-match";
 
 const DIR = "content/brands";
 
 /** Long-form fields, written as `## <field>` sections in the file body. */
-const BODY_FIELDS = ["manufacturingProcess", "blendingNotes", "products"] as const;
+const BODY_FIELDS = ["manufacturingProcess", "blendingNotes", "products", "flavors"] as const;
 
 type BrandFile = {
   file: string;
@@ -31,6 +32,12 @@ type BrandFile = {
   blendingNotes: string | null;
   /** sku -> supplier description */
   products: Map<string, string>;
+  /**
+   * Flavour name -> supplier description, for sources that identify a product
+   * by name rather than by article number. Loop's deck has no SKUs in it.
+   */
+  flavors: Map<string, string>;
+  strengthUnit: string | null;
 };
 
 /**
@@ -52,12 +59,24 @@ function parseFrontmatter(raw: string): { data: Record<string, string>; body: st
     const [, key, value] = kv;
     if (value.trim() === "|") {
       const block: string[] = [];
-      while (i + 1 < lines.length && /^\s{2,}/.test(lines[i + 1])) {
+      // A blank line is part of the block, not the end of it — it is how a
+      // paragraph break is written. The block ends at the first line that has
+      // content and is not indented. Without this the reader stopped at the
+      // first empty line and silently kept only the opening paragraph.
+      while (
+        i + 1 < lines.length &&
+        (lines[i + 1].trim() === "" || /^\s{2,}/.test(lines[i + 1]))
+      ) {
         block.push(lines[i + 1].replace(/^\s{2}/, ""));
         i += 1;
       }
-      // A block scalar here is prose, so soft-wrapped lines rejoin.
-      data[key] = block.join("\n").replace(/\n(?!\n)/g, " ").trim();
+      while (block.length > 0 && block[block.length - 1].trim() === "") block.pop();
+      // Newlines are kept as written. Markdown treats a single newline inside
+      // a paragraph as a soft break, so soft-wrapped prose still renders as
+      // one paragraph — while a blank line stays a paragraph break and a
+      // "- " line stays a list. Collapsing them, as this did, made a heading
+      // or a list in a block scalar impossible to express.
+      data[key] = block.join("\n").trim();
     } else {
       data[key] = value.trim();
     }
@@ -89,6 +108,18 @@ function parseBody(body: string): Record<string, string> {
   });
 
   return sections;
+}
+
+/** `Flavour name: description` lines, one per line. */
+function parseFlavors(text: string | undefined): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!text) return map;
+
+  for (const line of text.split("\n")) {
+    const match = line.match(/^([^:#|][^:]*?):\s*(.+)$/);
+    if (match) map.set(match[1].trim(), match[2].trim());
+  }
+  return map;
 }
 
 function parseProducts(text: string | undefined): Map<string, string> {
@@ -125,6 +156,8 @@ async function readBrandFiles(): Promise<BrandFile[]> {
       manufacturingProcess: sections.manufacturingProcess ?? null,
       blendingNotes: sections.blendingNotes ?? null,
       products: parseProducts(sections.products),
+      flavors: parseFlavors(sections.flavors),
+      strengthUnit: data.strengthUnit || null,
     });
   }
   return files;
@@ -142,6 +175,7 @@ const BRAND_SELECT = {
   shortDescription: true,
   manufacturingProcess: true,
   blendingNotes: true,
+  strengthUnit: true,
 } as const;
 
 /**
@@ -163,6 +197,10 @@ async function main() {
   console.log(`${files.length} content file(s)${force ? " — FORCE: existing content will be overwritten" : ""}\n`);
 
   const unmatchedSkus: { brand: string; sku: string }[] = [];
+  /** Source flavours with nothing to attach to in our catalog. */
+  const unmatchedFlavors: { brand: string; flavor: string }[] = [];
+  /** Our products the source never mentions. */
+  const unlistedProducts: { brand: string; flavor: string; strength: string; format: string }[] = [];
   let productsFilled = 0;
   let productsSkipped = 0;
 
@@ -187,6 +225,7 @@ async function main() {
     for (const field of [
       "countryOfOrigin",
       "websiteUrl",
+      "strengthUnit",
       "shortDescription",
       "manufacturingProcess",
       "blendingNotes",
@@ -206,12 +245,25 @@ async function main() {
       report.push({ field, action: existing ? "overwritten" : "filled" });
     }
 
-    // Publishing is always a human decision, so this is set regardless.
-    const unpublishing = brand.published;
+    /**
+     * Unpublish only when this run actually wrote prose.
+     *
+     * The rule is that nobody reads supplier text on a live page before a
+     * human has looked at it — so new or changed content takes the page down.
+     * But re-running the importer must not undo a publishing decision someone
+     * already made: a no-op run over Fumi, Helwit and XQS used to unpublish
+     * all three, which is the opposite of leaving their choices alone.
+     *
+     * Metadata-only fields (country, website, strengthUnit) do not count.
+     * They add a line of fact, not a page of supplier claims.
+     */
+    const PROSE_FIELDS = ["shortDescription", "manufacturingProcess", "blendingNotes"] as const;
+    const wroteProse = PROSE_FIELDS.some((field) => field in data);
+    const unpublishing = brand.published && wroteProse;
 
     await prisma.brand.update({
       where: { id: brand.id },
-      data: { ...data, published: false },
+      data: { ...data, ...(wroteProse ? { published: false } : {}) },
     });
 
     for (const entry of report) {
@@ -227,7 +279,11 @@ async function main() {
               : "ifylld";
       console.log(`  ${symbol} ${entry.field}: ${note}`);
     }
-    if (unpublishing) console.log(`  · published: satt till false (var publicerad)`);
+    if (unpublishing) {
+      console.log(`  · published: satt till false (var publicerad, nytt innehåll ska läsas först)`);
+    } else if (brand.published) {
+      console.log(`  · published: oförändrad (publicerad sedan tidigare, inget nytt innehåll)`);
+    }
 
     // ---- product descriptions ----
     for (const [sku, description] of file.products) {
@@ -251,6 +307,67 @@ async function main() {
       }
     }
 
+    // ---- product descriptions matched on flavour name ----
+    //
+    // A supplier deck that lists flavours but no article numbers (Loop's does
+    // not have one on any slide) still has to reach the catalog somehow. The
+    // match is on the folded flavour name, scoped to this brand's own active
+    // products, so it can never touch another brand's row.
+    if (file.flavors.size > 0) {
+      const catalog = await prisma.product.findMany({
+        where: { brandId: brand.id, active: true },
+        select: { id: true, flavor: true, strength: true, format: true, description: true },
+      });
+
+      const byFolded = new Map<string, typeof catalog>();
+      for (const product of catalog) {
+        const key = foldFlavor(product.flavor);
+        const list = byFolded.get(key) ?? [];
+        list.push(product);
+        byFolded.set(key, list);
+      }
+
+      const matchedKeys = new Set<string>();
+
+      for (const [flavor, description] of file.flavors) {
+        const key = foldFlavor(flavor);
+        const products = byFolded.get(key);
+
+        if (!products || products.length === 0) {
+          unmatchedFlavors.push({ brand: brand.name, flavor });
+          continue;
+        }
+        matchedKeys.add(key);
+
+        for (const product of products) {
+          if (product.description && !force) {
+            productsSkipped += 1;
+            continue;
+          }
+          await prisma.product.update({ where: { id: product.id }, data: { description } });
+          productsFilled += 1;
+        }
+      }
+
+      // The other direction, per brand: what the catalog carries that the
+      // source never mentioned.
+      for (const [key, products] of byFolded) {
+        if (matchedKeys.has(key)) continue;
+        for (const product of products) {
+          unlistedProducts.push({
+            brand: brand.name,
+            flavor: product.flavor,
+            strength: product.strength,
+            format: product.format,
+          });
+        }
+      }
+
+      console.log(
+        `  · smaktexter: ${file.flavors.size} smaker i källan, ${matchedKeys.size} hittade i katalogen`
+      );
+    }
+
     if (file.products.size > 0) {
       console.log(`  · produkttexter: ${file.products.size} i filen`);
     }
@@ -262,6 +379,22 @@ async function main() {
   if (unmatchedSkus.length > 0) {
     console.log(`\nArtikelnummer i källan utan träff i katalogen (${unmatchedSkus.length}):`);
     for (const row of unmatchedSkus) console.log(`  ${row.brand}: ${row.sku}`);
+  }
+
+  if (unmatchedFlavors.length > 0) {
+    console.log(`\nSmaker i källan som inte finns i vårt sortiment (${unmatchedFlavors.length}):`);
+    for (const row of unmatchedFlavors) console.log(`  ${row.brand}: ${row.flavor}`);
+    console.log(`  (Leverantörens sortiment är bredare än vårt. Inget lades till.)`);
+  }
+
+  if (unlistedProducts.length > 0) {
+    console.log(`\nVåra aktiva produkter som källan inte nämner (${unlistedProducts.length}):`);
+    for (const row of unlistedProducts) {
+      console.log(
+        `  ${row.brand}: ${row.flavor} ${row.strength} ${row.format}`.replace(/\s+/g, " ").trimEnd()
+      );
+    }
+    console.log(`  (Ingen avaktiverades. De saknar bara smaktext.)`);
   }
 
   // The other direction: catalog products with no supplier text.
@@ -283,7 +416,9 @@ async function main() {
     }
   }
 
-  console.log("\nInget publicerades. Läs sidorna och publicera själv i /admin/brands.");
+  console.log(
+    "\nInget publicerades. Sidor som fick nytt innehåll avpublicerades — läs dem och publicera själv i /admin/brands."
+  );
 }
 
 main()

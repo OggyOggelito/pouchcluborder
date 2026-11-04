@@ -172,6 +172,15 @@ model Brand {
   manufacturerCode String?
   countryOfOrigin  String?
 
+  /// How this supplier states nicotine strength: MG_PER_G | MG_PER_POUCH.
+  /// Null means we have not been told, which is not the same as either.
+  ///
+  /// Suppliers genuinely differ — Loop quotes mg per gram, XQS mg per påse —
+  /// and the two numbers are not comparable. Recorded per brand so a page can
+  /// print the unit next to the figure instead of leaving staff to guess.
+  /// Validated in src/lib/strength-units.ts.
+  strengthUnit String?
+
   /// One paragraph: what the brand is and how it is positioned.
   shortDescription String?
   /// Markdown. How the pouches or vapes are actually made.

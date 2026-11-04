@@ -2,14 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Markdown from "@/components/Markdown";
 import { categoryLabel } from "@/lib/categories";
-import { getBrandFacts, getPublishedBrandBySlug, hasContent } from "@/lib/repositories/brands";
+import { getBrandBySlugIncludingDrafts, getBrandFacts, hasContent } from "@/lib/repositories/brands";
 import { listActiveProductsForBrand } from "@/lib/repositories/products";
+import { canEditRoutines } from "@/lib/roles";
+import { getSessionUser } from "@/lib/session";
+import { strengthUnitLabel, strengthUnitNote } from "@/lib/strength-units";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const brand = await getPublishedBrandBySlug(slug);
+  const brand = await getBrandBySlugIncludingDrafts(slug);
   if (!brand) return { title: "Varumärke — Pouch Club" };
   return {
     title: `${brand.name} — Pouch Club`,
@@ -49,9 +52,15 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 export default async function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const brand = await getPublishedBrandBySlug(slug);
+  const brand = await getBrandBySlugIncludingDrafts(slug);
 
   if (!brand) notFound();
+
+  // A draft is readable by whoever may edit brand content, so supplier text
+  // can be reviewed before it goes live. For everyone else it does not exist.
+  const user = await getSessionUser();
+  const maySeeDraft = user ? canEditRoutines(user.role) : false;
+  if (!brand.published && !maySeeDraft) notFound();
 
   const [products, facts] = await Promise.all([
     listActiveProductsForBrand(brand.id),
@@ -101,6 +110,17 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
         />
       ) : null}
 
+      {!brand.published ? (
+        <p className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
+          <strong>Utkast.</strong> Sidan är inte publicerad och syns bara för
+          administratörer. Läs igenom den och publicera i{" "}
+          <Link href={`/admin/brands/${brand.id}`} className="underline underline-offset-4">
+            varumärkesredigeraren
+          </Link>
+          .
+        </p>
+      ) : null}
+
       <header className="mt-5 flex items-start gap-4">
         {brand.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -129,8 +149,13 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
         </p>
       ) : (
         <div className="mt-6 space-y-8">
+          {/* Markdown, not plain text: most brands put a single paragraph
+              here and render identically either way, but a supplier that
+              gives us a list — Loop's awards — needs it to render as one. */}
           {brand.shortDescription ? (
-            <p className="text-lg leading-relaxed text-zinc-700">{brand.shortDescription}</p>
+            <div className="text-[17px]">
+              <Markdown>{brand.shortDescription}</Markdown>
+            </div>
           ) : null}
 
           {/* A missing long-form section is shown rather than omitted. Dropping
@@ -169,9 +194,19 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
                 label="Nikotin per portion"
                 value={
                   facts.strengthRange.min === facts.strengthRange.max
-                    ? `${mg(facts.strengthRange.min)} mg`
-                    : `${mg(facts.strengthRange.min)}–${mg(facts.strengthRange.max)} mg`
+                    ? `${mg(facts.strengthRange.min)} mg/påse`
+                    : `${mg(facts.strengthRange.min)}–${mg(facts.strengthRange.max)} mg/påse`
                 }
+              />
+            ) : null}
+            {/* The supplier's own unit, which is not always ours. Loop quotes
+                mg per gram and this figure is per påse, so printing both
+                without saying which is which invites staff to read 25 mg/g
+                and 14,8 mg/påse as a contradiction. */}
+            {strengthUnitLabel(brand.strengthUnit) ? (
+              <Fact
+                label="Leverantörens enhet"
+                value={strengthUnitLabel(brand.strengthUnit) as string}
               />
             ) : null}
             {facts.formats.length > 0 ? (
@@ -184,6 +219,9 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
               />
             ) : null}
           </dl>
+          {strengthUnitNote(brand.strengthUnit) ? (
+            <p className="mt-3 text-sm text-zinc-600">{strengthUnitNote(brand.strengthUnit)}</p>
+          ) : null}
           {facts.sources.length > 0 ? (
             <p className="mt-3 text-xs text-zinc-500">
               Nikotinvärden för {facts.enrichedCount} av {facts.variantCount} varianter hämtade

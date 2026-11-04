@@ -1,6 +1,8 @@
 ---
 name: XQS
 countryOfOrigin: Sverige
+# XQS anger styrkan per påse, till skillnad från t.ex. Loop som anger mg/g.
+strengthUnit: MG_PER_POUCH
 shortDescription: |
   "Född i Jämtland, uppväxt i Dalarna." Visionen är ett alternativ till
   traditionellt tobaksfritt snus. Enligt leverantören (okt 2026) är XQS det

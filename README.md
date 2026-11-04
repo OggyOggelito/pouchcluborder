@@ -1069,6 +1069,102 @@ the ZONE page uses one for its strength key.
 Re-running that script overwrites those brands, so once you have edited a page
 at `/admin/brands/[id]`, edit it there rather than in the script.
 
+### Supplier content — `content/brands/*.md`
+
+Separate from the hand-written pages above. These files hold what a supplier
+told us, imported idempotently:
+
+```bash
+npm run brands:import            # fill empty fields only
+npm run brands:import -- --force # overwrite what is already there
+```
+
+Rules the script keeps, because supplier material is not our words:
+
+- **Never overwrites an edit.** A field with content is skipped and reported as
+  skipped, unless `--force`.
+- **New prose takes the page down.** Writing `shortDescription`,
+  `manufacturingProcess` or `blendingNotes` sets `published = false`, so nobody
+  reads unreviewed supplier claims on a live page. A run that writes *nothing*
+  leaves `published` alone — an earlier version unpublished Fumi, Helwit and
+  XQS on every no-op run, which undid a decision someone had already made.
+- **Metadata does not take the page down.** `countryOfOrigin`, `websiteUrl` and
+  `strengthUnit` are facts, not claims.
+- **It never creates a Brand.** Brands come from the catalog; a file naming one
+  we do not stock is reported and skipped.
+
+Two ways to attach text to products:
+
+| Section | Key | Used by |
+| --- | --- | --- |
+| `## products` | our `sku` | XQS, whose product sheet has article numbers |
+| `## flavors` | flavour name | Loop, whose deck has none |
+
+Flavour matching folds case, diacritics and whitespace — the deck says
+"Jalapeño Lime" and our masterdoc says "Jalapeno Lime" — and nothing else. No
+stemming and no fuzzy distance: `Hot Mango` must not match `Mango Chili`. The
+rule is `src/lib/flavor-match.ts` and is tested.
+
+Reading a draft: an unpublished brand page is visible to an ADMIN with an
+**Utkast** banner, and 404s for everyone else. Without that there was no way to
+read supplier text before publishing it, which is exactly what the import asks
+a human to do.
+
+### Loop (Another Snus Factory)
+
+Source: `content/source/loop/ASF_LOOP INTRO 202602.pdf`, 17 slides, February
+2026 — gitignored like the other supplier material. The text in it is largely
+image-based, so the slides were read as rendered images, not extracted text.
+
+Used: slide 3 (company), 4 (brand promise), 10 (awards), 11 (categories and
+flavour description), 12 (nicotine and strengths), 13–16 (flavour and strength
+grids). **Skipped:** 5–9 and 17 — tonality, the brand journey, wordmarks, logo
+variants and advertising stills. None of it helps anyone behind a counter.
+
+The deck gives no process description beyond "produktionsanläggning strax norr
+om Stockholm", so `manufacturingProcess` says exactly that and then says no
+more was provided. Nothing generic about how pouches are made was added. No
+logo or slide graphic was copied; `logoUrl` and `heroImageUrl` stay empty, and
+the deck states no website.
+
+### Strength units — mg/g is not mg/påse
+
+`Brand.strengthUnit` (`MG_PER_G` | `MG_PER_POUCH` | null) records how a
+supplier states strength, because they disagree: **Loop quotes mg per gram,
+XQS quotes mg per påse.** Loop's "25 mg/g" and our "14,8 mg" for the same can
+are both correct and measure different things.
+
+The brand page prints the unit beside the figure and explains the difference.
+Nothing converts between them — the conversion needs a pouch weight nobody has
+given us. Null is a real value meaning "not told", which is not the same as
+either unit.
+
+**The product finder was deliberately left alone**, and what it does today is
+worth knowing. Its mg figure comes from `strengthMg()`, which prefers
+`nicotineMgPerPortion` (per påse, matched in from snusbolaget.se by EAN) and
+otherwise parses a number out of the `strength` text. Across 1088 active
+products:
+
+| Source of the mg figure | Products |
+| --- | ---: |
+| `nicotineMgPerPortion` — per påse | 529 |
+| parsed out of the strength text | 245 |
+| none; the finder shows "mg okänt" | 314 |
+
+Loop is safe: 39 of its 40 active products take their figure from
+`nicotineMgPerPortion`, so the deck's mg/g numbers never reach the finder.
+
+The real mismatch is not mg/g at all — **it is vapes.** Frunk Bar, VEEV and
+Vozol are `category = "Vape"`, and their parsed "20mg" is e-liquid strength,
+not nicotine per portion. 56 active vapes currently sort and display on the
+same mg scale as pouches. `X-Booster` is a second case: two products at
+**80mg**, categorised as a pouch, which is not a per-påse figure either.
+
+Smallest fix, when you want it: have `strengthMg()` return null for products
+whose category is not a pouch, which drops vapes out of the mg sort and shows
+them as "mg okänt" instead of ranking them against pouches. That is one
+condition in `src/lib/strength.ts` plus a test. It is not in this task.
+
 ### Editing brand content
 
 `/admin/brands` lists every brand with its draft/published state; `/admin/brands/[id]`
