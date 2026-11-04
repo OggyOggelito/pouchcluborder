@@ -61,3 +61,59 @@ export function orderFileName(order: OrderDetail): string {
   const date = order.submittedAt.toISOString().slice(0, 10);
   return `pouchclub-${slugify(order.store.name)}-${date}-${order.id.slice(-6)}.xlsx`;
 }
+
+/**
+ * Customer requests as a one-sheet workbook for purchasing.
+ *
+ * No prices and no personal data — the model holds neither.
+ */
+export function buildRequestsWorkbook(
+  rows: {
+    storeName: string;
+    kind: string;
+    brandText: string | null;
+    flavorText: string | null;
+    productLabel: string | null;
+    count: number;
+    firstSeenAt: Date;
+    lastSeenAt: Date;
+    status: string;
+    statusNote: string | null;
+  }[]
+): ArrayBuffer {
+  const header = [
+    "Store",
+    "Kind",
+    "Brand",
+    "Flavor",
+    "Linked product",
+    "Count",
+    "First seen",
+    "Last seen",
+    "Status",
+    "Note",
+  ];
+
+  const body = rows.map((row) => [
+    row.storeName,
+    row.kind,
+    row.brandText ?? "",
+    row.flavorText ?? "",
+    row.productLabel ?? "",
+    row.count,
+    row.firstSeenAt.toISOString().slice(0, 10),
+    row.lastSeenAt.toISOString().slice(0, 10),
+    row.status,
+    row.statusNote ?? "",
+  ]);
+
+  const sheet = XLSX.utils.aoa_to_sheet([header, ...body]);
+  sheet["!cols"] = [
+    { wch: 22 }, { wch: 14 }, { wch: 24 }, { wch: 24 }, { wch: 34 },
+    { wch: 7 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 40 },
+  ];
+
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Kundönskemål");
+  return XLSX.write(book, { bookType: "xlsx", type: "array" }) as ArrayBuffer;
+}

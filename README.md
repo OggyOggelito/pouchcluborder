@@ -454,6 +454,93 @@ No email or push notifications: in-app only.
 
 ---
 
+## Kundönskemål och överföringar
+
+Two coordination tools. **Neither tracks stock.** The app has no live stock
+data, and nothing here changes order quantities or suggestions.
+
+### Customer requests — `/requests/new`
+
+One screen: what kind of request, what the customer asked for, send. Staff see
+a confirmation and nothing else — the ranking is admin-only.
+
+**No customer personal data, anywhere.** The model has no name, phone, email or
+callback field, free text is capped at 120 characters, and a note under every
+box says so.
+
+**Deduplication.** The key is lowercased, diacritics stripped and **every
+separator removed**, so "Zyn Cool Mint", "zyn cool mint" and "ZYN Cöol Mint"
+all land on one row and bump its count. Separators are dropped rather than
+collapsed to spaces because collapsing cannot do both jobs: `G.3` and `G3` are
+the same brand, while `Extra-Strong` and `Extra Strong` are the same strength —
+turning punctuation into a space fixes the second and breaks the first. An
+`OUT_OF_STOCK` request keys on the linked **product id** instead, so two people
+typing the same sold-out product differently still land on one row.
+
+While you type, matching requests already logged in that store appear with
+**"+1 till"**, so the list fills with counts rather than near-duplicates. The
+database's `@@unique([storeId, kind, normalizedKey])` is the backstop.
+
+**Entry points:** a quick-action card on `/staff`, and the product finder's
+no-results state — "Hittar du inte? Logga som kundönskemål", with the search
+text prefilled via `?q=`.
+
+`/admin/requests` ranks by count over 30 or 90 days, filters by store and kind,
+carries a status (`NEW`, `CONSIDERING`, `ADDED`, `WONT_ADD`) with a note, and
+exports to Excel. No prices and no personal data in the export, because the
+model holds neither.
+
+### Transfers — `/transfers`
+
+A structured "can you spare two stockar of X?".
+
+**A request reserves nothing.** The UI says so wherever a transfer is created,
+viewed or accepted: there is no stock count to reserve against, and the sending
+store decides what it can spare.
+
+**The unit is stored, never assumed.** Each line carries `STOCK` or `CAN`,
+because "two" means very different things depending on which.
+
+**First to accept wins.** Accepting is a conditional update inside a
+transaction — the row is written only while it is still `REQUESTED` with no
+accepting store. Two stores pressing accept at the same moment cannot both
+succeed; the second matches zero rows and sees **"Redan tagen av [butik]"**.
+The concurrency test fires both accepts with `Promise.allSettled` and asserts
+exactly one wins.
+
+**Who may accept.** A targeted request is for that store only. An open request
+goes to the rest of the requesting store's `region` — never back to the asking
+store, and never across regions unless an ADMIN targeted it explicitly.
+
+Status moves are `REQUESTED → ACCEPTED → SENT → RECEIVED`, with `DECLINED` and
+`CANCELLED` as exits. `RECEIVED`, `DECLINED` and `CANCELLED` are terminal, and
+the server refuses anything else — a stale page cannot push a transfer
+backwards or skip a step.
+
+Tabs are **Inkomna / Skickade / Historik**. STAFF can follow their store's
+transfers but cannot create or change them (`/transfers/new` returns 404).
+`/transfers/[id]/print` is the följesedel — from, to, date, lines and signature
+lines, **no prices**. `/admin/transfers` has all of them with filters.
+
+### Notifications
+
+There was no notification service before this, so this is the minimal in-app
+one: a row per recipient at `/notifications`, marked read when you open it.
+Fired on request, accept, decline, sent and received.
+
+**In-app only.** Nothing in the app can send email or push — no mail
+transport, no web-push keys, no worker. Adding email later means a sender
+reading the same rows.
+
+### Navigation
+
+`src/config/navigation.ts` is new — there was no central config, just a
+hardcoded array in the header. Routes are registered there with who may see
+them, and `SiteNav` reads it. `searchableFor()` exposes the same list for a
+future global search; there is no global search in the app yet.
+
+---
+
 ## Butiksverktyg (shop floor tools)
 
 Four staff-facing tools: a product finder, checklists, onboarding and quizzes.

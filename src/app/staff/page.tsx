@@ -1,6 +1,7 @@
 import { listPublishedBrands } from "@/lib/repositories/brands";
 import BrandDirectory from "@/components/BrandDirectory";
 import NewsWidget from "@/components/NewsWidget";
+import StaffQuickActions from "@/components/StaffQuickActions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function StaffPage() {
 
       {/* Signed-in staff see the latest announcements here; signed-out
           visitors see nothing extra and the guide stays public. */}
+      <StaffQuickActions />
       <NewsWidget />
 
       {brands.length === 0 ? (

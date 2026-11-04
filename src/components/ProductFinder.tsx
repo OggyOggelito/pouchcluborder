@@ -111,9 +111,17 @@ export default function ProductFinder({ products }: { products: FinderProduct[] 
       </p>
 
       {results.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
-          Inga produkter matchar filtren.
-        </p>
+        <div className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center">
+          <p className="text-zinc-500">Inga produkter matchar filtren.</p>
+          {/* The most useful moment to capture demand: someone looked and we
+              did not have it. The search text comes along prefilled. */}
+          <Link
+            href={`/requests/new${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`}
+            className="mt-4 inline-flex h-12 items-center rounded-2xl bg-zinc-900 px-6 font-semibold text-white"
+          >
+            Hittar du inte? Logga som kundönskemål
+          </Link>
+        </div>
       ) : (
         <ul className="mt-3 space-y-2">
           {results.map((product) => {

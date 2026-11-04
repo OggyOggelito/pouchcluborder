@@ -29,6 +29,10 @@ model Store {
   access StoreAccess[]
   shifts Shift[]
   checklistRuns ChecklistRun[]
+  customerRequests  CustomerRequest[]
+  transfersRequested StockTransfer[] @relation("requestingStore")
+  transfersTargeted  StockTransfer[] @relation("targetStore")
+  transfersAccepted  StockTransfer[] @relation("acceptingStore")
 
   @@index([region])
   @@map("stores")
@@ -63,6 +67,10 @@ model User {
   checklistRuns ChecklistRun[]
   checkedItems  ChecklistRunItem[]
   quizAttempts  QuizAttempt[]
+  customerRequests CustomerRequest[]
+  transfersCreated StockTransfer[]
+  transferEvents   StockTransferEvent[]
+  notifications    Notification[]
 
   @@map("users")
 }
@@ -263,6 +271,8 @@ model Product {
   updatedAt DateTime @updatedAt
 
   orderLines OrderLine[]
+  customerRequests CustomerRequest[]
+  transferLines    StockTransferLine[]
 
   // A variant is uniquely identified by these four fields. CSV import upserts on it.
   @@unique([brand, flavor, strength, format])
@@ -467,4 +477,160 @@ model QuizAttempt {
   @@index([quizId, userId])
   @@index([userId])
   @@map("quiz_attempts")
+}
+
+// ---------------------------------------------------------------------------
+// Customer requests
+// ---------------------------------------------------------------------------
+
+/// "A customer asked for X and we did not have it."
+///
+/// Demand signal only — this never touches stock, order quantities or
+/// suggestions. Deliberately holds NO customer personal data: there is no
+/// name, phone, email or callback field, and the UI says so under every box.
+model CustomerRequest {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// Audit only — who logged it. Never shown in the ranking.
+  recordedById String?
+  recordedBy   User?   @relation(fields: [recordedById], references: [id])
+
+  /// NOT_STOCKED | OUT_OF_STOCK | OTHER — validated in src/lib/customer-requests.ts.
+  kind String
+
+  /// Free text, capped at 120 characters each.
+  brandText  String?
+  flavorText String?
+
+  /// Set when the request is about a product we do carry (OUT_OF_STOCK).
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  /// Lowercased, diacritics stripped, whitespace collapsed. The dedup key.
+  normalizedKey String
+
+  count       Int      @default(1)
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  /// NEW | CONSIDERING | ADDED | WONT_ADD, set by an admin.
+  status     String  @default("NEW")
+  statusNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// One row per store, kind and normalised request — logging the same thing
+  /// again increments `count` instead of creating a duplicate.
+  @@unique([storeId, kind, normalizedKey])
+  @@index([status])
+  @@index([lastSeenAt])
+  @@map("customer_requests")
+}
+
+// ---------------------------------------------------------------------------
+// Store-to-store transfers
+// ---------------------------------------------------------------------------
+
+/// "Can you spare two stockar of X?"
+///
+/// Coordination only. A request reserves nothing — the sending store decides
+/// whether it can spare anything, and no stock count exists to change.
+model StockTransfer {
+  id String @id @default(cuid())
+
+  requestingStoreId String
+  requestingStore   Store  @relation("requestingStore", fields: [requestingStoreId], references: [id])
+
+  /// Null means an open request to every store in the region.
+  targetStoreId String?
+  targetStore   Store?  @relation("targetStore", fields: [targetStoreId], references: [id])
+
+  /// Set the moment one store accepts; this is what closes the race.
+  acceptingStoreId String?
+  acceptingStore   Store?  @relation("acceptingStore", fields: [acceptingStoreId], references: [id])
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id])
+
+  /// REQUESTED | ACCEPTED | SENT | RECEIVED | DECLINED | CANCELLED
+  status String @default("REQUESTED")
+  note   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lines  StockTransferLine[]
+  events StockTransferEvent[]
+
+  @@index([requestingStoreId, status])
+  @@index([targetStoreId, status])
+  @@index([acceptingStoreId])
+  @@index([status])
+  @@map("stock_transfers")
+}
+
+model StockTransferLine {
+  id         String @id @default(cuid())
+  transferId String
+  transfer   StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity Int
+  /// STOCK | CAN. Stored explicitly and never assumed — a store asking for
+  /// "two" means very different things depending on which.
+  unit String @default("STOCK")
+
+  @@index([transferId])
+  @@map("stock_transfer_lines")
+}
+
+/// Append-only timeline.
+model StockTransferEvent {
+  id         String @id @default(cuid())
+  transferId String
+  transfer   StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  /// The status the transfer moved to, or CREATED.
+  type   String
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+  /// Short human-readable addition, e.g. the accepting store's name.
+  detail String?
+
+  createdAt DateTime @default(now())
+
+  @@index([transferId, createdAt])
+  @@map("stock_transfer_events")
+}
+
+// ---------------------------------------------------------------------------
+// In-app notifications
+// ---------------------------------------------------------------------------
+
+/// There was no notification service before this, so this is the minimal
+/// in-app one: a row per recipient, marked read when opened. No email or push
+/// — nothing in the app can send either yet.
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Short machine type, e.g. "TRANSFER_REQUESTED".
+  type    String
+  title   String
+  body    String?
+  /// Internal link, relative only.
+  linkUrl String?
+
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([createdAt])
+  @@map("notifications")
 }

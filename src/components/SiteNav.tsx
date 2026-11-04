@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { logoutAction } from "@/lib/auth-actions";
-import { canAccessAdmin, canPlaceOrders, canViewTeamSchedule } from "@/lib/roles";
+import { navFor } from "@/config/navigation";
+import { canAccessAdmin } from "@/lib/roles";
 import { getSessionUser } from "@/lib/session";
 
 const LINK =
@@ -19,33 +20,17 @@ export default async function SiteNav() {
   const user = await getSessionUser();
   const isAdmin = user ? canAccessAdmin(user.role) : false;
 
-  const links = [
-    { href: "/staff", label: "Guide" },
-    { href: "/staff/finder", label: "Produktsök" },
-    ...(user
-      ? [
-          { href: "/news", label: "Nyheter" },
-          { href: "/staff/checklists", label: "Checklistor" },
-          { href: "/staff/quizzes", label: "Quiz" },
-          { href: "/my-onboarding", label: "Introduktion" },
-          { href: "/my-schedule", label: "Schema" },
-          // Ordering and the coverage grid are not for STAFF.
-          ...(canViewTeamSchedule(user.role) ? [{ href: "/team-schedule", label: "Team" }] : []),
-          ...(canPlaceOrders(user.role) ? [{ href: "/orders", label: "Tidigare" }] : []),
-          ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
-        ]
-      : []),
-  ];
+  // Routes are registered in src/config/navigation.ts, not here.
+  const links = navFor(user?.role ?? null);
 
   if (!user) {
     return (
       <nav className="flex shrink-0 items-center gap-1 text-sm">
-        <Link href="/staff" className={LINK}>
-          Guide
-        </Link>
-        <Link href="/staff/finder" className={LINK}>
-          Produktsök
-        </Link>
+        {links.map((link) => (
+          <Link key={link.href} href={link.href} className={LINK}>
+            {link.label}
+          </Link>
+        ))}
         <Link href="/login" className={LINK}>
           Logga in
         </Link>
