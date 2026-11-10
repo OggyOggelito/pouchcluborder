@@ -62,7 +62,7 @@ export default function MoreSheet({
         onClick={() => setOpen(true)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className="flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-zinc-500 transition active:bg-zinc-100"
+        className="flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl text-muted transition active:bg-raised"
       >
         <NavIcon name="settings" className="h-6 w-6" />
         <span className="text-[11px] font-medium leading-none">Mer</span>
@@ -74,23 +74,23 @@ export default function MoreSheet({
             type="button"
             aria-label="Stäng menyn"
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-zinc-900/40"
+            className="absolute inset-0 bg-scrim"
           />
 
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-3xl bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl"
+            className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-3xl bg-surface pb-[env(safe-area-inset-bottom)] shadow-2xl"
           >
-            <div className="sticky top-0 flex items-center justify-between gap-3 border-b border-zinc-100 bg-white px-4 py-3">
+            <div className="sticky top-0 flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3">
               <h2 id={titleId} className="text-lg font-semibold tracking-tight">
                 Meny
               </h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="grid h-11 w-11 place-items-center rounded-xl text-zinc-500 transition active:bg-zinc-100"
+                className="grid h-11 w-11 place-items-center rounded-xl text-muted transition active:bg-raised"
                 aria-label="Stäng menyn"
               >
                 <span aria-hidden className="text-xl leading-none">
@@ -102,7 +102,7 @@ export default function MoreSheet({
             <div className="px-3 pb-4 pt-2">
               {sections.map((section) => (
                 <section key={section.group} className="pb-2">
-                  <h3 className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  <h3 className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted">
                     {section.label}
                   </h3>
                   <ul>
@@ -111,16 +111,20 @@ export default function MoreSheet({
                         <Link
                           href={entry.href}
                           aria-current={current === entry.href ? "page" : undefined}
-                          className={`flex min-h-[3rem] items-center gap-3 rounded-xl px-3 text-[15px] transition active:bg-zinc-100 ${
-                            current === entry.href
-                              ? "bg-zinc-100 font-semibold text-zinc-900"
-                              : "text-zinc-700"
+                          className={`relative flex min-h-[3rem] items-center gap-3 rounded-xl py-1 pl-4 pr-3 text-[15px] transition active:bg-raised ${
+                            current === entry.href ? "bg-raised font-bold text-ink" : "text-ink"
                           }`}
                         >
-                          <NavIcon name={entry.icon} className="h-5 w-5 shrink-0 text-zinc-500" />
+                          {current === entry.href ? (
+                            <span
+                              aria-hidden
+                              className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary"
+                            />
+                          ) : null}
+                          <NavIcon name={entry.icon} className="h-5 w-5 shrink-0 text-muted" />
                           <span className="min-w-0 flex-1 truncate">{entry.label}</span>
                           {entry.href === "/news" && newsBadge > 0 ? (
-                            <span className="shrink-0 rounded-full bg-brand-700 px-2 py-0.5 text-xs font-semibold text-white">
+                            <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-on-primary">
                               {newsBadge}
                             </span>
                           ) : null}
@@ -131,7 +135,7 @@ export default function MoreSheet({
                 </section>
               ))}
 
-              <div className="mt-2 border-t border-zinc-100 pt-2">{signOut}</div>
+              <div className="mt-2 border-t border-line pt-2">{signOut}</div>
             </div>
           </div>
         </div>

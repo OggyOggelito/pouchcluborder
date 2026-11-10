@@ -15,7 +15,7 @@ import type { StoreSummary } from "@/lib/repositories/stores";
 type ProductHit = { id: string; label: string };
 
 const FIELD =
-  "mt-1 h-12 w-full rounded-2xl border border-zinc-200 px-4 text-base outline-none transition focus:border-zinc-400";
+  "mt-1 h-12 w-full bg-raised rounded-2xl border border-control px-4 text-base text-ink placeholder:text-muted outline-none transition focus:border-primary";
 
 /**
  * One screen, under a minute: category, a sentence, send.
@@ -61,7 +61,7 @@ export default function IssueReportForm({
 
       {stores.length > 1 ? (
         <div>
-          <label htmlFor="issue-store" className="block text-sm font-medium text-zinc-700">
+          <label htmlFor="issue-store" className="block text-sm font-medium text-ink">
             Butik
           </label>
           <select
@@ -80,7 +80,7 @@ export default function IssueReportForm({
       ) : null}
 
       <fieldset>
-        <legend className="text-sm font-medium text-zinc-700">Vad gäller det?</legend>
+        <legend className="text-sm font-medium text-ink">Vad gäller det?</legend>
         <div className="mt-2 grid gap-2">
           {ISSUE_CATEGORIES.map((candidate) => (
             <button
@@ -90,14 +90,14 @@ export default function IssueReportForm({
               aria-pressed={category === candidate}
               className={`min-h-14 rounded-2xl border px-4 py-3 text-left transition ${
                 category === candidate
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white hover:border-zinc-300"
+                  ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                  : "border-line bg-surface hover:border-control"
               }`}
             >
               <span className="block font-medium">{ISSUE_CATEGORY_LABELS[candidate]}</span>
               <span
                 className={`block text-sm ${
-                  category === candidate ? "text-zinc-300" : "text-zinc-500"
+                  category === candidate ? "text-muted" : "text-muted"
                 }`}
               >
                 {ISSUE_CATEGORY_HELP[candidate]}
@@ -108,11 +108,11 @@ export default function IssueReportForm({
       </fieldset>
 
       <div>
-        <label htmlFor="issue-product" className="block text-sm font-medium text-zinc-700">
+        <label htmlFor="issue-product" className="block text-sm font-medium text-ink">
           Produkt (valfritt)
         </label>
         {selectedProduct ? (
-          <div className="mt-1 flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+          <div className="mt-1 flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3">
             <span className="min-w-0 truncate text-[15px]">{selectedProduct.label}</span>
             <button
               type="button"
@@ -120,7 +120,7 @@ export default function IssueReportForm({
                 setProductId("");
                 setProductQuery("");
               }}
-              className="h-9 shrink-0 rounded-xl border border-zinc-200 px-3 text-sm font-medium"
+              className="h-9 shrink-0 rounded-xl border border-control px-3 text-sm font-medium"
             >
               Ta bort
             </button>
@@ -135,7 +135,7 @@ export default function IssueReportForm({
           />
         )}
         {hits.length > 0 ? (
-          <ul className="mt-2 space-y-1 rounded-2xl border border-zinc-200 bg-white p-2">
+          <ul className="mt-2 space-y-1 rounded-2xl border border-line bg-surface p-2">
             {hits.map((product) => (
               <li key={product.id}>
                 <button
@@ -144,7 +144,7 @@ export default function IssueReportForm({
                     setProductId(product.id);
                     setProductQuery(product.label);
                   }}
-                  className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-left text-sm"
+                  className="w-full rounded-xl border border-line px-3 py-2 text-left text-sm"
                 >
                   {product.label}
                 </button>
@@ -155,7 +155,7 @@ export default function IssueReportForm({
       </div>
 
       <div>
-        <label htmlFor="issue-text" className="block text-sm font-medium text-zinc-700">
+        <label htmlFor="issue-text" className="block text-sm font-medium text-ink">
           Vad har hänt?
         </label>
         <textarea
@@ -166,18 +166,18 @@ export default function IssueReportForm({
           rows={4}
           maxLength={MAX_ISSUE_TEXT_LENGTH}
           placeholder="t.ex. Sex dosor krossade i kartongen från dagens leverans."
-          className="mt-1 w-full rounded-2xl border border-zinc-200 px-4 py-3 text-base outline-none transition focus:border-zinc-400"
+          className="mt-1 w-full bg-raised rounded-2xl border border-control px-4 py-3 text-base text-ink placeholder:text-muted outline-none transition focus:border-primary"
         />
         <div className="mt-1 flex items-baseline justify-between gap-3">
-          <p className="text-sm text-zinc-500">{NO_PERSONAL_DATA_SHORT}</p>
-          <span className="shrink-0 text-xs text-zinc-500">
+          <p className="text-sm text-muted">{NO_PERSONAL_DATA_SHORT}</p>
+          <span className="shrink-0 text-xs text-muted">
             {text.length}/{MAX_ISSUE_TEXT_LENGTH}
           </span>
         </div>
       </div>
 
       {state.error ? (
-        <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">
+        <p role="alert" className="rounded-xl bg-raised p-3 text-sm text-danger">
           {state.error}
         </p>
       ) : null}
@@ -185,7 +185,7 @@ export default function IssueReportForm({
       <button
         type="submit"
         disabled={pending || !text.trim()}
-        className="h-14 w-full rounded-2xl bg-zinc-900 px-6 text-lg font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
+        className="h-14 w-full rounded-2xl bg-primary px-6 text-lg font-semibold text-on-primary transition active:scale-[0.99] disabled:bg-raised disabled:text-muted"
       >
         {pending ? "Skickar…" : "Skicka rapport"}
       </button>

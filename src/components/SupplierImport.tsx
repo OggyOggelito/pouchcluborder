@@ -61,18 +61,18 @@ export default function SupplierImport() {
   const stats = result?.stats;
 
   return (
-    <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <section className="mt-6 rounded-2xl border border-line bg-surface p-5 shadow-sm">
       <h2 className="text-lg font-semibold tracking-tight">
         Importera leverantörsfil (rå .xlsx)
       </h2>
-      <p className="mt-1 text-sm text-zinc-600">
+      <p className="mt-1 text-sm text-muted">
         Ta masterdocen precis som den kommer (<code className="font-mono">Sortiment_ÅÅÅÅMMDD.xlsx</code>,
         blad <code className="font-mono">MASTERDOC</code>) — ingen förstädning behövs. Rubrikrad 2,
         bara <code className="font-mono">Aktiv = Ja</code>, och bara vitt snus, nikotinfritt,
         tobakssnus och vapes. Körs alltid i <strong>ersätt-läge</strong>.
       </p>
 
-      <label className="mt-4 flex h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 text-center transition hover:border-zinc-400">
+      <label className="mt-4 flex h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-control text-center transition hover:border-control">
         <input
           type="file"
           accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -85,7 +85,7 @@ export default function SupplierImport() {
           }}
         />
         <span className="font-medium">{file?.name ?? "Välj Sortiment-fil (.xlsx)"}</span>
-        <span className="mt-1 text-sm text-zinc-500">
+        <span className="mt-1 text-sm text-muted">
           {file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : "MASTERDOC-bladet läses automatiskt"}
         </span>
       </label>
@@ -94,7 +94,7 @@ export default function SupplierImport() {
         type="button"
         onClick={runImport}
         disabled={busy || !file}
-        className="mt-4 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
+        className="mt-4 h-12 w-full rounded-2xl bg-primary px-6 font-semibold text-on-primary transition active:scale-[0.99] disabled:bg-raised disabled:text-muted"
       >
         {busy ? "Importerar…" : "Importera leverantörsfil"}
       </button>
@@ -103,7 +103,7 @@ export default function SupplierImport() {
         <div
           role="status"
           className={`mt-4 rounded-xl p-4 text-sm ${
-            failed ? "bg-red-50 text-red-800" : "bg-brand-50 text-brand-700"
+            failed ? "bg-raised text-danger" : "bg-raised text-primary"
           }`}
         >
           {result.error ? <p className="font-medium">{result.error}</p> : null}
@@ -136,17 +136,17 @@ export default function SupplierImport() {
                   </li>
                   <li>sammanslagna dubbletter: {stats.mergedDuplicates}</li>
                   {stats.recategorised > 0 ? (
-                    <li className="text-amber-700">
+                    <li className="text-warning">
                       omkategoriserade till nikotinfritt: <strong>{stats.recategorised}</strong>
                     </li>
                   ) : null}
                   {stats.missingPrice > 0 ? (
-                    <li className="text-amber-700">
+                    <li className="text-warning">
                       saknar Inpris (importerade till 0 kr): <strong>{stats.missingPrice}</strong>
                     </li>
                   ) : null}
                   {stats.inferredPackSize > 0 ? (
-                    <li className="text-amber-700">
+                    <li className="text-warning">
                       saknar Innehåll DFP (antal/stock gissat): <strong>{stats.inferredPackSize}</strong>
                     </li>
                   ) : null}
@@ -154,7 +154,7 @@ export default function SupplierImport() {
                     bortfiltrerade: {stats.skippedInactive} inaktiva, {stats.skippedCategory} fel
                     kategori, {stats.skippedUnusable} utan pris/namn
                   </li>
-                  <li className="text-zinc-500">
+                  <li className="text-muted">
                     läste {stats.totalRows} rader ur MASTERDOC
                   </li>
                 </ul>

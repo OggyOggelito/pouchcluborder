@@ -47,7 +47,7 @@ export default async function RoutinesPage({
   return (
     <main className="mx-auto max-w-2xl px-4 pb-20 pt-6">
       <h1 className="text-2xl font-semibold tracking-tight">Rutiner</h1>
-      <p className="mt-1 text-zinc-600">Hur vi gör saker i butik.</p>
+      <p className="mt-1 text-muted">Hur vi gör saker i butik.</p>
 
       <form action="/staff/routines" className="mt-4">
         {active ? <input type="hidden" name="category" value={active} /> : null}
@@ -60,11 +60,11 @@ export default async function RoutinesPage({
             name="q"
             defaultValue={q ?? ""}
             placeholder="Sök, t.ex. stängning"
-            className="h-12 min-w-0 flex-1 rounded-2xl border border-zinc-200 px-4 text-base outline-none transition focus:border-zinc-400"
+            className="h-12 min-w-0 flex-1 bg-raised rounded-2xl border border-control px-4 text-base text-ink placeholder:text-muted outline-none transition focus:border-primary"
           />
           <button
             type="submit"
-            className="h-12 shrink-0 rounded-2xl bg-zinc-900 px-5 font-semibold text-white"
+            className="h-12 shrink-0 rounded-2xl bg-primary px-5 font-semibold text-on-primary"
           >
             Sök
           </button>
@@ -76,7 +76,7 @@ export default async function RoutinesPage({
           <Link
             href={chipHref({ category: null })}
             className={`min-h-tap shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
-              active ? "border-zinc-200 bg-white text-zinc-600" : "border-zinc-900 bg-zinc-900 text-white"
+              active ? "border-control bg-surface text-muted" : "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
             }`}
           >
             Alla
@@ -87,8 +87,8 @@ export default async function RoutinesPage({
               href={chipHref({ category: row.name })}
               className={`min-h-tap shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
                 active === row.name
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white text-zinc-600"
+                  ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                  : "border-control bg-surface text-muted"
               }`}
             >
               {row.name}
@@ -98,12 +98,12 @@ export default async function RoutinesPage({
       ) : null}
 
       {articles.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-6 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga publicerade rutiner än. En administratör skriver dem under{" "}
           <span className="font-mono">/admin/routines</span>.
         </p>
       ) : results.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-6 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inget träffade {q ? `“${q}”` : "filtret"}.{" "}
           <Link href="/staff/routines" className="underline underline-offset-4">
             Visa alla
@@ -115,10 +115,10 @@ export default async function RoutinesPage({
             <li key={article.id}>
               <Link
                 href={`/staff/routines/${article.slug}`}
-                className="block rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition active:scale-[0.99] hover:border-zinc-300"
+                className="block rounded-2xl border border-line bg-surface p-4 shadow-sm transition active:scale-[0.99] hover:border-control"
               >
                 <p className="font-semibold tracking-tight">{article.title}</p>
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-muted">
                   {article.category ? `${article.category} · ` : ""}
                   senast uppdaterad {formatDateTime(article.updatedAt)}
                 </p>

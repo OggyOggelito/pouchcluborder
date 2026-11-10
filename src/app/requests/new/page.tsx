@@ -22,7 +22,7 @@ export default async function NewRequestPage({
     return (
       <main className="mx-auto max-w-lg px-4 py-10">
         <h1 className="text-xl font-semibold tracking-tight">Kundönskemål</h1>
-        <p className="mt-2 text-zinc-600">
+        <p className="mt-2 text-muted">
           Ditt konto är inte kopplat till någon butik. Be en administratör koppla en.
         </p>
       </main>
@@ -37,7 +37,7 @@ export default async function NewRequestPage({
   return (
     <main className="mx-auto max-w-lg px-4 pb-20 pt-6">
       <h1 className="text-2xl font-semibold tracking-tight">Kundönskemål</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         Frågade en kund efter något vi inte kunde sälja? Logga det här, så ser inköp vad som
         efterfrågas.
       </p>

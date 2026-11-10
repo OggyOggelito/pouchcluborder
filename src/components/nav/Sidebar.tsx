@@ -35,7 +35,7 @@ export default function Sidebar({
       >
         {sections.map((section) => (
           <section key={section.group} className="pb-3">
-            <h2 className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <h2 className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-muted">
               {section.label}
             </h2>
             <ul className="space-y-0.5">
@@ -46,21 +46,25 @@ export default function Sidebar({
                     <Link
                       href={entry.href}
                       aria-current={active ? "page" : undefined}
-                      className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] transition ${
-                        active
-                          ? "bg-zinc-900 font-semibold text-white"
-                          : "text-zinc-700 hover:bg-zinc-100"
+                      className={`relative flex min-h-11 items-center gap-3 rounded-xl py-1 pl-4 pr-3 text-[15px] transition ${
+                        active ? "bg-raised font-bold text-ink" : "text-ink hover:bg-raised"
                       }`}
                     >
+                      {active ? (
+                        <span
+                          aria-hidden
+                          className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-primary"
+                        />
+                      ) : null}
                       <NavIcon
                         name={entry.icon}
-                        className={`h-5 w-5 shrink-0 ${active ? "text-white" : "text-zinc-500"}`}
+                        className={`h-5 w-5 shrink-0 ${active ? "text-primary" : "text-muted"}`}
                       />
                       <span className="min-w-0 flex-1 truncate">{entry.label}</span>
                       {entry.href === "/news" && newsBadge > 0 ? (
                         <span
                           className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            active ? "bg-white text-zinc-900" : "bg-brand-700 text-white"
+                            "bg-primary text-on-primary"
                           }`}
                         >
                           {newsBadge}
@@ -75,7 +79,7 @@ export default function Sidebar({
           </section>
         ))}
 
-        <div className="border-t border-zinc-100 pt-2">{signOut}</div>
+        <div className="border-t border-line pt-2">{signOut}</div>
       </nav>
     </aside>
   );

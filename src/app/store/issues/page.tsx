@@ -21,7 +21,7 @@ export default async function StoreIssuesPage() {
     return (
       <main className="mx-auto max-w-lg px-4 py-10">
         <h1 className="text-xl font-semibold tracking-tight">Problemrapporter</h1>
-        <p className="mt-2 text-zinc-600">
+        <p className="mt-2 text-muted">
           Ditt konto är inte kopplat till någon butik. Be en administratör koppla en.
         </p>
       </main>
@@ -42,7 +42,7 @@ export default async function StoreIssuesPage() {
           Skiftanteckningar
         </Link>
       </div>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         Skadad vara, fel etikett, trasig utrustning eller en leverans som strulat.
         {open === 0
           ? " Inget öppet just nu."
@@ -53,13 +53,13 @@ export default async function StoreIssuesPage() {
 
       <Link
         href="/store/issues/new"
-        className="mt-4 flex h-14 items-center justify-center rounded-2xl bg-zinc-900 px-6 text-lg font-semibold text-white transition active:scale-[0.99]"
+        className="mt-4 flex h-14 items-center justify-center rounded-2xl bg-primary px-6 text-lg font-semibold text-on-primary transition active:scale-[0.99]"
       >
         Skapa problemrapport
       </Link>
 
       {issues.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-6 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga rapporter än.
         </p>
       ) : (

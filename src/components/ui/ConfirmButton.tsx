@@ -59,18 +59,18 @@ export default function ConfirmButton({
             type="button"
             aria-label={cancelLabel}
             onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-zinc-900/40"
+            className="absolute inset-0 bg-scrim"
           />
           <div
             role="alertdialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="relative w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl"
+            className="relative w-full max-w-sm rounded-3xl bg-surface p-5 shadow-2xl"
           >
             <h2 id={titleId} className="text-lg font-semibold tracking-tight">
               {title}
             </h2>
-            {body ? <p className="mt-1 text-sm text-zinc-600">{body}</p> : null}
+            {body ? <p className="mt-1 text-sm text-muted">{body}</p> : null}
 
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row">
               <button
@@ -79,7 +79,7 @@ export default function ConfirmButton({
                   setOpen(false);
                   triggerRef.current?.focus();
                 }}
-                className="min-h-tap flex-1 rounded-2xl border border-zinc-200 px-4 font-medium transition hover:bg-zinc-50"
+                className="min-h-tap flex-1 rounded-2xl border border-control px-4 font-medium transition hover:bg-raised"
               >
                 {cancelLabel}
               </button>
@@ -88,8 +88,8 @@ export default function ConfirmButton({
               <button
                 ref={confirmRef}
                 type="submit"
-                className={`min-h-tap flex-1 rounded-2xl px-4 font-semibold text-white transition ${
-                  tone === "danger" ? "bg-red-700" : "bg-zinc-900"
+                className={`min-h-tap flex-1 rounded-2xl px-4 font-semibold text-on-primary transition ${
+                  tone === "danger" ? "bg-danger" : "bg-primary"
                 }`}
               >
                 {confirmLabel}

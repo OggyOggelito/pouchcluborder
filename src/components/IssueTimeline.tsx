@@ -16,13 +16,13 @@ export default function IssueTimeline({ events }: { events: IssueDetail["events"
   return (
     <ol className="mt-3 space-y-3">
       {events.map((event) => (
-        <li key={event.id} className="border-l-2 border-zinc-200 pl-3">
-          <p className="text-xs text-zinc-500">
+        <li key={event.id} className="border-l-2 border-line pl-3">
+          <p className="text-xs text-muted">
             {TYPE_LABELS[event.type] ?? event.type} · {event.userName ?? "Okänd"} ·{" "}
             {formatDateTime(event.at)}
           </p>
           {event.detail ? (
-            <p className="mt-0.5 whitespace-pre-wrap text-[15px] text-zinc-800">
+            <p className="mt-0.5 whitespace-pre-wrap text-[15px] text-ink">
               {event.type === "STATUS"
                 ? ISSUE_STATUS_LABELS[toIssueStatus(event.detail)]
                 : event.detail}

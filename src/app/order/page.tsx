@@ -36,7 +36,7 @@ export default async function OrderPage({
     return (
       <main className="mx-auto max-w-3xl px-4 py-10">
         <PageHeader title="Ingen butik kopplad" />
-        <p className="text-zinc-700">
+        <p className="text-ink">
           Kontot <span className="font-medium">{user.email}</span> har ännu ingen butik. Be en
           administratör koppla en butik till kontot.
         </p>
@@ -63,7 +63,7 @@ export default async function OrderPage({
           action={
             <Link
               href="/admin"
-              className="inline-flex min-h-tap items-center rounded-2xl bg-zinc-900 px-5 font-semibold text-white"
+              className="inline-flex min-h-tap items-center rounded-2xl bg-primary px-5 font-semibold text-on-primary"
             >
               Till importen
             </Link>

@@ -14,33 +14,36 @@ import remarkGfm from "remark-gfm";
  */
 export default function Markdown({ children }: { children: string }) {
   return (
-    <div className="space-y-4 text-[17px] leading-relaxed text-zinc-700">
+    // prose-measure caps the line at ~65ch. It does nothing on a phone, where
+    // the viewport is already narrower than that, and stops long Swedish
+    // paragraphs running the full width of a desktop sidebar layout.
+    <div className="prose-measure space-y-4 text-[17px] leading-relaxed text-ink">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
-            <h2 className="pt-2 text-xl font-semibold tracking-tight text-zinc-900">{children}</h2>
+            <h2 className="pt-2 text-xl font-semibold tracking-tight text-ink">{children}</h2>
           ),
           h2: ({ children }) => (
-            <h3 className="pt-2 text-lg font-semibold tracking-tight text-zinc-900">{children}</h3>
+            <h3 className="pt-2 text-lg font-semibold tracking-tight text-ink">{children}</h3>
           ),
           h3: ({ children }) => (
-            <h4 className="pt-1 font-semibold tracking-tight text-zinc-900">{children}</h4>
+            <h4 className="pt-1 font-semibold tracking-tight text-ink">{children}</h4>
           ),
           p: ({ children }) => <p>{children}</p>,
           ul: ({ children }) => <ul className="list-disc space-y-1 pl-5">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal space-y-1 pl-5">{children}</ol>,
           li: ({ children }) => <li>{children}</li>,
           strong: ({ children }) => (
-            <strong className="font-semibold text-zinc-900">{children}</strong>
+            <strong className="font-semibold text-ink">{children}</strong>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-2 border-zinc-200 pl-4 text-zinc-500">
+            <blockquote className="border-l-2 border-line pl-4 text-muted">
               {children}
             </blockquote>
           ),
           code: ({ children }) => (
-            <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-sm">{children}</code>
+            <code className="rounded bg-raised px-1.5 py-0.5 font-mono text-sm">{children}</code>
           ),
           a: ({ href, children }) => {
             // Cross-links between brand pages stay in the tab; only links off
@@ -56,18 +59,18 @@ export default function Markdown({ children }: { children: string }) {
               </a>
             );
           },
-          hr: () => <hr className="border-zinc-200" />,
+          hr: () => <hr className="border-line" />,
           table: ({ children }) => (
             <div className="-mx-1 overflow-x-auto">
               <table className="w-full border-collapse text-[15px]">{children}</table>
             </div>
           ),
-          thead: ({ children }) => <thead className="border-b border-zinc-200">{children}</thead>,
+          thead: ({ children }) => <thead className="border-b border-line">{children}</thead>,
           th: ({ children }) => (
-            <th className="px-2 py-2 text-left text-sm font-semibold text-zinc-500">{children}</th>
+            <th className="px-2 py-2 text-left text-sm font-semibold text-muted">{children}</th>
           ),
           td: ({ children }) => (
-            <td className="border-b border-zinc-100 px-2 py-2 align-top">{children}</td>
+            <td className="border-b border-line px-2 py-2 align-top">{children}</td>
           ),
         }}
       >

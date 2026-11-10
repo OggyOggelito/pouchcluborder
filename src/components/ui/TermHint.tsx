@@ -26,7 +26,7 @@ export default function TermHint({ term }: { term: TermKey }) {
       >
         <span
           aria-hidden
-          className="grid h-6 w-6 place-items-center rounded-full border border-zinc-300 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-100"
+          className="grid h-6 w-6 place-items-center rounded-full border border-control text-xs font-semibold text-muted transition hover:bg-raised"
         >
           ?
         </span>
@@ -34,7 +34,7 @@ export default function TermHint({ term }: { term: TermKey }) {
       </button>
 
       {open ? (
-        <span className="ml-2 inline-block rounded-xl bg-zinc-100 px-3 py-1.5 text-sm font-normal text-zinc-700">
+        <span className="ml-2 inline-block rounded-xl bg-raised px-3 py-1.5 text-sm font-normal text-ink">
           {definition.explanation}
         </span>
       ) : null}

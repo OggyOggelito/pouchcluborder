@@ -79,14 +79,14 @@ export default function ProductFinder({ products }: { products: FinderProduct[] 
 
   return (
     <>
-      <div className="sticky top-[57px] z-20 -mx-4 space-y-3 bg-zinc-50/95 px-4 pb-3 pt-3 backdrop-blur">
+      <div className="sticky top-[57px] z-20 -mx-4 space-y-3 bg-canvas/95 px-4 pb-3 pt-3 backdrop-blur">
         <input
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Sök märke, smak eller format…"
           aria-label="Sök produkt"
-          className="h-12 w-full rounded-2xl border border-zinc-200 bg-white px-4 text-base outline-none transition focus:border-zinc-400 [&::-webkit-search-cancel-button]:appearance-none"
+          className="h-12 w-full rounded-2xl border border-control bg-raised px-4 text-base text-ink placeholder:text-muted outline-none transition focus:border-primary [&::-webkit-search-cancel-button]:appearance-none"
         />
 
         <FilterRow label="Kategori" options={categories} value={category} onChange={setCategory} />
@@ -105,19 +105,19 @@ export default function ProductFinder({ products }: { products: FinderProduct[] 
         />
       </div>
 
-      <p className="mt-2 text-sm text-zinc-500" role="status">
+      <p className="mt-2 text-sm text-muted" role="status">
         {results.length} {results.length === 1 ? "produkt" : "produkter"}
         {hasFilter ? " matchar" : " i sortimentet"}.
       </p>
 
       {results.length === 0 ? (
-        <div className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center">
-          <p className="text-zinc-500">Inga produkter matchar filtren.</p>
+        <div className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center">
+          <p className="text-muted">Inga produkter matchar filtren.</p>
           {/* The most useful moment to capture demand: someone looked and we
               did not have it. The search text comes along prefilled. */}
           <Link
             href={`/requests/new${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`}
-            className="mt-4 inline-flex h-12 items-center rounded-2xl bg-zinc-900 px-6 font-semibold text-white"
+            className="mt-4 inline-flex h-12 items-center rounded-2xl bg-primary px-6 font-semibold text-on-primary"
           >
             Hittar du inte? Logga som kundönskemål
           </Link>
@@ -129,15 +129,15 @@ export default function ProductFinder({ products }: { products: FinderProduct[] 
             return (
               <li
                 key={product.id}
-                className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
+                className="rounded-2xl border border-line bg-surface p-4 shadow-sm"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <p className="font-semibold tracking-tight">
-                    {product.brand} <span className="font-normal text-zinc-600">{product.flavor}</span>
+                    {product.brand} <span className="font-normal text-muted">{product.flavor}</span>
                   </p>
-                  <p className="text-sm tabular-nums text-zinc-500">
+                  <p className="text-sm tabular-nums text-muted">
                     {mg !== null ? `${formatMg(mg)} mg` : "mg okänt"}
-                    <span className="text-zinc-300"> · </span>
+                    <span className="text-muted"> · </span>
                     {product.format}
                   </p>
                 </div>
@@ -145,28 +145,28 @@ export default function ProductFinder({ products }: { products: FinderProduct[] 
                 {/* The brand's own strength wording, when the data carries it,
                     instead of a label of our own. */}
                 {product.strength && product.strength !== `${mg}mg` ? (
-                  <p className="mt-0.5 text-sm text-zinc-500">
+                  <p className="mt-0.5 text-sm text-muted">
                     Märkets benämning: <span className="font-medium">{product.strength}</span>
                   </p>
                 ) : null}
 
                 {product.description ? (
-                  <p className="mt-2 text-[15px] leading-relaxed text-zinc-700">
+                  <p className="mt-2 text-[15px] leading-relaxed text-ink">
                     {product.description}
                   </p>
                 ) : null}
 
-                <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500">
+                <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
                   {product.category ? <span>{categoryLabel(product.category)}</span> : null}
                   {parseTags(product.flavorTags).map((tag) => (
-                    <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-zinc-600">
+                    <span key={tag} className="rounded-full bg-raised px-2 py-0.5 text-muted">
                       {FLAVOR_GROUP_LABELS[tag]}
                     </span>
                   ))}
                   {product.brandSlug ? (
                     <Link
                       href={`/staff/brands/${product.brandSlug}`}
-                      className="underline underline-offset-4 hover:text-zinc-700"
+                      className="underline underline-offset-4 hover:text-ink"
                     >
                       Om {product.brand}
                     </Link>
@@ -196,7 +196,7 @@ function FilterRow({
 
   return (
     <div>
-      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
       <div className="mt-1 flex gap-2 overflow-x-auto pb-1">
         <Chip active={value === null} onClick={() => onChange(null)}>
           Alla
@@ -231,8 +231,8 @@ function Chip({
       aria-pressed={active}
       className={`min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition ${
         active
-          ? "border-zinc-900 bg-zinc-900 text-white"
-          : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+          ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+          : "border-control bg-surface text-muted hover:border-control"
       }`}
     >
       {children}

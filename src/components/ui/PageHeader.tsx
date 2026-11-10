@@ -25,7 +25,7 @@ export default function PageHeader({
         <nav aria-label="Brödsmula" className="mb-2">
           <Link
             href={breadcrumb.href}
-            className="inline-flex min-h-11 items-center gap-1 rounded-xl pr-2 text-sm text-zinc-600 transition hover:text-zinc-900"
+            className="inline-flex min-h-11 items-center gap-1 rounded-xl pr-2 text-sm text-muted transition hover:text-ink"
           >
             <span aria-hidden>‹</span>
             {breadcrumb.label}
@@ -36,7 +36,7 @@ export default function PageHeader({
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          {description ? <p className="mt-1 text-zinc-600">{description}</p> : null}
+          {description ? <p className="mt-1 text-muted">{description}</p> : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>

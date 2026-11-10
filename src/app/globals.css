@@ -1,39 +1,136 @@
 @import "tailwindcss";
+@import "../styles/tokens.css";
 
+/**
+ * Tailwind v4 is configured in CSS, so the theme is this block. Every entry
+ * points at a token in src/styles/tokens.css — no colour value is written
+ * here, which is what keeps `npm run lint:colors` green.
+ *
+ * The names are chosen to read well as classes: bg-surface, bg-raised,
+ * text-ink, text-muted, border-line, border-control, bg-primary
+ * text-on-primary, text-danger.
+ */
 @theme {
-  /* Brand ramp. 200-400 were missing, so `border-brand-200` in three
-     components resolved to nothing and rendered as currentColor. */
-  --color-brand-50: oklch(0.96 0.03 165);
-  --color-brand-100: oklch(0.92 0.06 165);
-  --color-brand-200: oklch(0.87 0.08 165);
-  --color-brand-300: oklch(0.81 0.11 165);
-  --color-brand-400: oklch(0.74 0.13 165);
-  --color-brand-500: oklch(0.68 0.14 165);
-  --color-brand-600: oklch(0.58 0.13 165);
-  --color-brand-700: oklch(0.48 0.11 165);
+  --color-canvas: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--surface-raised);
 
-  /* Semantic text shades.
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
 
-     `--color-muted` replaces text-zinc-400, which is ~2.6:1 on white and was
-     the single cause of every contrast failure in the audit (2320 nodes).
-     zinc-500 clears 4.5:1 on both white and zinc-50. `--color-faint` is for
-     text that is genuinely decorative and never carries meaning. */
-  --color-muted: var(--color-zinc-500);
-  --color-faint: var(--color-zinc-400);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-pressed: var(--primary-pressed);
+
+  --color-line: var(--border);
+  --color-control: var(--border-control);
+  --color-focus: var(--focus);
+
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-info: var(--info);
+  --color-warning: var(--warning);
+
+  --color-scrim: var(--scrim);
 
   /* The one tap-target floor. 44px is the smallest comfortable thumb target
      and what this app's components size to. */
   --spacing-tap: 2.75rem;
 }
 
+/* The background is set on <html> as well as <body> so the page is navy
+   before any stylesheet has painted. Otherwise the browser flashes its own
+   white between first paint and CSS. */
 html {
   -webkit-text-size-adjust: 100%;
+  background-color: var(--bg);
 }
 
 body {
-  background-color: var(--color-zinc-50);
-  color: var(--color-zinc-900);
+  background-color: var(--bg);
+  color: var(--text);
   -webkit-tap-highlight-color: transparent;
+}
+
+/**
+ * Hierarchy has to come from size, weight and spacing, because almost all
+ * text is one colour. This is the scale; headings use it via Tailwind's
+ * text-* sizes and the weights below.
+ */
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+p,
+li,
+dd {
+  line-height: 1.6;
+}
+
+/* Long Swedish prose gets a measure. 65ch is the readable maximum; it applies
+   to running text, not to layout containers. */
+.prose-measure {
+  max-width: 65ch;
+}
+
+/**
+ * Links are underlined, always. Colour cannot carry "this is clickable" when
+ * the body text is already the brand colour.
+ *
+ * Buttons and anything with an explicit role opt out — they say it with a
+ * fill, an outline or an icon instead.
+ */
+a:not([class*="no-underline"]):not([role="button"]) {
+  text-underline-offset: 0.2em;
+}
+
+/* Focus that is visible on every surface, including on a filled yellow
+   button where a yellow ring alone would vanish. */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+.bg-primary:focus-visible,
+[class*="bg-primary"]:focus-visible {
+  outline-color: var(--on-primary);
+  outline-offset: -4px;
+}
+
+/**
+ * Primary action: filled yellow, navy text, with hover and pressed states.
+ *
+ * Done centrally rather than at each of the ~80 call sites, so every primary
+ * button in the app reacts the same way and a new one gets it for free. The
+ * element+class selector outranks Tailwind's own `bg-primary`.
+ */
+button.bg-primary:not([disabled]):hover,
+a.bg-primary:hover,
+label.bg-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+button.bg-primary:not([disabled]):active,
+a.bg-primary:active {
+  background-color: var(--primary-pressed);
+}
+
+/* Disabled: dimmed, no pointer, and no hover reaction. */
+[disabled],
+[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+[disabled]:hover,
+[aria-disabled="true"]:hover {
+  filter: none;
 }
 
 /* Quantity fields are typed into on a phone; kill the spinner arrows so the
@@ -55,23 +152,53 @@ input[type="search"]::-webkit-search-decoration {
   appearance: none;
 }
 
-/* Focus that is always visible, including for keyboard users on dark
-   surfaces. The default ring disappears against bg-zinc-900 buttons. */
-:focus-visible {
-  outline: 2px solid var(--color-brand-600);
-  outline-offset: 2px;
-  border-radius: 0.5rem;
+/**
+ * Autofill. Chrome paints a white box with black text over any styling, which
+ * on the login form is the one place a user meets a filled input first.
+ * There is no property that clears it, so the colour is pushed in with an
+ * inset shadow and the text colour is overridden for the fill state.
+ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text);
+  -webkit-box-shadow: 0 0 0 1000px var(--surface-raised) inset;
+  box-shadow: 0 0 0 1000px var(--surface-raised) inset;
+  caret-color: var(--text);
+  transition: background-color 9999s ease-in-out 0s;
 }
 
-/* Printing a routine or a följesedel: drop the app chrome. */
+/**
+ * Print. The one place the app is not dark: a följesedel or a routine taped
+ * to a wall has to come out of a laser printer legibly, which navy and yellow
+ * do not. Forced to black on white, with the app chrome dropped.
+ */
 @media print {
+  html,
+  body {
+    background: var(--print-bg) !important;
+    color: var(--print-text) !important;
+  }
+
   header,
   nav,
   [data-print-hidden] {
     display: none !important;
   }
 
-  body {
-    background: #fff;
+  /* Every themed surface and text colour collapses to plain black on white —
+     a blanket rule, so a component added later cannot print yellow. */
+  *,
+  *::before,
+  *::after {
+    background-image: none !important;
+    color: var(--print-text) !important;
+    border-color: var(--print-border) !important;
+    box-shadow: none !important;
+  }
+
+  [class*="bg-"] {
+    background-color: transparent !important;
   }
 }

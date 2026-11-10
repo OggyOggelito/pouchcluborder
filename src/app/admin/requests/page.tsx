@@ -40,16 +40,16 @@ export default async function AdminRequestsPage({
 
   const chip = (active: boolean) =>
     `min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
-      active ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-600"
+      active ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary" : "border-control bg-surface text-muted"
     }`;
 
   return (
     <main className="mx-auto max-w-5xl px-4 pb-20 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">Kundönskemål</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         {rows.length} rader, rankade på antal. Senaste {days} dagarna.
       </p>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         Efterfrågan, inte lagersaldo. Inga personuppgifter om kunder lagras.
       </p>
 
@@ -98,34 +98,34 @@ export default async function AdminRequestsPage({
       <p className="mt-4">
         <a
           href={`/api/admin/requests/export?${query}`}
-          className="inline-flex h-11 items-center rounded-xl border border-zinc-200 px-5 text-sm font-medium transition hover:bg-zinc-50"
+          className="inline-flex h-11 items-center rounded-xl border border-control px-5 text-sm font-medium transition hover:bg-raised"
         >
           Exportera till Excel
         </a>
       </p>
 
       {rows.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga önskemål i perioden.
         </p>
       ) : (
         <ul className="mt-5 space-y-3">
           {rows.map((row) => (
-            <li key={row.id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <li key={row.id} className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <p className="font-semibold tracking-tight">
                   {[row.brandText, row.flavorText].filter(Boolean).join(" ") || row.productLabel || "—"}
                 </p>
-                <p className="text-sm tabular-nums text-zinc-500">
-                  <span className="text-lg font-semibold text-zinc-900">{row.count}</span> gånger
+                <p className="text-sm tabular-nums text-muted">
+                  <span className="text-lg font-semibold text-ink">{row.count}</span> gånger
                 </p>
               </div>
-              <p className="mt-0.5 text-sm text-zinc-500">
+              <p className="mt-0.5 text-sm text-muted">
                 {row.storeName} · {REQUEST_KIND_LABELS[row.kind]} · senast{" "}
                 {formatDateTime(row.lastSeenAt)}
               </p>
               {row.productLabel && (row.brandText || row.flavorText) ? (
-                <p className="mt-1 text-sm text-zinc-500">Kopplad produkt: {row.productLabel}</p>
+                <p className="mt-1 text-sm text-muted">Kopplad produkt: {row.productLabel}</p>
               ) : null}
 
               <form action={setRequestStatusAction} className="mt-3 grid gap-2 sm:grid-cols-[150px_1fr_auto]">
@@ -134,7 +134,7 @@ export default async function AdminRequestsPage({
                   name="status"
                   defaultValue={row.status}
                   aria-label={`Status för ${row.brandText ?? row.id}`}
-                  className="min-h-tap rounded-xl border border-zinc-200 px-2 text-sm"
+                  className="min-h-tap rounded-xl border border-line px-2 text-sm"
                 >
                   {REQUEST_STATUSES.map((status) => (
                     <option key={status} value={status}>{REQUEST_STATUS_LABELS[status]}</option>
@@ -145,9 +145,9 @@ export default async function AdminRequestsPage({
                   defaultValue={row.statusNote ?? ""}
                   placeholder="Notering (valfri)"
                   aria-label="Notering"
-                  className="min-h-tap rounded-xl border border-zinc-200 px-3 text-sm"
+                  className="min-h-tap rounded-xl border border-line px-3 text-sm"
                 />
-                <button type="submit" className="min-h-tap rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50">
+                <button type="submit" className="min-h-tap rounded-xl border border-control px-4 text-sm font-medium transition hover:bg-raised">
                   Spara
                 </button>
               </form>

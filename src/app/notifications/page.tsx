@@ -24,12 +24,12 @@ export default async function NotificationsPage() {
           </form>
         ) : null}
       </div>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         Visas bara i appen — vi skickar varken e-post eller push än.
       </p>
 
       {notifications.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga aviseringar.
         </p>
       ) : (
@@ -37,18 +37,18 @@ export default async function NotificationsPage() {
           {notifications.map((item) => {
             const body = (
               <>
-                <p className={`font-medium ${item.readAt ? "text-zinc-600" : ""}`}>{item.title}</p>
-                {item.body ? <p className="mt-0.5 text-sm text-zinc-500">{item.body}</p> : null}
-                <p className="mt-1 text-xs text-zinc-500">{formatDateTime(item.createdAt)}</p>
+                <p className={`font-medium ${item.readAt ? "text-muted" : ""}`}>{item.title}</p>
+                {item.body ? <p className="mt-0.5 text-sm text-muted">{item.body}</p> : null}
+                <p className="mt-1 text-xs text-muted">{formatDateTime(item.createdAt)}</p>
               </>
             );
             const className = `block rounded-2xl border p-4 shadow-sm ${
-              item.readAt ? "border-zinc-200 bg-white" : "border-brand-200 bg-brand-50/40"
+              item.readAt ? "border-line bg-surface" : "border-primary bg-raised"
             }`;
             return (
               <li key={item.id}>
                 {item.linkUrl ? (
-                  <Link href={item.linkUrl} className={`${className} transition hover:border-zinc-300`}>
+                  <Link href={item.linkUrl} className={`${className} transition hover:border-control`}>
                     {body}
                   </Link>
                 ) : (

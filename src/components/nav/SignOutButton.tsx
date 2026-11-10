@@ -10,9 +10,9 @@ export default function SignOutButton() {
     <form action={logoutAction}>
       <button
         type="submit"
-        className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] text-zinc-700 transition hover:bg-zinc-100"
+        className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] text-ink transition hover:bg-raised"
       >
-        <NavIcon name="logout" className="h-5 w-5 shrink-0 text-zinc-500" />
+        <NavIcon name="logout" className="h-5 w-5 shrink-0 text-muted" />
         <span>Logga ut</span>
       </button>
     </form>

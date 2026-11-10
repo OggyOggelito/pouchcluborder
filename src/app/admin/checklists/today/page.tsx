@@ -41,7 +41,7 @@ export default async function ChecklistsTodayPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 pb-20 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">Dagens status</h1>
-      <p className="mt-1 text-zinc-600">{today} · Europe/Stockholm</p>
+      <p className="mt-1 text-muted">{today} · Europe/Stockholm</p>
       <p className="mt-1 text-sm">
         <Link href="/admin/checklists" className="underline underline-offset-4">
           Till mallarna
@@ -53,10 +53,10 @@ export default async function ChecklistsTodayPage() {
         {stores.map((store) => {
           const runs = dailyRuns.filter((run) => run.storeId === store.id);
           return (
-            <li key={store.id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <li key={store.id} className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
               <p className="font-medium">{store.name}</p>
               {runs.length === 0 ? (
-                <p className="mt-1 text-sm text-zinc-500">
+                <p className="mt-1 text-sm text-muted">
                   Ingen lista öppnad i dag.
                 </p>
               ) : (
@@ -70,9 +70,9 @@ export default async function ChecklistsTodayPage() {
                     const done = progress.total > 0 && progress.done === progress.total;
                     return (
                       <li key={run.id} className="flex items-center justify-between gap-3 text-sm">
-                        <span className="text-zinc-600">{label}</span>
+                        <span className="text-muted">{label}</span>
                         <span
-                          className={`tabular-nums ${done ? "font-medium text-brand-700" : "text-zinc-500"}`}
+                          className={`tabular-nums ${done ? "font-medium text-primary" : "text-muted"}`}
                         >
                           {progress.done}/{progress.total}
                         </span>
@@ -88,7 +88,7 @@ export default async function ChecklistsTodayPage() {
 
       <h2 className="mt-8 text-lg font-semibold tracking-tight">Introduktioner</h2>
       {onboardingRuns.length === 0 ? (
-        <p className="mt-3 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-3 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga introduktioner tilldelade.
         </p>
       ) : (
@@ -98,15 +98,15 @@ export default async function ChecklistsTodayPage() {
             return (
               <li
                 key={run.id}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3 shadow-sm"
               >
                 <span className="min-w-0">
                   <span className="block truncate font-medium">
                     {run.user?.name ?? run.user?.email}
                   </span>
-                  <span className="block truncate text-sm text-zinc-500">{run.title}</span>
+                  <span className="block truncate text-sm text-muted">{run.title}</span>
                 </span>
-                <span className="shrink-0 text-sm tabular-nums text-zinc-500">
+                <span className="shrink-0 text-sm tabular-nums text-muted">
                   {progress.done}/{progress.total}
                 </span>
               </li>

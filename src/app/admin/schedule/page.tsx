@@ -21,10 +21,10 @@ export default async function AdminSchedulePage() {
   return (
     <main className="mx-auto max-w-3xl px-4 pb-20 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">Schema</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         {counts.total} pass i databasen, {counts.upcoming} framåt i tiden.
       </p>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         Aktiv källa: <span className="font-medium">{providerName}</span> — styrs av{" "}
         <code className="font-mono">SCHEDULE_PROVIDER</code> i <code className="font-mono">.env</code>.
       </p>

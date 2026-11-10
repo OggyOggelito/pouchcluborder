@@ -33,7 +33,7 @@ export default async function NewIssuePage({
     return (
       <main className="mx-auto max-w-lg px-4 py-10">
         <h1 className="text-xl font-semibold tracking-tight">Ny problemrapport</h1>
-        <p className="mt-2 text-zinc-600">
+        <p className="mt-2 text-muted">
           Ditt konto är inte kopplat till någon butik. Be en administratör koppla en.
         </p>
       </main>
@@ -54,7 +54,7 @@ export default async function NewIssuePage({
   return (
     <main className="mx-auto max-w-lg px-4 pb-20 pt-6">
       <h1 className="text-2xl font-semibold tracking-tight">Ny problemrapport</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         Beskriv kort vad som är fel. En administratör tar över och du ser statusen här i appen.
       </p>
 

@@ -27,13 +27,13 @@ function mg(value: number): string {
 function LongSection({ heading, markdown }: { heading: string; markdown: string | null }) {
   return (
     <section>
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{heading}</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{heading}</h2>
       {markdown ? (
         <div className="mt-3">
           <Markdown>{markdown}</Markdown>
         </div>
       ) : (
-        <p className="mt-3 rounded-2xl border border-dashed border-zinc-300 p-4 text-center text-sm text-zinc-500">
+        <p className="mt-3 rounded-2xl border border-dashed border-control p-4 text-center text-sm text-muted">
           Innehåll kommer snart.
         </p>
       )}
@@ -44,8 +44,8 @@ function LongSection({ heading, markdown }: { heading: string; markdown: string 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-wrap gap-x-2">
-      <dt className="text-zinc-500">{label}</dt>
-      <dd className="font-medium text-zinc-900">{value}</dd>
+      <dt className="text-muted">{label}</dt>
+      <dd className="font-medium text-ink">{value}</dd>
     </div>
   );
 }
@@ -95,7 +95,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
     <main className="mx-auto max-w-2xl px-4 pb-20 pt-4">
       <Link
         href="/staff"
-        className="inline-flex h-9 items-center text-sm text-zinc-500 underline underline-offset-4 transition hover:text-zinc-900"
+        className="inline-flex h-9 items-center text-sm text-muted underline underline-offset-4 transition hover:text-ink"
       >
         ← Alla varumärken
       </Link>
@@ -111,7 +111,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
       ) : null}
 
       {!brand.published ? (
-        <p className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
+        <p className="mt-4 rounded-2xl bg-raised p-3 text-sm text-warning">
           <strong>Utkast.</strong> Sidan är inte publicerad och syns bara för
           administratörer. Läs igenom den och publicera i{" "}
           <Link href={`/admin/brands/${brand.id}`} className="underline underline-offset-4">
@@ -127,14 +127,14 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
           <img
             src={brand.logoUrl}
             alt=""
-            className="h-14 w-14 shrink-0 rounded-xl border border-zinc-200 object-contain p-1"
+            className="h-14 w-14 shrink-0 rounded-xl border border-line object-contain p-1"
           />
         ) : null}
         <div className="min-w-0">
           <h1 className="text-3xl font-semibold tracking-tight">{brand.name}</h1>
-          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-500">
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
             {categories.map((category) => (
-              <span key={category} className="rounded-full bg-zinc-100 px-2 py-0.5">
+              <span key={category} className="rounded-full bg-raised px-2 py-0.5">
                 {categoryLabel(category)}
               </span>
             ))}
@@ -144,7 +144,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
       </header>
 
       {!hasContent(brand) ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-6 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Innehåll kommer snart.
         </p>
       ) : (
@@ -181,8 +181,8 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
       ) : null}
 
       {facts.manufacturers.length > 0 || facts.strengthRange || facts.formats.length > 0 ? (
-        <section className="mt-10 border-t border-zinc-200 pt-6">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        <section className="mt-10 border-t border-line pt-6">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
             Snabbfakta
           </h2>
           <dl className="mt-3 space-y-2 text-[17px]">
@@ -220,10 +220,10 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
             ) : null}
           </dl>
           {strengthUnitNote(brand.strengthUnit) ? (
-            <p className="mt-3 text-sm text-zinc-600">{strengthUnitNote(brand.strengthUnit)}</p>
+            <p className="mt-3 text-sm text-muted">{strengthUnitNote(brand.strengthUnit)}</p>
           ) : null}
           {facts.sources.length > 0 ? (
-            <p className="mt-3 text-xs text-zinc-500">
+            <p className="mt-3 text-xs text-muted">
               Nikotinvärden för {facts.enrichedCount} av {facts.variantCount} varianter hämtade
               från {facts.sources.join(", ")}.
             </p>
@@ -231,16 +231,16 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
         </section>
       ) : null}
 
-      <section className="mt-10 border-t border-zinc-200 pt-6">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+      <section className="mt-10 border-t border-line pt-6">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">
           Det här har vi i sortimentet
         </h2>
 
         {products.length === 0 ? (
-          <p className="mt-3 text-zinc-500">Inget aktivt i katalogen just nu.</p>
+          <p className="mt-3 text-muted">Inget aktivt i katalogen just nu.</p>
         ) : (
           <>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-muted">
               {products.length} {products.length === 1 ? "variant" : "varianter"}
             </p>
             <ul className="mt-4 space-y-3">
@@ -248,11 +248,11 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
                 <li key={flavor}>
                   <p className="font-medium">{flavor}</p>
                   {descriptionByFlavor.has(flavor) ? (
-                    <p className="mt-0.5 text-[15px] leading-relaxed text-zinc-600">
+                    <p className="mt-0.5 text-[15px] leading-relaxed text-muted">
                       {descriptionByFlavor.get(flavor)}
                     </p>
                   ) : null}
-                  <p className="mt-0.5 text-sm text-zinc-500">
+                  <p className="mt-0.5 text-sm text-muted">
                     {variants
                       .map((variant) => {
                         const strength =

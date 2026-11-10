@@ -44,7 +44,7 @@ export default async function OrderDetailPage({
         action={
           <a
             href={`/api/orders/${order.id}/export`}
-            className="inline-flex min-h-tap items-center rounded-2xl bg-zinc-900 px-5 font-semibold text-white"
+            className="inline-flex min-h-tap items-center rounded-2xl bg-primary px-5 font-semibold text-on-primary"
           >
             Exportera Excel
           </a>
@@ -55,11 +55,11 @@ export default async function OrderDetailPage({
         <p className="text-base font-semibold tabular-nums">
           {countOf("stock", order.totalQuantity)}
         </p>
-        <p className="text-sm text-zinc-600 tabular-nums">
+        <p className="text-sm text-muted tabular-nums">
           {formatSek(order.totalSek)} inköpsvärde
         </p>
         {order.note ? (
-          <p className="mt-3 rounded-xl bg-zinc-100 px-3 py-2 text-sm text-zinc-700">
+          <p className="mt-3 rounded-xl bg-raised px-3 py-2 text-sm text-ink">
             {order.note}
           </p>
         ) : null}
@@ -74,18 +74,18 @@ export default async function OrderDetailPage({
                   <span className="block truncate font-medium">
                     {line.brand} {line.flavor}
                   </span>
-                  <span className="block truncate text-sm text-zinc-600">
+                  <span className="block truncate text-sm text-muted">
                     {[line.strength, line.format].filter(Boolean).join(" · ")}
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
                   <span className="block font-semibold tabular-nums">
                     {formatNumber(line.quantity)}{" "}
-                    <span className="font-normal text-zinc-600">
+                    <span className="font-normal text-muted">
                       {termFor("stock", line.quantity)}
                     </span>
                   </span>
-                  <span className="block text-sm text-zinc-600 tabular-nums">
+                  <span className="block text-sm text-muted tabular-nums">
                     {formatSek(line.lineTotal)}
                   </span>
                 </span>

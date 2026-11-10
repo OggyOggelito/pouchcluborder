@@ -29,7 +29,7 @@ export default function BottomBar({
   return (
     <nav
       aria-label="Huvudmeny"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
       <ul className="mx-auto flex max-w-3xl items-stretch gap-1 px-2 py-1">
         {entries.map((entry) => {
@@ -39,17 +39,29 @@ export default function BottomBar({
               <Link
                 href={entry.href}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl transition active:bg-zinc-100 ${
-                  active ? "text-brand-700" : "text-zinc-500"
+                className={`relative flex min-h-[3.25rem] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl transition active:bg-raised ${
+                  active ? "bg-raised text-ink" : "text-muted"
                 }`}
               >
+                {/* A 3px bar, not just a colour change: on this background
+                    almost everything is already yellow. */}
+                {active ? (
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-3 top-0 h-[3px] rounded-full bg-primary"
+                  />
+                ) : null}
                 <NavIcon name={entry.icon} className="h-6 w-6" />
-                <span className="text-[11px] font-medium leading-none">{entry.label}</span>
+                <span
+                  className={`text-[11px] leading-none ${active ? "font-bold" : "font-medium"}`}
+                >
+                  {entry.label}
+                </span>
 
                 {entry.href === "/news" && newsBadge > 0 ? (
                   <span
                     aria-hidden
-                    className="absolute right-[18%] top-1 min-w-5 rounded-full bg-brand-700 px-1 text-center text-[10px] font-bold leading-5 text-white"
+                    className="absolute right-[18%] top-1 min-w-5 rounded-full bg-primary px-1 text-center text-[10px] font-bold leading-5 text-on-primary"
                   >
                     {newsBadge > 9 ? "9+" : newsBadge}
                   </span>

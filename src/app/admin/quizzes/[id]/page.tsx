@@ -13,7 +13,7 @@ import { requireAdmin } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 const FIELD =
-  "mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-[15px] outline-none transition focus:border-zinc-400";
+  "mt-1 w-full bg-raised rounded-xl border border-control px-3 py-2 text-[15px] text-ink placeholder:text-muted outline-none transition focus:border-primary";
 
 export default async function EditQuizPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
@@ -26,21 +26,21 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-20 pt-6">
-      <Link href="/admin/quizzes" className="inline-flex h-9 items-center text-sm text-zinc-500 underline underline-offset-4">
+      <Link href="/admin/quizzes" className="inline-flex h-9 items-center text-sm text-muted underline underline-offset-4">
         ← Alla quiz
       </Link>
 
-      <form action={saveQuizAction} className="mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <form action={saveQuizAction} className="mt-4 rounded-2xl border border-line bg-surface p-5 shadow-sm">
         <input type="hidden" name="id" value={quiz.id} />
-        <label htmlFor="title" className="block text-sm font-medium text-zinc-700">Titel</label>
+        <label htmlFor="title" className="block text-sm font-medium text-ink">Titel</label>
         <input id="title" name="title" defaultValue={quiz.title} className={FIELD} />
 
-        <label htmlFor="description" className="mt-4 block text-sm font-medium text-zinc-700">
+        <label htmlFor="description" className="mt-4 block text-sm font-medium text-ink">
           Beskrivning
         </label>
         <textarea id="description" name="description" rows={2} defaultValue={quiz.description ?? ""} className={FIELD} />
 
-        <label htmlFor="brandId" className="mt-4 block text-sm font-medium text-zinc-700">Varumärke</label>
+        <label htmlFor="brandId" className="mt-4 block text-sm font-medium text-ink">Varumärke</label>
         <select id="brandId" name="brandId" defaultValue="" className={FIELD}>
           <option value="">— inget —</option>
           {brands.map((brand) => (
@@ -53,7 +53,7 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
           <span className="text-sm">Publicerad — syns för personalen</span>
         </label>
 
-        <button type="submit" className="mt-4 h-11 w-full rounded-xl bg-zinc-900 font-medium text-white">
+        <button type="submit" className="mt-4 h-11 w-full rounded-xl bg-primary font-medium text-on-primary">
           Spara quiz
         </button>
       </form>
@@ -62,7 +62,7 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
 
       <ul className="mt-3 space-y-3">
         {quiz.questions.map((question, index) => (
-          <li key={question.id} className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <li key={question.id} className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
             <form action={saveQuestionAction} className="space-y-3">
               <input type="hidden" name="quizId" value={quiz.id} />
               <input type="hidden" name="questionId" value={question.id} />
@@ -82,7 +82,7 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
                     defaultValue={question.options[optionIndex] ?? ""}
                     placeholder={`Alternativ ${optionIndex + 1}`}
                     aria-label={`Alternativ ${optionIndex + 1}`}
-                    className="min-h-tap flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none focus:border-zinc-400"
+                    className="min-h-tap flex-1 bg-raised rounded-xl border border-control px-3 text-sm text-ink placeholder:text-muted outline-none focus:border-primary"
                   />
                 </div>
               ))}
@@ -94,7 +94,7 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
                 aria-label="Förklaring"
                 className={`${FIELD} font-mono text-sm`}
               />
-              <button type="submit" className="min-h-tap rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50">
+              <button type="submit" className="min-h-tap rounded-xl border border-control px-4 text-sm font-medium transition hover:bg-raised">
                 Spara fråga
               </button>
             </form>
@@ -106,7 +106,7 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
                     <input type="hidden" name="quizId" value={quiz.id} />
                     <input type="hidden" name="questionId" value={question.id} />
                     <input type="hidden" name="direction" value={direction as string} />
-                    <button type="submit" disabled={disabled as boolean} aria-label="Flytta" className="h-9 w-9 rounded-lg border border-zinc-200 text-sm disabled:opacity-30">
+                    <button type="submit" disabled={disabled as boolean} aria-label="Flytta" className="h-9 w-9 rounded-lg border border-line text-sm disabled:opacity-30">
                       {glyph as string}
                     </button>
                   </form>
@@ -115,7 +115,7 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
               <form action={deleteQuestionAction}>
                 <input type="hidden" name="quizId" value={quiz.id} />
                 <input type="hidden" name="questionId" value={question.id} />
-                <button type="submit" className="h-9 rounded-lg border border-red-200 px-3 text-sm text-red-700 transition hover:bg-red-50">
+                <button type="submit" className="h-9 rounded-lg border border-danger px-3 text-sm text-danger transition hover:bg-raised">
                   Ta bort
                 </button>
               </form>
@@ -124,7 +124,7 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
         ))}
       </ul>
 
-      <section className="mt-6 rounded-2xl border border-dashed border-zinc-300 p-4">
+      <section className="mt-6 rounded-2xl border border-dashed border-control p-4">
         <h3 className="font-medium">Lägg till fråga</h3>
         <form action={saveQuestionAction} className="mt-3 space-y-3">
           <input type="hidden" name="quizId" value={quiz.id} />
@@ -132,11 +132,11 @@ export default async function EditQuizPage({ params }: { params: Promise<{ id: s
           {[0, 1, 2, 3].map((optionIndex) => (
             <div key={optionIndex} className="flex items-center gap-2">
               <input type="radio" name="correctOption" value={optionIndex} defaultChecked={optionIndex === 0} aria-label={`Rätt svar ${optionIndex + 1}`} className="h-5 w-5" />
-              <input name={`option${optionIndex}`} placeholder={`Alternativ ${optionIndex + 1}`} aria-label={`Alternativ ${optionIndex + 1}`} className="min-h-tap flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none focus:border-zinc-400" />
+              <input name={`option${optionIndex}`} placeholder={`Alternativ ${optionIndex + 1}`} aria-label={`Alternativ ${optionIndex + 1}`} className="min-h-tap flex-1 bg-raised rounded-xl border border-control px-3 text-sm text-ink placeholder:text-muted outline-none focus:border-primary" />
             </div>
           ))}
           <textarea name="explanation" rows={2} placeholder="Förklaring (valfri)" aria-label="Förklaring" className={`${FIELD} font-mono text-sm`} />
-          <button type="submit" className="h-11 w-full rounded-xl bg-zinc-900 font-medium text-white">
+          <button type="submit" className="h-11 w-full rounded-xl bg-primary font-medium text-on-primary">
             Lägg till fråga
           </button>
         </form>

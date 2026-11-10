@@ -15,12 +15,12 @@ export default async function MyOnboardingPage() {
       <h1 className="text-xl font-semibold tracking-tight">Min introduktion</h1>
 
       {summaries.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-6 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Du har ingen introduktion tilldelad. En administratör lägger upp den.
         </p>
       ) : (
         <>
-          <p className="mt-1 text-zinc-600">
+          <p className="mt-1 text-muted">
             {summaries.reduce((sum, run) => sum + run.progress.done, 0)} av{" "}
             {summaries.reduce((sum, run) => sum + run.progress.total, 0)} punkter klara.
           </p>

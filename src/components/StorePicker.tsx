@@ -28,7 +28,7 @@ export default function StorePicker({ stores }: { stores: StoreSummary[] }) {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="text-2xl font-semibold tracking-tight">Vilken butik är du i?</h1>
-      <p className="mt-2 text-zinc-600">
+      <p className="mt-2 text-muted">
         Vi kommer ihåg valet på den här enheten — du behöver bara göra det en gång.
       </p>
 
@@ -39,15 +39,15 @@ export default function StorePicker({ stores }: { stores: StoreSummary[] }) {
               type="button"
               onClick={() => choose(store.id)}
               disabled={busy !== null}
-              className="flex w-full items-center justify-between rounded-2xl border border-zinc-200 bg-white px-5 py-5 text-left shadow-sm transition active:scale-[0.99] hover:border-zinc-300 disabled:opacity-60"
+              className="flex w-full items-center justify-between rounded-2xl border border-line bg-surface px-5 py-5 text-left shadow-sm transition active:scale-[0.99] hover:border-control disabled:opacity-60"
             >
               <span>
                 <span className="block text-lg font-medium">{store.name}</span>
                 {store.city && store.city !== store.name ? (
-                  <span className="block text-sm text-zinc-500">{store.city}</span>
+                  <span className="block text-sm text-muted">{store.city}</span>
                 ) : null}
               </span>
-              <span aria-hidden className="text-zinc-500">
+              <span aria-hidden className="text-muted">
                 {busy === store.id ? "…" : "→"}
               </span>
             </button>
@@ -56,7 +56,7 @@ export default function StorePicker({ stores }: { stores: StoreSummary[] }) {
       </ul>
 
       {stores.length === 0 ? (
-        <p className="mt-6 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="mt-6 rounded-xl bg-raised p-4 text-sm text-warning">
           Inga butiker i databasen. Kör <code className="font-mono">npm run setup</code> för att
           lägga in butiker och produkter.
         </p>

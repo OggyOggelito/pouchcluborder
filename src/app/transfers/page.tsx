@@ -40,7 +40,7 @@ export default async function TransfersPage({
           </Link>
         ) : null}
       </div>
-      <p className="mt-1 text-sm text-zinc-500">{NO_RESERVATION_NOTICE}</p>
+      <p className="mt-1 text-sm text-muted">{NO_RESERVATION_NOTICE}</p>
 
       <div className="mt-4 flex gap-2">
         {TABS.map((candidate) => (
@@ -49,8 +49,8 @@ export default async function TransfersPage({
             href={`/transfers?tab=${candidate.id}`}
             className={`min-h-tap flex-1 rounded-full border text-center text-sm font-medium leading-[2.75rem] ${
               candidate.id === tab
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-600"
+                ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                : "border-control bg-surface text-muted"
             }`}
           >
             {candidate.label}
@@ -59,14 +59,14 @@ export default async function TransfersPage({
       </div>
 
       {!mayCreate ? (
-        <p className="mt-4 rounded-xl bg-zinc-100 p-3 text-sm text-zinc-600">
+        <p className="mt-4 rounded-xl bg-raised p-3 text-sm text-muted">
           Du kan följa butikens överföringar här. Det är butiksansvarig som skapar och svarar
           på förfrågningar.
         </p>
       ) : null}
 
       {transfers.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inget här just nu.
         </p>
       ) : (

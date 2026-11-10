@@ -10,7 +10,7 @@ import { ANNOUNCEMENT_CATEGORIES, CATEGORY_LABELS } from "@/lib/announcements";
 import type { AnnouncementRecord } from "@/lib/repositories/announcements";
 
 const FIELD =
-  "mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-[15px] outline-none transition focus:border-zinc-400";
+  "mt-1 w-full bg-raised rounded-xl border border-control px-3 py-2 text-[15px] text-ink placeholder:text-muted outline-none transition focus:border-primary";
 
 export default function AnnouncementEditor({
   announcement,
@@ -23,7 +23,7 @@ export default function AnnouncementEditor({
   );
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
       <h2 className="text-lg font-semibold tracking-tight">
         {announcement ? "Redigera" : "Nytt inlägg"}
       </h2>
@@ -32,7 +32,7 @@ export default function AnnouncementEditor({
         {announcement ? <input type="hidden" name="id" value={announcement.id} /> : null}
 
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-zinc-700">
+          <label htmlFor="title" className="block text-sm font-medium text-ink">
             Rubrik
           </label>
           <input
@@ -46,7 +46,7 @@ export default function AnnouncementEditor({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-zinc-700">
+            <label htmlFor="category" className="block text-sm font-medium text-ink">
               Kategori
             </label>
             <select
@@ -69,7 +69,7 @@ export default function AnnouncementEditor({
                 type="checkbox"
                 name="pinned"
                 defaultChecked={announcement?.pinned ?? false}
-                className="h-5 w-5 rounded border-zinc-300"
+                className="h-5 w-5 rounded border-control"
               />
               <span className="text-sm">Fäst överst</span>
             </label>
@@ -78,7 +78,7 @@ export default function AnnouncementEditor({
                 type="checkbox"
                 name="publish"
                 defaultChecked={announcement ? announcement.publishedAt !== null : true}
-                className="h-5 w-5 rounded border-zinc-300"
+                className="h-5 w-5 rounded border-control"
               />
               <span className="text-sm">Publicerad</span>
             </label>
@@ -86,10 +86,10 @@ export default function AnnouncementEditor({
         </div>
 
         <div>
-          <label htmlFor="body" className="block text-sm font-medium text-zinc-700">
+          <label htmlFor="body" className="block text-sm font-medium text-ink">
             Innehåll
           </label>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted">
             Markdown: <code className="font-mono">##</code> rubrik,{" "}
             <code className="font-mono">-</code> punktlista,{" "}
             <code className="font-mono">**fet**</code>.
@@ -105,12 +105,12 @@ export default function AnnouncementEditor({
         </div>
 
         {state.error ? (
-          <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">
+          <p role="alert" className="rounded-xl bg-raised p-3 text-sm text-danger">
             {state.error}
           </p>
         ) : null}
         {state.message ? (
-          <p role="status" className="rounded-xl bg-brand-50 p-3 text-sm text-brand-700">
+          <p role="status" className="rounded-xl bg-raised p-3 text-sm text-primary">
             {state.message}
           </p>
         ) : null}
@@ -118,7 +118,7 @@ export default function AnnouncementEditor({
         <button
           type="submit"
           disabled={pending}
-          className="h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
+          className="h-12 w-full rounded-2xl bg-primary px-6 font-semibold text-on-primary transition active:scale-[0.99] disabled:bg-raised disabled:text-muted"
         >
           {pending ? "Sparar…" : "Spara"}
         </button>
@@ -129,7 +129,7 @@ export default function AnnouncementEditor({
           <input type="hidden" name="id" value={announcement.id} />
           <button
             type="submit"
-            className="min-h-tap w-full rounded-xl border border-red-200 text-sm font-medium text-red-700 transition hover:bg-red-50"
+            className="min-h-tap w-full rounded-xl border border-danger text-sm font-medium text-danger transition hover:bg-raised"
           >
             Ta bort inlägget
           </button>

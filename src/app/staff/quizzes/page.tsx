@@ -19,12 +19,12 @@ export default async function StaffQuizzesPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 pb-16 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">Quiz</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         Testa dig själv. Du kan göra om ett quiz hur många gånger du vill.
       </p>
 
       {quizzes.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga publicerade quiz än.
         </p>
       ) : (
@@ -35,13 +35,13 @@ export default async function StaffQuizzesPage() {
               <li key={quiz.id}>
                 <Link
                   href={`/staff/quizzes/${quiz.id}`}
-                  className="block rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300"
+                  className="block rounded-2xl border border-line bg-surface p-4 shadow-sm transition hover:border-control"
                 >
                   <p className="font-medium">{quiz.title}</p>
                   {quiz.description ? (
-                    <p className="mt-0.5 line-clamp-2 text-sm text-zinc-500">{quiz.description}</p>
+                    <p className="mt-0.5 line-clamp-2 text-sm text-muted">{quiz.description}</p>
                   ) : null}
-                  <p className="mt-1 text-sm text-zinc-500">
+                  <p className="mt-1 text-sm text-muted">
                     {quiz.questionCount} frågor
                     {quiz.brandName ? ` · ${quiz.brandName}` : ""}
                     {mine?.best

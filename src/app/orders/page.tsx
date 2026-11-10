@@ -29,7 +29,7 @@ export default async function RecentOrdersPage() {
       return (
         <main className="mx-auto max-w-3xl px-4 py-10">
           <h1 className="text-xl font-semibold tracking-tight">Ingen butik kopplad</h1>
-          <p className="mt-2 text-zinc-600">Be en administratör koppla en butik till kontot.</p>
+          <p className="mt-2 text-muted">Be en administratör koppla en butik till kontot.</p>
         </main>
       );
     }
@@ -47,13 +47,13 @@ export default async function RecentOrdersPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
       <h1 className="text-xl font-semibold tracking-tight">Tidigare beställningar</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         {heading}
-        {isAdmin ? <span className="text-zinc-500"> · {stores.length} butiker</span> : null}
+        {isAdmin ? <span className="text-muted"> · {stores.length} butiker</span> : null}
       </p>
 
       {orders.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga beställningar än.{" "}
           <Link href="/order" className="underline underline-offset-4">
             Gör den första
@@ -65,21 +65,21 @@ export default async function RecentOrdersPage() {
           {orders.map((order) => (
             <li
               key={order.id}
-              className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 shadow-sm"
+              className="rounded-2xl border border-line bg-surface px-4 py-4 shadow-sm"
             >
               <Link href={`/orders/${order.id}`} className="block min-h-tap">
                 <p className="font-medium">{formatShortDateTime(order.submittedAt)}</p>
-                <p className="text-sm text-zinc-600 tabular-nums">
-                  {isAdmin ? <span className="text-zinc-700">{order.storeName} · </span> : null}
+                <p className="text-sm text-muted tabular-nums">
+                  {isAdmin ? <span className="text-ink">{order.storeName} · </span> : null}
                   {countOf("stock", order.totalQuantity)} · {order.lineCount} rader ·{" "}
                   {formatSek(order.totalSek)}
                 </p>
                 {order.placedByEmail ? (
-                  <p className="truncate text-xs text-zinc-600">{order.placedByEmail}</p>
+                  <p className="truncate text-xs text-muted">{order.placedByEmail}</p>
                 ) : null}
               </Link>
 
-              <div className="mt-3 flex flex-wrap gap-2 border-t border-zinc-100 pt-3">
+              <div className="mt-3 flex flex-wrap gap-2 border-t border-line pt-3">
                 {/* One tap to re-order the same thing — the most common
                     restock is "the same as last time". It opens as a draft,
                     so it is still reviewed and sent by a person. */}
@@ -87,14 +87,14 @@ export default async function RecentOrdersPage() {
                   <input type="hidden" name="orderId" value={order.id} />
                   <button
                     type="submit"
-                    className="min-h-tap rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white transition active:scale-[0.98]"
+                    className="min-h-tap rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition active:scale-[0.98]"
                   >
                     Beställ samma igen
                   </button>
                 </form>
                 <a
                   href={`/api/orders/${order.id}/export`}
-                  className="flex min-h-tap shrink-0 items-center rounded-xl border border-zinc-200 px-4 text-sm font-medium transition hover:bg-zinc-50"
+                  className="flex min-h-tap shrink-0 items-center rounded-xl border border-control px-4 text-sm font-medium transition hover:bg-raised"
                 >
                   Excel
                 </a>
@@ -106,7 +106,7 @@ export default async function RecentOrdersPage() {
 
       <Link
         href="/order"
-        className="mt-6 flex h-12 items-center justify-center rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.98]"
+        className="mt-6 flex h-12 items-center justify-center rounded-2xl bg-primary px-6 font-semibold text-on-primary transition active:scale-[0.98]"
       >
         Ny beställning
       </Link>

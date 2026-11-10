@@ -46,17 +46,17 @@ export default async function AdminRoutineEditorPage({
       <RoutineEditor article={article} categories={categories} />
 
       {article ? (
-        <form action={deleteArticleAction} className="mt-10 border-t border-zinc-100 pt-5">
+        <form action={deleteArticleAction} className="mt-10 border-t border-line pt-5">
           <input type="hidden" name="id" value={article.id} />
           <ConfirmButton
             title="Ta bort artikeln?"
             body="Rutinen försvinner för all personal och länkar till den slutar fungera."
             confirmLabel="Ta bort"
-            className="min-h-tap rounded-xl border border-red-200 px-4 text-sm font-medium text-red-700 transition hover:bg-red-50"
+            className="min-h-tap rounded-xl border border-danger px-4 text-sm font-medium text-danger transition hover:bg-raised"
           >
             Ta bort artikeln
           </ConfirmButton>
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-muted">
             Avpublicera i stället om den bara ska bort tillfälligt.
           </p>
         </form>

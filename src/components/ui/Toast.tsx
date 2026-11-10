@@ -40,7 +40,11 @@ export default function Toast({
       role="status"
       aria-live="polite"
       className={`pointer-events-none fixed inset-x-0 bottom-24 z-40 mx-auto w-fit max-w-[90vw] rounded-2xl px-4 py-3 text-sm font-medium shadow-lg lg:bottom-6 ${
-        tone === "warning" ? "bg-amber-100 text-amber-900" : "bg-zinc-900 text-white"
+        // A filled yellow toast would read as a button. Toasts are a layer:
+        // raised surface with a visible edge.
+        tone === "warning"
+          ? "border border-warning bg-raised text-warning"
+          : "border border-control bg-raised text-ink"
       }`}
     >
       {message}

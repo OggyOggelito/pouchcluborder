@@ -26,7 +26,7 @@ export default async function QuizResultsPage({
   return (
     <main className="mx-auto max-w-4xl px-4 pb-20 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">Quizresultat</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         {filtered.length} resultat.{" "}
         <Link href="/admin/quizzes" className="underline underline-offset-4">
           Till quizen
@@ -37,7 +37,7 @@ export default async function QuizResultsPage({
         <Link
           href="/admin/quizzes/results"
           className={`min-h-tap shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
-            storeFilter ? "border-zinc-200 bg-white text-zinc-600" : "border-zinc-900 bg-zinc-900 text-white"
+            storeFilter ? "border-control bg-surface text-muted" : "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
           }`}
         >
           Alla butiker
@@ -48,8 +48,8 @@ export default async function QuizResultsPage({
             href={`/admin/quizzes/results?store=${encodeURIComponent(store.name)}`}
             className={`min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
               storeFilter === store.name
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-600"
+                ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                : "border-control bg-surface text-muted"
             }`}
           >
             {store.name}
@@ -58,14 +58,14 @@ export default async function QuizResultsPage({
       </div>
 
       {filtered.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga försök registrerade{storeFilter ? " för den butiken" : ""} än.
         </p>
       ) : (
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div className="mt-5 overflow-x-auto rounded-2xl border border-line bg-surface shadow-sm">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left">
+              <tr className="border-b border-line text-left">
                 <th className="px-3 py-2 font-semibold">Person</th>
                 <th className="px-3 py-2 font-semibold">Quiz</th>
                 <th className="px-3 py-2 font-semibold">Bäst</th>
@@ -75,10 +75,10 @@ export default async function QuizResultsPage({
             </thead>
             <tbody>
               {filtered.map((row) => (
-                <tr key={`${row.userId}-${row.quizId}`} className="border-b border-zinc-100 last:border-b-0">
+                <tr key={`${row.userId}-${row.quizId}`} className="border-b border-line last:border-b-0">
                   <td className="px-3 py-2">
                     <span className="block font-medium">{row.userName}</span>
-                    <span className="block text-xs text-zinc-500">{row.storeNames.join(", ") || "—"}</span>
+                    <span className="block text-xs text-muted">{row.storeNames.join(", ") || "—"}</span>
                   </td>
                   <td className="px-3 py-2">{row.quizTitle}</td>
                   <td className="px-3 py-2 tabular-nums">
@@ -88,7 +88,7 @@ export default async function QuizResultsPage({
                     {row.latest ? (
                       <>
                         {row.latest.score}/{row.latest.total}
-                        <span className="block text-xs text-zinc-500">{formatDateTime(row.latest.at)}</span>
+                        <span className="block text-xs text-muted">{formatDateTime(row.latest.at)}</span>
                       </>
                     ) : "—"}
                   </td>

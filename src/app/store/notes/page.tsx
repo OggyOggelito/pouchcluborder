@@ -40,7 +40,7 @@ export default async function StoreNotesPage({
     return (
       <main className="mx-auto max-w-lg px-4 py-10">
         <h1 className="text-xl font-semibold tracking-tight">Skiftanteckningar</h1>
-        <p className="mt-2 text-zinc-600">
+        <p className="mt-2 text-muted">
           Ditt konto är inte kopplat till någon butik. Be en administratör koppla en.
         </p>
       </main>
@@ -73,10 +73,10 @@ export default async function StoreNotesPage({
           Problemrapporter
         </Link>
       </div>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         Vad nästa skift behöver veta.{" "}
         {openTodos > 0 ? (
-          <strong className="text-zinc-800">
+          <strong className="text-ink">
             {openTodos === 1 ? "1 öppen punkt att göra." : `${openTodos} öppna punkter att göra.`}
           </strong>
         ) : (
@@ -89,7 +89,7 @@ export default async function StoreNotesPage({
           <Link
             href={`/store/notes?tab=${tab}`}
             className={`min-h-tap shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
-              selected ? "border-zinc-200 bg-white text-zinc-600" : "border-zinc-900 bg-zinc-900 text-white"
+              selected ? "border-control bg-surface text-muted" : "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
             }`}
           >
             Alla butiker
@@ -100,8 +100,8 @@ export default async function StoreNotesPage({
               href={`/store/notes?tab=${tab}&store=${store.id}`}
               className={`min-h-tap shrink-0 rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
                 selected?.id === store.id
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white text-zinc-600"
+                  ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                  : "border-control bg-surface text-muted"
               }`}
             >
               {store.name}
@@ -117,8 +117,8 @@ export default async function StoreNotesPage({
             href={query({ tab: candidate.id })}
             className={`min-h-tap flex-1 rounded-full border text-center text-sm font-medium leading-[2.75rem] ${
               candidate.id === tab
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-600"
+                ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                : "border-control bg-surface text-muted"
             }`}
           >
             {candidate.label}
@@ -129,14 +129,14 @@ export default async function StoreNotesPage({
       {tab === "feed" ? (
         <ShiftNoteComposer stores={stores} defaultStoreId={selected?.id ?? ""} />
       ) : (
-        <p className="mt-4 rounded-xl bg-zinc-100 p-3 text-sm text-zinc-600">
+        <p className="mt-4 rounded-xl bg-raised p-3 text-sm text-muted">
           Anteckningar som inte ligger kvar högst upp flyttas hit efter{" "}
           {ARCHIVE_AFTER_DAYS} dagar. Ingenting tas bort automatiskt.
         </p>
       )}
 
       {notes.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-6 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           {tab === "feed" ? "Inga anteckningar just nu." : "Arkivet är tomt."}
         </p>
       ) : (

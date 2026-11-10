@@ -30,7 +30,7 @@ type Similar = {
 type ProductHit = { id: string; label: string };
 
 const FIELD =
-  "mt-1 h-12 w-full rounded-2xl border border-zinc-200 px-4 text-base outline-none transition focus:border-zinc-400";
+  "mt-1 h-12 w-full bg-raised rounded-2xl border border-control px-4 text-base text-ink placeholder:text-muted outline-none transition focus:border-primary";
 
 /**
  * One screen: pick what kind, type what the customer asked for, send.
@@ -91,18 +91,18 @@ export default function RequestLogger({
   if (state.confirmation) {
     // Staff see a confirmation only — never the ranking.
     return (
-      <section className="mt-6 rounded-2xl border border-brand-200 bg-brand-50 p-6 text-center">
-        <p className="text-lg font-medium text-brand-700">{state.confirmation}</p>
+      <section className="mt-6 rounded-2xl border border-primary bg-raised p-6 text-center">
+        <p className="text-lg font-medium text-primary">{state.confirmation}</p>
         <div className="mt-5 flex flex-col gap-2">
           <Link
             href="/requests/new"
-            className="flex h-12 items-center justify-center rounded-2xl bg-zinc-900 font-semibold text-white"
+            className="flex h-12 items-center justify-center rounded-2xl bg-primary font-semibold text-on-primary"
           >
             Logga ett till
           </Link>
           <Link
             href="/staff"
-            className="flex h-12 items-center justify-center rounded-2xl border border-zinc-200 font-medium"
+            className="flex h-12 items-center justify-center rounded-2xl border border-line font-medium"
           >
             Klar
           </Link>
@@ -119,7 +119,7 @@ export default function RequestLogger({
 
       {stores.length > 1 ? (
         <div>
-          <label htmlFor="store" className="block text-sm font-medium text-zinc-700">Butik</label>
+          <label htmlFor="store" className="block text-sm font-medium text-ink">Butik</label>
           <select
             id="store"
             value={storeId}
@@ -134,7 +134,7 @@ export default function RequestLogger({
       ) : null}
 
       <fieldset>
-        <legend className="text-sm font-medium text-zinc-700">Vad gäller det?</legend>
+        <legend className="text-sm font-medium text-ink">Vad gäller det?</legend>
         <div className="mt-2 grid gap-2">
           {REQUEST_KINDS.map((candidate) => (
             <button
@@ -147,12 +147,12 @@ export default function RequestLogger({
               aria-pressed={kind === candidate}
               className={`min-h-14 rounded-2xl border px-4 py-3 text-left transition ${
                 kind === candidate
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white hover:border-zinc-300"
+                  ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                  : "border-line bg-surface hover:border-control"
               }`}
             >
               <span className="block font-medium">{REQUEST_KIND_LABELS[candidate]}</span>
-              <span className={`block text-sm ${kind === candidate ? "text-zinc-300" : "text-zinc-500"}`}>
+              <span className={`block text-sm ${kind === candidate ? "text-muted" : "text-muted"}`}>
                 {REQUEST_KIND_HELP[candidate]}
               </span>
             </button>
@@ -161,7 +161,7 @@ export default function RequestLogger({
       </fieldset>
 
       <div>
-        <label htmlFor="brandText" className="block text-sm font-medium text-zinc-700">
+        <label htmlFor="brandText" className="block text-sm font-medium text-ink">
           Märke eller produkt
         </label>
         <input
@@ -176,7 +176,7 @@ export default function RequestLogger({
       </div>
 
       {productHits.length > 0 ? (
-        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+        <div className="rounded-2xl border border-line bg-surface p-3">
           <p className="text-sm font-medium">Koppla till en produkt i katalogen</p>
           <ul className="mt-2 space-y-1">
             {productHits.map((product) => (
@@ -186,8 +186,8 @@ export default function RequestLogger({
                   onClick={() => setProductId(productId === product.id ? "" : product.id)}
                   className={`w-full rounded-xl border px-3 py-2 text-left text-sm ${
                     productId === product.id
-                      ? "border-zinc-900 bg-zinc-900 text-white"
-                      : "border-zinc-200"
+                      ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                      : "border-line"
                   }`}
                 >
                   {product.label}
@@ -199,7 +199,7 @@ export default function RequestLogger({
       ) : null}
 
       <div>
-        <label htmlFor="flavorText" className="block text-sm font-medium text-zinc-700">
+        <label htmlFor="flavorText" className="block text-sm font-medium text-ink">
           Smak (valfritt)
         </label>
         <input
@@ -211,14 +211,14 @@ export default function RequestLogger({
           placeholder="t.ex. Mint"
           className={FIELD}
         />
-        <p className="mt-2 rounded-xl bg-zinc-100 p-3 text-sm text-zinc-600">
+        <p className="mt-2 rounded-xl bg-raised p-3 text-sm text-muted">
           {NO_PERSONAL_DATA_NOTICE}
         </p>
       </div>
 
       {similar.length > 0 ? (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-medium text-amber-900">
+        <section className="rounded-2xl border border-warning bg-raised p-4">
+          <p className="text-sm font-medium text-warning">
             Redan loggat i den här butiken — lägg hellre till en till:
           </p>
           <ul className="mt-2 space-y-2">
@@ -228,7 +228,7 @@ export default function RequestLogger({
                   <span className="block truncate font-medium">
                     {[row.brandText, row.flavorText].filter(Boolean).join(" ") || "—"}
                   </span>
-                  <span className="block text-xs text-amber-800">
+                  <span className="block text-xs text-warning">
                     {REQUEST_KIND_LABELS[row.kind]} · {row.count} gånger
                   </span>
                 </span>
@@ -237,7 +237,7 @@ export default function RequestLogger({
                   formAction={bumpAction}
                   name="requestId"
                   value={row.id}
-                  className="min-h-tap shrink-0 rounded-xl bg-amber-900 px-4 text-sm font-semibold text-white"
+                  className="min-h-tap shrink-0 rounded-xl bg-warning px-4 text-sm font-semibold text-on-primary"
                 >
                   +1 till
                 </button>
@@ -248,13 +248,13 @@ export default function RequestLogger({
       ) : null}
 
       {state.error ? (
-        <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{state.error}</p>
+        <p role="alert" className="rounded-xl bg-raised p-3 text-sm text-danger">{state.error}</p>
       ) : null}
 
       <button
         type="submit"
         disabled={logging}
-        className="h-14 w-full rounded-2xl bg-zinc-900 px-6 text-lg font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
+        className="h-14 w-full rounded-2xl bg-primary px-6 text-lg font-semibold text-on-primary transition active:scale-[0.99] disabled:bg-raised disabled:text-muted"
       >
         {logging ? "Sparar…" : "Logga önskemålet"}
       </button>

@@ -42,7 +42,7 @@ export default async function AdminPage() {
 
       {sections.map((section) => (
         <section key={section.section} className="mb-6">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
             {section.label}
           </h2>
           <ul className="grid gap-2 sm:grid-cols-2">
@@ -54,10 +54,10 @@ export default async function AdminPage() {
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
                         <span className="block font-semibold tracking-tight">{entry.label}</span>
-                        <span className="block text-sm text-zinc-600">{entry.description}</span>
+                        <span className="block text-sm text-muted">{entry.description}</span>
                       </span>
                       {count !== null && count > 0 ? (
-                        <span className="shrink-0 rounded-full bg-brand-700 px-2.5 py-1 text-xs font-bold text-white">
+                        <span className="shrink-0 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-on-primary">
                           {count}
                           <span className="sr-only"> behöver åtgärd</span>
                         </span>
@@ -71,15 +71,15 @@ export default async function AdminPage() {
         </section>
       ))}
 
-      <section className="mt-8 border-t border-zinc-200 pt-6">
-        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+      <section className="mt-8 border-t border-line pt-6">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
           Importera katalog
         </h2>
         <SupplierImport />
         <CsvImport />
       </section>
 
-      <p className="mt-8 text-sm text-zinc-600">
+      <p className="mt-8 text-sm text-muted">
         <Link href="/order" className="underline underline-offset-4">
           Till beställningen
         </Link>

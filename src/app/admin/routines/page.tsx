@@ -27,20 +27,20 @@ export default async function AdminRoutinesPage() {
           Visa personalsidan
         </Link>
       </div>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         {articles.length === 1 ? "1 artikel" : `${articles.length} artiklar`},{" "}
         {published === 1 ? "1 publicerad" : `${published} publicerade`}.
       </p>
 
       <Link
         href="/admin/routines/new"
-        className="mt-4 flex h-12 items-center justify-center rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99]"
+        className="mt-4 flex h-12 items-center justify-center rounded-2xl bg-primary px-6 font-semibold text-on-primary transition active:scale-[0.99]"
       >
         Ny artikel
       </Link>
 
       {articles.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-6 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga artiklar än. Kör <span className="font-mono">npm run seed:routines</span> för
           exempelartikeln, eller skriv en egen.
         </p>
@@ -50,17 +50,17 @@ export default async function AdminRoutinesPage() {
             <li key={article.id}>
               <Link
                 href={`/admin/routines/${article.id}`}
-                className="block rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300"
+                className="block rounded-2xl border border-line bg-surface p-4 shadow-sm transition hover:border-control"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold tracking-tight">{article.title}</span>
                   {article.published ? null : (
-                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900">
+                    <span className="rounded-full bg-raised px-2.5 py-0.5 text-xs font-medium text-warning">
                       Utkast
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-muted">
                   {article.category ? `${article.category} · ` : "Ingen kategori · "}
                   senast uppdaterad {formatDateTime(article.updatedAt)}
                   {article.updatedByName ? ` av ${article.updatedByName}` : ""}
@@ -71,9 +71,9 @@ export default async function AdminRoutinesPage() {
         </ul>
       )}
 
-      <section className="mt-8 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <section className="mt-8 rounded-2xl border border-line bg-surface p-5 shadow-sm">
         <h2 className="text-lg font-semibold tracking-tight">Kategorier</h2>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-muted">
           Chipsen på personalsidan, i den här ordningen.
         </p>
 
@@ -82,11 +82,11 @@ export default async function AdminRoutinesPage() {
             {categories.map((category) => (
               <li
                 key={category.id}
-                className="flex items-center justify-between gap-3 rounded-xl bg-zinc-50 px-3 py-2"
+                className="flex items-center justify-between gap-3 rounded-xl bg-raised px-3 py-2"
               >
                 <span className="min-w-0">
                   <span className="block truncate text-[15px] font-medium">{category.name}</span>
-                  <span className="block text-xs text-zinc-500">
+                  <span className="block text-xs text-muted">
                     {category.articleCount === 1 ? "1 artikel" : `${category.articleCount} artiklar`}
                   </span>
                 </span>
@@ -97,7 +97,7 @@ export default async function AdminRoutinesPage() {
                     body="Artiklarna är kvar och behåller sin text — de slutar bara matcha ett chip."
                     confirmLabel="Ta bort"
                     tone="neutral"
-                    className="min-h-tap shrink-0 rounded-xl border border-zinc-200 px-3 text-sm font-medium"
+                    className="min-h-tap shrink-0 rounded-xl border border-control px-3 text-sm font-medium"
                   >
                     Ta bort
                   </ConfirmButton>
@@ -106,10 +106,10 @@ export default async function AdminRoutinesPage() {
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-sm text-zinc-500">Inga kategorier än.</p>
+          <p className="mt-3 text-sm text-muted">Inga kategorier än.</p>
         )}
 
-        <p className="mt-3 text-sm text-zinc-500">
+        <p className="mt-3 text-sm text-muted">
           Att ta bort en kategori rör inte artiklarna — de behåller sin text och slutar bara
           matcha ett chip.
         </p>
@@ -122,11 +122,11 @@ export default async function AdminRoutinesPage() {
             id="category-name"
             name="name"
             placeholder="t.ex. Kassa"
-            className="h-11 min-w-0 flex-1 rounded-xl border border-zinc-200 px-3 text-[15px] outline-none transition focus:border-zinc-400"
+            className="h-11 min-w-0 flex-1 bg-raised rounded-xl border border-control px-3 text-[15px] text-ink placeholder:text-muted outline-none transition focus:border-primary"
           />
           <button
             type="submit"
-            className="h-11 shrink-0 rounded-xl border border-zinc-200 px-4 text-sm font-medium"
+            className="h-11 shrink-0 rounded-xl border border-control px-4 text-sm font-medium"
           >
             Lägg till
           </button>

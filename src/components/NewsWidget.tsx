@@ -18,10 +18,10 @@ export default async function NewsWidget({ limit = 3 }: { limit?: number }) {
   if (items.length === 0) return null;
 
   return (
-    <section className="mt-5 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+    <section className="mt-5 rounded-2xl border border-line bg-surface p-4 shadow-sm">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Nytt</h2>
-        <Link href="/news" className="inline-flex min-h-tap items-center text-sm text-zinc-600 underline underline-offset-4">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Nytt</h2>
+        <Link href="/news" className="inline-flex min-h-tap items-center text-sm text-muted underline underline-offset-4">
           Alla nyheter
         </Link>
       </div>
@@ -35,7 +35,7 @@ export default async function NewsWidget({ limit = 3 }: { limit?: number }) {
                 <span className="block truncate font-medium group-hover:underline">
                   {item.title}
                 </span>
-                <span className="block text-xs text-zinc-500">
+                <span className="block text-xs text-muted">
                   {categoryLabel(item.category)}
                   {item.publishedAt
                     ? ` · ${item.publishedAt.toLocaleDateString("sv-SE", {

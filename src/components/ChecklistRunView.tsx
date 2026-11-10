@@ -23,20 +23,20 @@ export default function ChecklistRunView({ run }: { run: RunView }) {
     <section>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
         <h2 className="text-lg font-semibold tracking-tight">{run.title}</h2>
-        <p className="text-sm tabular-nums text-zinc-500">
+        <p className="text-sm tabular-nums text-muted">
           {progress.done} av {progress.total} klara
         </p>
       </div>
 
       <div
-        className="mt-2 h-2 w-full overflow-hidden rounded-full bg-zinc-200"
+        className="mt-2 h-2 w-full overflow-hidden rounded-full bg-raised"
         role="progressbar"
         aria-valuenow={progress.done}
         aria-valuemin={0}
         aria-valuemax={progress.total}
       >
         <div
-          className="h-full rounded-full bg-brand-600 transition-all"
+          className="h-full rounded-full bg-primary transition-all"
           style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
         />
       </div>
@@ -48,7 +48,7 @@ export default function ChecklistRunView({ run }: { run: RunView }) {
             <li
               key={item.id}
               className={`rounded-2xl border p-4 shadow-sm transition ${
-                checked ? "border-brand-200 bg-brand-50/50" : "border-zinc-200 bg-white"
+                checked ? "border-primary bg-raised" : "border-line bg-surface"
               }`}
             >
               <form action={toggleChecklistItemAction}>
@@ -64,23 +64,23 @@ export default function ChecklistRunView({ run }: { run: RunView }) {
                     aria-hidden
                     className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg border-2 text-sm font-bold ${
                       checked
-                        ? "border-brand-700 bg-brand-700 text-white"
-                        : "border-zinc-300 text-transparent"
+                        ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                        : "border-control text-transparent"
                     }`}
                   >
                     ✓
                   </span>
                   <span className="min-w-0">
-                    <span className={`block font-medium ${checked ? "text-zinc-500 line-through" : ""}`}>
+                    <span className={`block font-medium ${checked ? "text-muted line-through" : ""}`}>
                       {item.title}
                       {!item.required ? (
-                        <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-normal text-zinc-500">
+                        <span className="ml-2 rounded-full bg-raised px-2 py-0.5 text-xs font-normal text-muted">
                           valfri
                         </span>
                       ) : null}
                     </span>
                     {checked && item.checkedByName ? (
-                      <span className="mt-0.5 block text-xs text-zinc-500">
+                      <span className="mt-0.5 block text-xs text-muted">
                         {item.checkedByName} · {STOCKHOLM_TIME.format(item.checkedAt!)}
                       </span>
                     ) : null}
@@ -110,11 +110,11 @@ export default function ChecklistRunView({ run }: { run: RunView }) {
                   defaultValue={item.note ?? ""}
                   placeholder="Anteckning (valfritt)"
                   aria-label={`Anteckning för ${item.title}`}
-                  className="min-h-tap flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none transition focus:border-zinc-400"
+                  className="min-h-tap flex-1 bg-raised rounded-xl border border-control px-3 text-sm text-ink placeholder:text-muted outline-none transition focus:border-primary"
                 />
                 <button
                   type="submit"
-                  className="min-h-tap shrink-0 rounded-xl border border-zinc-200 px-3 text-sm font-medium transition hover:bg-zinc-50"
+                  className="min-h-tap shrink-0 rounded-xl border border-control px-3 text-sm font-medium transition hover:bg-raised"
                 >
                   Spara
                 </button>

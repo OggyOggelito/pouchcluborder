@@ -21,7 +21,7 @@ export default async function EditAnnouncementPage({
     <main className="mx-auto max-w-3xl px-4 pb-20 pt-6">
       <Link
         href="/admin/announcements"
-        className="inline-flex h-9 items-center text-sm text-zinc-500 underline underline-offset-4"
+        className="inline-flex h-9 items-center text-sm text-muted underline underline-offset-4"
       >
         ← Alla inlägg
       </Link>

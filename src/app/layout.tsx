@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import BottomBar from "@/components/nav/BottomBar";
+import Wordmark from "@/components/nav/Wordmark";
 import GlobalSearch from "@/components/nav/GlobalSearch";
 import Sidebar from "@/components/nav/Sidebar";
 import SignOutButton from "@/components/nav/SignOutButton";
@@ -8,6 +9,7 @@ import { bottomBarFor, groupedNavFor } from "@/config/navigation";
 import { getFeatures } from "@/lib/features";
 import { countUnreadNews } from "@/lib/repositories/preferences";
 import { getSessionUser } from "@/lib/session";
+import { THEME_COLOR } from "@/styles/tokens";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,7 +23,9 @@ export const viewport: Viewport = {
   // maximumScale was 1, which stops a person pinching to read a small label.
   // Letting the page zoom costs nothing and is a WCAG 1.4.4 failure otherwise.
   viewportFit: "cover",
-  themeColor: "#18181b",
+  // The brand navy. Colours the browser chrome on Android and the status bar
+  // area on iOS, so the app does not sit in a white frame.
+  themeColor: THEME_COLOR,
 };
 
 /**
@@ -46,21 +50,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-dvh antialiased">
         <a
           href="#innehall"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-xl focus:bg-zinc-900 focus:px-4 focus:py-3 focus:text-white"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-xl focus:bg-primary focus:px-4 focus:py-3 focus:text-on-primary"
         >
           Hoppa till innehållet
         </a>
 
-        <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
+        <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur">
           <div className="mx-auto flex max-w-[82rem] items-center justify-between gap-3 px-3 py-2">
-            <Link
-              href="/"
-              className="flex min-h-11 items-center gap-2 rounded-xl px-1 font-semibold tracking-tight"
-            >
-              <span className="grid h-9 w-9 place-items-center rounded-lg bg-zinc-900 text-sm font-bold text-white">
-                PC
-              </span>
-              <span className="hidden sm:inline">Pouch Club</span>
+            <Link href="/" className="flex min-h-11 items-center rounded-xl px-1">
+              <Wordmark />
             </Link>
 
             <div className="flex items-center gap-1">
@@ -68,7 +66,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {!user ? (
                 <Link
                   href="/login"
-                  className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+                  className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium text-ink transition hover:bg-raised"
                 >
                   Logga in
                 </Link>

@@ -30,7 +30,7 @@ export default function QuantityInput({
         aria-label={`Minska ${label}`}
         onClick={() => onChange(clamp(value - 1))}
         disabled={value === 0}
-        className="h-11 w-11 shrink-0 rounded-xl border border-zinc-200 bg-white text-xl leading-none text-zinc-600 transition active:scale-95 disabled:opacity-30"
+        className="h-11 w-11 shrink-0 rounded-xl border border-line bg-surface text-xl leading-none text-muted transition active:scale-95 disabled:opacity-30"
       >
         −
       </button>
@@ -46,10 +46,10 @@ export default function QuantityInput({
         value={active ? String(value) : ""}
         onChange={(event) => onChange(clamp(Number.parseInt(event.target.value, 10)))}
         onFocus={(event) => event.currentTarget.select()}
-        className={`h-11 w-16 rounded-xl border text-center text-base font-medium tabular-nums outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100 ${
+        className={`h-11 w-16 bg-raised rounded-xl border text-center text-base font-medium tabular-nums text-ink placeholder:text-muted outline-none transition focus:border-primary focus:ring-2 focus:ring-focus ${
           active
-            ? "border-brand-500 bg-brand-50 text-zinc-900"
-            : "border-zinc-200 bg-white text-zinc-500 placeholder:text-zinc-400"
+            ? "border-primary bg-raised text-ink"
+            : "border-control bg-surface text-muted placeholder:text-muted"
         }`}
       />
 
@@ -57,7 +57,7 @@ export default function QuantityInput({
         type="button"
         aria-label={`Öka ${label}`}
         onClick={() => onChange(clamp(value + 1))}
-        className="h-11 w-11 shrink-0 rounded-xl border border-zinc-200 bg-white text-xl leading-none text-zinc-600 transition active:scale-95"
+        className="h-11 w-11 shrink-0 rounded-xl border border-line bg-surface text-xl leading-none text-muted transition active:scale-95"
       >
         +
       </button>

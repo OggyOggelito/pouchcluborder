@@ -36,7 +36,7 @@ export default async function StaffChecklistsPage({
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
         <h1 className="text-xl font-semibold tracking-tight">Checklistor</h1>
-        <p className="mt-2 text-zinc-600">
+        <p className="mt-2 text-muted">
           Ditt konto är inte kopplat till någon butik. Be en administratör koppla en.
         </p>
       </main>
@@ -59,7 +59,7 @@ export default async function StaffChecklistsPage({
   return (
     <main className="mx-auto max-w-2xl px-4 pb-20 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">Checklistor</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         {store.name} · {stockholmDateKey()}
       </p>
 
@@ -71,8 +71,8 @@ export default async function StaffChecklistsPage({
               href={`/staff/checklists?store=${candidate.id}&type=${type}`}
               className={`min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
                 candidate.id === store.id
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white text-zinc-600"
+                  ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                  : "border-control bg-surface text-muted"
               }`}
             >
               {candidate.name}
@@ -88,8 +88,8 @@ export default async function StaffChecklistsPage({
             href={`/staff/checklists?store=${store.id}&type=${candidate}`}
             className={`min-h-tap flex-1 rounded-full border text-center text-sm font-medium leading-[2.75rem] ${
               candidate === type
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-600"
+                ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                : "border-control bg-surface text-muted"
             }`}
           >
             {CHECKLIST_TYPE_LABELS[candidate]}
@@ -98,7 +98,7 @@ export default async function StaffChecklistsPage({
       </div>
 
       {runs.filter(Boolean).length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Ingen {CHECKLIST_TYPE_LABELS[type].toLowerCase()}slista är upplagd än.
         </p>
       ) : (

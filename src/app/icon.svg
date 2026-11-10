@@ -1,0 +1,20 @@
+<!--
+  PLACEHOLDER. Replace with the real Pouch Club mark.
+
+  A navy tile with the initials in brand yellow — enough to stop the browser
+  showing its default globe, and nothing more. It is not a logo and is not
+  meant to become one. Colours are the tokens' values, written here because an
+  SVG served as a static asset cannot read a CSS variable.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#02152d" />
+  <text
+    x="32"
+    y="42"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
+    font-size="26"
+    font-weight="700"
+    fill="#f8c50b"
+  >PC</text>
+</svg>

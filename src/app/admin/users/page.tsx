@@ -12,7 +12,7 @@ export default async function AdminUsersPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 pb-20 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">Konton</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         Butiksägare ser bara sina egna butiker. Administratörer ser alla.
       </p>
       <UserAdmin users={users} stores={stores} />

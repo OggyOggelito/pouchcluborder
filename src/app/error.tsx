@@ -26,11 +26,11 @@ export default function AppError({
 
   return (
     <main className="mx-auto max-w-lg px-4 py-16">
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-amber-900">
+      <div className="rounded-2xl border border-warning bg-raised p-6 text-center">
+        <h1 className="text-xl font-semibold tracking-tight text-warning">
           Något gick fel
         </h1>
-        <p className="mt-2 text-amber-900">
+        <p className="mt-2 text-warning">
           Sidan kunde inte visas. Det är appen som strular, inte du.
         </p>
 
@@ -38,20 +38,20 @@ export default function AppError({
           <button
             type="button"
             onClick={reset}
-            className="min-h-tap flex-1 rounded-2xl bg-zinc-900 px-5 font-semibold text-white"
+            className="min-h-tap flex-1 rounded-2xl bg-primary px-5 font-semibold text-on-primary"
           >
             Försök igen
           </button>
           <a
             href="/"
-            className="flex min-h-tap flex-1 items-center justify-center rounded-2xl border border-amber-300 px-5 font-medium text-amber-900"
+            className="flex min-h-tap flex-1 items-center justify-center rounded-2xl border border-warning px-5 font-medium text-warning"
           >
             Till startsidan
           </a>
         </div>
 
         {error.digest ? (
-          <p className="mt-4 text-xs text-amber-800">
+          <p className="mt-4 text-xs text-warning">
             Felkod: <span className="font-mono">{error.digest}</span>
           </p>
         ) : null}

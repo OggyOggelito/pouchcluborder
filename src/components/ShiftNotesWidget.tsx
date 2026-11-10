@@ -26,7 +26,7 @@ export default async function ShiftNotesWidget() {
   ]);
 
   return (
-    <section className="mt-5 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <section className="mt-5 rounded-2xl border border-line bg-surface p-5 shadow-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="text-lg font-semibold tracking-tight">Skiftanteckningar</h2>
         <Link href="/store/notes" className="inline-flex min-h-tap items-center text-sm font-medium underline underline-offset-4">
@@ -34,9 +34,9 @@ export default async function ShiftNotesWidget() {
         </Link>
       </div>
 
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         {openTodos > 0 ? (
-          <strong className="text-zinc-800">
+          <strong className="text-ink">
             {openTodos === 1 ? "1 öppen punkt att göra." : `${openTodos} öppna punkter att göra.`}
           </strong>
         ) : (
@@ -45,7 +45,7 @@ export default async function ShiftNotesWidget() {
       </p>
 
       {notes.length === 0 ? (
-        <p className="mt-3 text-sm text-zinc-500">
+        <p className="mt-3 text-sm text-muted">
           Inga anteckningar än.{" "}
           <Link href="/store/notes" className="underline underline-offset-4">
             Skriv den första
@@ -55,9 +55,9 @@ export default async function ShiftNotesWidget() {
       ) : (
         <ul className="mt-3 space-y-2">
           {notes.map((note) => (
-            <li key={note.id} className="rounded-xl bg-zinc-50 p-3">
-              <p className="line-clamp-2 text-[15px] text-zinc-800">{note.text}</p>
-              <p className="mt-1 text-xs text-zinc-500">
+            <li key={note.id} className="rounded-xl bg-raised p-3">
+              <p className="line-clamp-2 text-[15px] text-ink">{note.text}</p>
+              <p className="mt-1 text-xs text-muted">
                 {NOTE_CATEGORY_LABELS[note.category]}
                 {storeIds.length > 1 ? ` · ${note.storeName}` : ""} ·{" "}
                 {note.authorName ?? "Okänd"} · {formatDateTime(note.createdAt)}

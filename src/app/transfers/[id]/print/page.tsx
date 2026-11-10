@@ -34,25 +34,25 @@ export default async function TransferPrintPage({ params }: { params: Promise<{ 
 
   return (
     <main className="mx-auto max-w-xl px-6 py-8 print:px-0 print:py-0">
-      <div className="flex items-baseline justify-between border-b border-zinc-300 pb-3">
+      <div className="flex items-baseline justify-between border-b border-control pb-3">
         <h1 className="text-2xl font-semibold tracking-tight">Följesedel</h1>
-        <p className="text-sm text-zinc-500">{DATE.format(transfer.createdAt)}</p>
+        <p className="text-sm text-muted">{DATE.format(transfer.createdAt)}</p>
       </div>
 
       <dl className="mt-5 grid grid-cols-2 gap-4">
         <div>
-          <dt className="text-xs uppercase tracking-wide text-zinc-500">Från</dt>
+          <dt className="text-xs uppercase tracking-wide text-muted">Från</dt>
           <dd className="text-lg font-medium">{transfer.acceptingStore?.name ?? "—"}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase tracking-wide text-zinc-500">Till</dt>
+          <dt className="text-xs uppercase tracking-wide text-muted">Till</dt>
           <dd className="text-lg font-medium">{transfer.requestingStore.name}</dd>
         </div>
       </dl>
 
       <table className="mt-6 w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-zinc-300 text-left">
+          <tr className="border-b border-control text-left">
             <th className="py-2 font-semibold">Produkt</th>
             <th className="py-2 font-semibold">Styrka</th>
             <th className="py-2 font-semibold">Format</th>
@@ -61,7 +61,7 @@ export default async function TransferPrintPage({ params }: { params: Promise<{ 
         </thead>
         <tbody>
           {transfer.lines.map((line) => (
-            <tr key={line.id} className="border-b border-zinc-200">
+            <tr key={line.id} className="border-b border-line">
               <td className="py-2">
                 {line.brand} {line.flavor}
               </td>
@@ -80,13 +80,13 @@ export default async function TransferPrintPage({ params }: { params: Promise<{ 
       <div className="mt-12 grid grid-cols-2 gap-8">
         {["Packad av", "Mottagen av"].map((label) => (
           <div key={label}>
-            <div className="h-10 border-b border-zinc-400" />
-            <p className="mt-1 text-xs text-zinc-500">{label}</p>
+            <div className="h-10 border-b border-control" />
+            <p className="mt-1 text-xs text-muted">{label}</p>
           </div>
         ))}
       </div>
 
-      <p className="mt-10 text-xs text-zinc-500 print:hidden">
+      <p className="mt-10 text-xs text-muted print:hidden">
         Skriv ut med webbläsarens utskriftsfunktion.
       </p>
     </main>

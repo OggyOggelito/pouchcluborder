@@ -25,13 +25,13 @@ export default async function AdminTransfersPage({
 
   const chip = (active: boolean) =>
     `min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium leading-[2.75rem] ${
-      active ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-600"
+      active ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary" : "border-control bg-surface text-muted"
     }`;
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-20 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">Överföringar</h1>
-      <p className="mt-1 text-zinc-600">{transfers.length} överföringar.</p>
+      <p className="mt-1 text-muted">{transfers.length} överföringar.</p>
 
       <div className="mt-4 space-y-2">
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -65,7 +65,7 @@ export default async function AdminTransfersPage({
       </div>
 
       {transfers.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga överföringar matchar filtren.
         </p>
       ) : (

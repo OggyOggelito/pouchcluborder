@@ -48,19 +48,19 @@ export default function ShiftImport() {
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <section className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
       <h2 className="text-lg font-semibold tracking-tight">Importera schema</h2>
-      <p className="mt-1 text-sm text-zinc-600">
+      <p className="mt-1 text-sm text-muted">
         Ladda upp en export från TooEasy (eller något annat schemaverktyg). Både{" "}
         <strong>CSV</strong> och <strong>.ics</strong> fungerar — formatet läses av innehållet,
         inte filändelsen.
       </p>
-      <p className="mt-2 text-sm text-zinc-500">
+      <p className="mt-2 text-sm text-muted">
         CSV-kolumner: <code className="font-mono">email, date, start, end, store</code>. Samma
         period kan laddas upp om — befintliga pass i filens datumintervall ersätts.
       </p>
 
-      <label className="mt-4 flex h-24 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 text-center transition hover:border-zinc-400">
+      <label className="mt-4 flex h-24 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-control text-center transition hover:border-control">
         <input
           type="file"
           accept=".csv,.ics,.txt,text/calendar,text/csv"
@@ -72,14 +72,14 @@ export default function ShiftImport() {
           }}
         />
         <span className="font-medium">{file?.name ?? "Välj schemafil"}</span>
-        <span className="mt-1 text-sm text-zinc-500">CSV eller ICS</span>
+        <span className="mt-1 text-sm text-muted">CSV eller ICS</span>
       </label>
 
       <button
         type="button"
         onClick={upload}
         disabled={busy || !file}
-        className="mt-4 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
+        className="mt-4 h-12 w-full rounded-2xl bg-primary px-6 font-semibold text-on-primary transition active:scale-[0.99] disabled:bg-raised disabled:text-muted"
       >
         {busy ? "Importerar…" : "Importera schema"}
       </button>
@@ -88,7 +88,7 @@ export default function ShiftImport() {
         <div
           role="status"
           className={`mt-4 space-y-3 rounded-xl p-4 text-sm ${
-            failed ? "bg-red-50 text-red-800" : "bg-brand-50 text-brand-700"
+            failed ? "bg-raised text-danger" : "bg-raised text-primary"
           }`}
         >
           {result.error ? <p className="font-medium">{result.error}</p> : null}

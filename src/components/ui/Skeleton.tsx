@@ -5,12 +5,12 @@
  * "Laddar" once instead of reading a dozen empty boxes.
  */
 export function SkeletonLine({ className = "" }: { className?: string }) {
-  return <div aria-hidden className={`animate-pulse rounded-lg bg-zinc-200 ${className}`} />;
+  return <div aria-hidden className={`animate-pulse rounded-lg bg-raised ${className}`} />;
 }
 
 export function SkeletonCard() {
   return (
-    <div aria-hidden className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+    <div aria-hidden className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
       <SkeletonLine className="h-4 w-1/3" />
       <SkeletonLine className="mt-3 h-3 w-full" />
       <SkeletonLine className="mt-2 h-3 w-2/3" />

@@ -15,7 +15,7 @@ export default async function EditBrandPage({ params }: { params: Promise<{ id: 
   return (
     <main className="mx-auto max-w-2xl px-4 pb-20 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">{brand.name}</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         /staff/brands/<span className="font-mono">{brand.slug}</span>
       </p>
       <BrandEditor brand={brand} />

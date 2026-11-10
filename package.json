@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "lint:colors": "tsx scripts/lint-colors.ts",
+    "build": "npm run lint:colors && prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "seed": "tsx --env-file-if-exists=.env prisma/seed.ts",
@@ -25,6 +26,7 @@
     "ux:shots": "tsx scripts/ux/shots.ts",
     "ux:axe": "tsx scripts/ux/axe.ts",
     "ux:targets": "tsx scripts/ux/targets.ts",
+    "theme:shots": "tsx scripts/ux/theme-shots.ts",
     "brands:import": "tsx scripts/import-brand-content.ts",
     "flavors:retag": "tsx scripts/retag-flavors.ts",
     "seed:shopfloor": "tsx prisma/seed-shopfloor.ts",

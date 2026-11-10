@@ -85,7 +85,7 @@ export default async function TodayPage() {
         <div className="mb-3">
           <Link
             href="/order"
-            className="flex min-h-16 items-center justify-center rounded-2xl bg-zinc-900 px-6 text-lg font-semibold text-white transition active:scale-[0.99]"
+            className="flex min-h-16 items-center justify-center rounded-2xl bg-primary px-6 text-lg font-semibold text-on-primary transition active:scale-[0.99]"
           >
             Ny beställning
           </Link>
@@ -97,13 +97,13 @@ export default async function TodayPage() {
           <ul className="space-y-2">
             {drafts.map((draft) => (
               <li key={draft.storeId}>
-                <Card href={`/order?store=${draft.storeId}`} className="border-brand-300">
+                <Card href={`/order?store=${draft.storeId}`} className="border-primary">
                   <div className="flex items-center justify-between gap-3">
                     <span className="min-w-0">
                       <span className="block font-semibold tracking-tight">
                         Fortsätt beställning
                       </span>
-                      <span className="block text-sm text-zinc-600">
+                      <span className="block text-sm text-muted">
                         {stores.length > 1 ? `${draft.storeName} · ` : ""}
                         {lineCount(draft.lines) === 1
                           ? "1 produkt"
@@ -133,7 +133,7 @@ export default async function TodayPage() {
           <h2 className="font-semibold tracking-tight">Ditt pass idag</h2>
           <ul className="mt-2 space-y-1">
             {todaysShifts.map((entry, index) => (
-              <li key={`${entry.date.toISOString()}-${index}`} className="text-[15px] text-zinc-700">
+              <li key={`${entry.date.toISOString()}-${index}`} className="text-[15px] text-ink">
                 <span className="font-medium tabular-nums">
                   {entry.startTime}–{entry.endTime}
                 </span>{" "}
@@ -155,7 +155,7 @@ export default async function TodayPage() {
           <div className="flex items-start justify-between gap-3">
             <span className="min-w-0">
               <span className="block font-semibold tracking-tight">Checklistor idag</span>
-              <span className="block text-sm text-zinc-600">
+              <span className="block text-sm text-muted">
                 {openChecklists
                   .slice(0, 2)
                   .map(
@@ -180,7 +180,7 @@ export default async function TodayPage() {
               <span className="block font-semibold tracking-tight">
                 {unreadNews === 1 ? "1 oläst nyhet" : `${unreadNews} olästa nyheter`}
               </span>
-              <span className="block truncate text-sm text-zinc-600">
+              <span className="block truncate text-sm text-muted">
                 {latestNews[0]?.title ?? ""}
               </span>
             </span>
@@ -208,12 +208,12 @@ export default async function TodayPage() {
                 <li key={href}>
                   <Link
                     href={href}
-                    className="flex min-h-tap items-center justify-between gap-3 rounded-xl px-1 text-[15px] text-zinc-700 transition hover:bg-zinc-50"
+                    className="flex min-h-tap items-center justify-between gap-3 rounded-xl px-1 text-[15px] text-ink transition hover:bg-raised"
                   >
                     <span>
                       <span className="font-semibold tabular-nums">{count}</span> {label}
                     </span>
-                    <span aria-hidden className="text-zinc-500">
+                    <span aria-hidden className="text-muted">
                       ›
                     </span>
                   </Link>
@@ -232,8 +232,8 @@ export default async function TodayPage() {
       drafts.length === 0 &&
       outstandingAdmin === 0 ? (
         <Card>
-          <p className="font-medium text-zinc-700">Inget särskilt idag.</p>
-          <p className="mt-1 text-sm text-zinc-600">
+          <p className="font-medium text-ink">Inget särskilt idag.</p>
+          <p className="mt-1 text-sm text-muted">
             Allt är avbockat och inget nytt väntar.{" "}
             <Link href="/staff" className="underline underline-offset-4">
               Läs på om ett märke

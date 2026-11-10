@@ -15,7 +15,7 @@ export default async function AdminAnnouncementsPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 pb-20 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">Nyheter</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         {published} publicerade av {announcements.length}.{" "}
         <Link href="/news" className="underline underline-offset-4">
           Visa flödet
@@ -28,7 +28,7 @@ export default async function AdminAnnouncementsPage() {
 
       <h2 className="mt-8 text-lg font-semibold tracking-tight">Alla inlägg</h2>
       {announcements.length === 0 ? (
-        <p className="mt-3 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-3 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga inlägg än.
         </p>
       ) : (
@@ -37,29 +37,29 @@ export default async function AdminAnnouncementsPage() {
             <li key={item.id}>
               <Link
                 href={`/admin/announcements/${item.id}`}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm transition hover:border-zinc-300"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3 shadow-sm transition hover:border-control"
               >
                 <span className="min-w-0">
                   <span className="flex flex-wrap items-center gap-2">
                     {item.pinned ? <span aria-label="Fäst">📌</span> : null}
                     <span className="truncate font-medium">{item.title}</span>
-                    <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
+                    <span className="shrink-0 rounded-full bg-raised px-2 py-0.5 text-xs text-muted">
                       {categoryLabel(item.category)}
                     </span>
                     {item.publishedAt ? null : (
-                      <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
+                      <span className="shrink-0 rounded-full bg-raised px-2 py-0.5 text-xs text-warning">
                         Utkast
                       </span>
                     )}
                   </span>
-                  <span className="mt-0.5 block text-sm text-zinc-500">
+                  <span className="mt-0.5 block text-sm text-muted">
                     {item.publishedAt
                       ? formatDateTime(item.publishedAt)
                       : `Ändrad ${formatDateTime(item.updatedAt)}`}
                     {item.authorName ? ` · ${item.authorName}` : ""}
                   </span>
                 </span>
-                <span aria-hidden className="text-zinc-500">
+                <span aria-hidden className="text-muted">
                   ›
                 </span>
               </Link>

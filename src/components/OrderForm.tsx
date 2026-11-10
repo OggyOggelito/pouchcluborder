@@ -363,7 +363,7 @@ export default function OrderForm({
           <button
             type="button"
             onClick={changeStore}
-            className="min-h-11 text-sm text-zinc-600 underline underline-offset-4 transition hover:text-zinc-900"
+            className="min-h-11 text-sm text-muted underline underline-offset-4 transition hover:text-ink"
           >
             Byt butik
           </button>
@@ -372,7 +372,7 @@ export default function OrderForm({
 
       <DraftStatus state={saveState} onKeepMine={() => void persist(quantities, note)} />
 
-      <div className="sticky top-[53px] z-20 -mx-4 bg-zinc-50/95 px-4 pb-3 pt-3 backdrop-blur">
+      <div className="sticky top-[53px] z-20 -mx-4 bg-canvas/95 px-4 pb-3 pt-3 backdrop-blur">
         <div className="relative">
           <input
             type="search"
@@ -380,14 +380,14 @@ export default function OrderForm({
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Sök märke eller smak…"
             aria-label="Sök märke eller smak"
-            className="h-12 w-full rounded-2xl border border-zinc-200 bg-white pl-4 pr-12 text-base outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+            className="h-12 w-full rounded-2xl border border-control bg-raised pl-4 pr-12 text-base text-ink placeholder:text-muted outline-none transition focus:border-primary focus:ring-2 focus:ring-focus"
           />
           {query ? (
             <button
               type="button"
               onClick={() => setQuery("")}
               aria-label="Rensa sökning"
-              className="absolute right-1 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full text-zinc-600 transition hover:bg-zinc-100"
+              className="absolute right-1 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full text-muted transition hover:bg-raised"
             >
               <span aria-hidden>✕</span>
             </button>
@@ -421,7 +421,7 @@ export default function OrderForm({
       </div>
 
       {visibleGroups.length === 0 ? (
-        <p className="mt-10 text-center text-zinc-600">
+        <p className="mt-10 text-center text-muted">
           {onlySelected
             ? "Inget valt matchar sökningen."
             : query.trim()
@@ -438,28 +438,28 @@ export default function OrderForm({
           return (
             <li
               key={group.brand}
-              className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"
+              className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm"
             >
               <button
                 type="button"
                 onClick={() => toggleBrand(group.brand)}
                 aria-expanded={expanded}
-                className="flex min-h-tap w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-zinc-50"
+                className="flex min-h-tap w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-raised"
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="truncate text-base font-semibold">{group.brand}</span>
                   {group.categories.length === 1 && group.categories[0].category ? (
-                    <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700">
+                    <span className="shrink-0 rounded-full bg-raised px-2 py-0.5 text-xs text-ink">
                       {categoryLabel(group.categories[0].category)}
                     </span>
                   ) : null}
                   {brandQuantity > 0 ? (
-                    <span className="shrink-0 rounded-full bg-brand-700 px-2 py-0.5 text-xs font-semibold text-white">
+                    <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-on-primary">
                       {brandQuantity}
                     </span>
                   ) : null}
                 </span>
-                <span className="flex items-center gap-2 text-sm text-zinc-600">
+                <span className="flex items-center gap-2 text-sm text-muted">
                   <span>{group.variantCount}</span>
                   <span aria-hidden className={`transition-transform ${expanded ? "rotate-90" : ""}`}>
                     ›
@@ -468,18 +468,18 @@ export default function OrderForm({
               </button>
 
               {expanded ? (
-                <div className="border-t border-zinc-100">
+                <div className="border-t border-line">
                   {group.categories.map((categoryGroup) => (
                     <div key={categoryGroup.key}>
                       {group.categories.length > 1 && categoryGroup.category ? (
-                        <p className="bg-zinc-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+                        <p className="bg-raised px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
                           {categoryLabel(categoryGroup.category)}
                         </p>
                       ) : null}
 
                       {categoryGroup.flavors.map((flavorGroup) => (
-                        <div key={flavorGroup.key} className="border-b border-zinc-100 last:border-b-0">
-                          <p className="px-4 pt-3 text-sm font-medium text-zinc-600">
+                        <div key={flavorGroup.key} className="border-b border-line last:border-b-0">
+                          <p className="px-4 pt-3 text-sm font-medium text-muted">
                             {flavorGroup.flavor}
                           </p>
                           <ul>
@@ -493,7 +493,7 @@ export default function OrderForm({
                                     {variant.strength ? (
                                       <>
                                         <span className="font-medium">{variant.strength}</span>
-                                        <span className="text-zinc-500"> · </span>
+                                        <span className="text-muted"> · </span>
                                       </>
                                     ) : variant.nicotineMgPerPortion !== null ? (
                                       <>
@@ -501,28 +501,28 @@ export default function OrderForm({
                                             EAN — so it is marked rather than shown
                                             as if the supplier had stated it. */}
                                         <span
-                                          className="font-medium text-zinc-600"
+                                          className="font-medium text-muted"
                                           title="Nikotinhalt från snusbolaget.se, matchad på EAN"
                                         >
                                           ~{formatMg(variant.nicotineMgPerPortion)} mg
                                         </span>
-                                        <span className="text-zinc-500"> · </span>
+                                        <span className="text-muted"> · </span>
                                       </>
                                     ) : null}
                                     <span
                                       className={
                                         variant.strength || variant.nicotineMgPerPortion !== null
-                                          ? "text-zinc-700"
+                                          ? "text-ink"
                                           : "font-medium"
                                       }
                                     >
                                       {variant.format}
                                     </span>
                                     {!variant.strength && variant.nicotineMgPerPortion === null ? (
-                                      <span className="text-zinc-600"> · styrka saknas</span>
+                                      <span className="text-muted"> · styrka saknas</span>
                                     ) : null}
                                   </p>
-                                  <p className="text-sm text-zinc-600">
+                                  <p className="text-sm text-muted">
                                     {variant.pricePerStock > 0
                                       ? `${formatSek(variant.pricePerStock)} / ${termFor("stock", 1)}`
                                       : "Pris saknas"}
@@ -575,7 +575,7 @@ function DraftStatus({ state, onKeepMine }: { state: SaveState; onKeepMine: () =
     return (
       <p
         role="status"
-        className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900"
+        className="mt-3 rounded-xl bg-raised px-3 py-2 text-sm text-warning"
       >
         Sparas inte just nu, försöker igen. Det du har lagt till finns kvar i telefonen.
       </p>
@@ -583,7 +583,7 @@ function DraftStatus({ state, onKeepMine }: { state: SaveState; onKeepMine: () =
   }
 
   return (
-    <div role="alert" className="mt-3 rounded-xl bg-amber-50 px-3 py-3 text-sm text-amber-900">
+    <div role="alert" className="mt-3 rounded-xl bg-raised px-3 py-3 text-sm text-warning">
       <p className="font-medium">Beställningen har ändrats någon annanstans</p>
       <p className="mt-1">
         Samma utkast har redigerats på en annan enhet. Ladda om för att hämta den versionen, eller
@@ -593,14 +593,14 @@ function DraftStatus({ state, onKeepMine }: { state: SaveState; onKeepMine: () =
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="min-h-11 rounded-xl bg-amber-900 px-4 text-sm font-semibold text-white"
+          className="min-h-11 rounded-xl bg-warning px-4 text-sm font-semibold text-on-primary"
         >
           Hämta den senaste
         </button>
         <button
           type="button"
           onClick={onKeepMine}
-          className="min-h-11 rounded-xl border border-amber-300 px-4 text-sm font-medium"
+          className="min-h-11 rounded-xl border border-warning px-4 text-sm font-medium"
         >
           Fortsätt med min
         </button>
@@ -625,8 +625,8 @@ function CategoryChip({
       aria-pressed={active}
       className={`min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition ${
         active
-          ? "border-zinc-900 bg-zinc-900 text-white"
-          : "border-zinc-200 bg-white text-zinc-700"
+          ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+          : "border-line bg-surface text-ink"
       }`}
     >
       {children}
@@ -648,13 +648,13 @@ function SummaryBar({
 
   return (
     <div className="fixed inset-x-0 bottom-[4.25rem] z-30 px-4 lg:bottom-4">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white/95 p-3 shadow-lg backdrop-blur">
+      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl border border-line bg-surface/95 p-3 shadow-lg backdrop-blur">
         <div className="min-w-0">
           <p className="truncate text-base font-semibold tabular-nums">
             {formatNumber(totalQuantity)} {termFor("stock", totalQuantity)}
             {totalQuantity === 0 ? <TermHint term="stock" /> : null}
           </p>
-          <p className="truncate text-sm text-zinc-600 tabular-nums">
+          <p className="truncate text-sm text-muted tabular-nums">
             {formatSek(totalSek)} inköpsvärde
           </p>
         </div>
@@ -662,7 +662,7 @@ function SummaryBar({
           type="button"
           onClick={onReview}
           disabled={empty}
-          className="h-12 shrink-0 rounded-2xl bg-brand-700 px-6 text-base font-semibold text-white transition active:scale-[0.98] disabled:bg-zinc-200 disabled:text-zinc-500"
+          className="h-12 shrink-0 rounded-2xl bg-primary px-6 text-base font-semibold text-on-primary transition active:scale-[0.98] disabled:bg-raised disabled:text-muted"
         >
           Granska
         </button>
@@ -709,18 +709,18 @@ function ReviewStep({
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex min-h-11 items-center gap-1 text-sm text-zinc-600 transition hover:text-zinc-900"
+        className="inline-flex min-h-11 items-center gap-1 text-sm text-muted transition hover:text-ink"
       >
         <span aria-hidden>‹</span> Tillbaka till sortimentet
       </button>
 
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">Granska beställningen</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         {storeName} · {countOf("stock", totals.totalQuantity)}
       </p>
 
       {empty ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-600">
+        <p className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Du har inte valt något än.
         </p>
       ) : (
@@ -728,18 +728,18 @@ function ReviewStep({
           {chosen.map((group) => (
             <li
               key={group.brand}
-              className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm"
+              className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm"
             >
-              <p className="border-b border-zinc-100 px-4 py-3 font-semibold">{group.brand}</p>
+              <p className="border-b border-line px-4 py-3 font-semibold">{group.brand}</p>
               <ul>
                 {group.items.map((product) => (
                   <li
                     key={product.id}
-                    className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-2 last:border-b-0"
+                    className="flex items-center justify-between gap-3 border-b border-line px-4 py-2 last:border-b-0"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-[15px]">{product.flavor}</p>
-                      <p className="truncate text-sm text-zinc-600">
+                      <p className="truncate text-sm text-muted">
                         {[product.strength, product.format].filter(Boolean).join(" · ")}
                       </p>
                     </div>
@@ -757,7 +757,7 @@ function ReviewStep({
       )}
 
       <div className="mt-6">
-        <label htmlFor="note" className="block text-sm font-medium text-zinc-700">
+        <label htmlFor="note" className="block text-sm font-medium text-ink">
           Meddelande till lagret (valfritt)
         </label>
         <textarea
@@ -767,23 +767,23 @@ function ReviewStep({
           rows={2}
           maxLength={500}
           placeholder="T.ex. ”brådskande, slut i hyllan”"
-          className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-3 text-base outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+          className="mt-2 w-full rounded-2xl border border-control bg-raised p-3 text-base text-ink placeholder:text-muted outline-none transition focus:border-primary focus:ring-2 focus:ring-focus"
         />
       </div>
 
       {error ? (
-        <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">
+        <p role="alert" className="mt-4 rounded-xl bg-raised p-3 text-sm text-danger">
           {error}
         </p>
       ) : null}
 
       <div className="fixed inset-x-0 bottom-[4.25rem] z-30 px-4 lg:bottom-4">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white/95 p-3 shadow-lg backdrop-blur">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-2xl border border-line bg-surface/95 p-3 shadow-lg backdrop-blur">
           <div className="min-w-0">
             <p className="truncate text-base font-semibold tabular-nums">
               {formatNumber(totals.totalQuantity)} {termFor("stock", totals.totalQuantity)}
             </p>
-            <p className="truncate text-sm text-zinc-600 tabular-nums">
+            <p className="truncate text-sm text-muted tabular-nums">
               {formatSek(totals.totalSek)} inköpsvärde
             </p>
           </div>
@@ -791,7 +791,7 @@ function ReviewStep({
             type="button"
             onClick={onSubmit}
             disabled={saving || empty}
-            className="h-12 shrink-0 rounded-2xl bg-brand-700 px-6 text-base font-semibold text-white transition active:scale-[0.98] disabled:bg-zinc-200 disabled:text-zinc-500"
+            className="h-12 shrink-0 rounded-2xl bg-primary px-6 text-base font-semibold text-on-primary transition active:scale-[0.98] disabled:bg-raised disabled:text-muted"
           >
             {saving ? "Skickar…" : "Skicka beställning"}
           </button>
@@ -812,19 +812,19 @@ function OrderConfirmation({
 }) {
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
-      <div className="rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-sm">
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand-50 text-2xl text-brand-700">
+      <div className="rounded-3xl border border-line bg-surface p-6 text-center shadow-sm">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-raised text-2xl text-primary">
           ✓
         </div>
         <h1 className="mt-4 text-xl font-semibold tracking-tight">Beställningen är skickad</h1>
-        <p className="mt-1 text-zinc-700">
+        <p className="mt-1 text-ink">
           {storeName} · {countOf("stock", submitted.totalQuantity)} ·{" "}
           {formatSek(submitted.totalSek)}
         </p>
 
         <a
           href={`/api/orders/${submitted.id}/export`}
-          className="mt-6 flex min-h-12 items-center justify-center rounded-2xl bg-zinc-900 px-6 text-base font-semibold text-white transition active:scale-[0.98]"
+          className="mt-6 flex min-h-12 items-center justify-center rounded-2xl bg-primary px-6 text-base font-semibold text-on-primary transition active:scale-[0.98]"
         >
           Exportera Excel
         </a>
@@ -832,14 +832,14 @@ function OrderConfirmation({
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <Link
             href={`/orders/${submitted.id}`}
-            className="flex min-h-12 flex-1 items-center justify-center rounded-2xl border border-zinc-200 px-4 font-medium transition hover:bg-zinc-50"
+            className="flex min-h-12 flex-1 items-center justify-center rounded-2xl border border-control px-4 font-medium transition hover:bg-raised"
           >
             Se beställningen
           </Link>
           <button
             type="button"
             onClick={onNewOrder}
-            className="min-h-12 flex-1 rounded-2xl border border-zinc-200 px-4 font-medium transition hover:bg-zinc-50"
+            className="min-h-12 flex-1 rounded-2xl border border-control px-4 font-medium transition hover:bg-raised"
           >
             Ny beställning
           </button>

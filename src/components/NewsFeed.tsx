@@ -43,7 +43,7 @@ export default function NewsFeed({ items }: { items: Item[] }) {
       ) : null}
 
       {visible.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga inlägg i den kategorin.
         </p>
       ) : (
@@ -51,19 +51,19 @@ export default function NewsFeed({ items }: { items: Item[] }) {
           {visible.map((item) => (
             <li
               key={item.id}
-              className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm"
+              className="rounded-2xl border border-line bg-surface p-5 shadow-sm"
             >
               <div className="flex flex-wrap items-center gap-2">
                 {item.pinned ? (
-                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                  <span className="rounded-full bg-raised px-2 py-0.5 text-xs font-medium text-warning">
                     📌 Fäst
                   </span>
                 ) : null}
-                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
+                <span className="rounded-full bg-raised px-2 py-0.5 text-xs text-muted">
                   {categoryLabel(item.category)}
                 </span>
                 {item.publishedAt ? (
-                  <time className="text-xs text-zinc-500" dateTime={item.publishedAt}>
+                  <time className="text-xs text-muted" dateTime={item.publishedAt}>
                     {new Date(item.publishedAt).toLocaleDateString("sv-SE", {
                       day: "numeric",
                       month: "long",
@@ -80,7 +80,7 @@ export default function NewsFeed({ items }: { items: Item[] }) {
               </div>
 
               {item.authorName ? (
-                <p className="mt-4 text-xs text-zinc-500">{item.authorName}</p>
+                <p className="mt-4 text-xs text-muted">{item.authorName}</p>
               ) : null}
             </li>
           ))}
@@ -106,8 +106,8 @@ function Chip({
       aria-pressed={active}
       className={`min-h-tap shrink-0 whitespace-nowrap rounded-full border px-4 text-sm font-medium transition ${
         active
-          ? "border-zinc-900 bg-zinc-900 text-white"
-          : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+          ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+          : "border-control bg-surface text-muted hover:border-control"
       }`}
     >
       {children}

@@ -7,7 +7,7 @@ import { requireAdmin } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 const FIELD =
-  "mt-1 w-full rounded-xl border border-zinc-200 px-3 py-2 text-[15px] outline-none transition focus:border-zinc-400";
+  "mt-1 w-full bg-raised rounded-xl border border-control px-3 py-2 text-[15px] text-ink placeholder:text-muted outline-none transition focus:border-primary";
 
 export default async function AdminQuizzesPage() {
   await requireAdmin();
@@ -19,28 +19,28 @@ export default async function AdminQuizzesPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 pb-20 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">Quiz</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         {quizzes.filter((quiz) => quiz.published).length} publicerade av {quizzes.length}.{" "}
         <Link href="/admin/quizzes/results" className="underline underline-offset-4">
           Resultat
         </Link>
       </p>
 
-      <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <section className="mt-6 rounded-2xl border border-line bg-surface p-5 shadow-sm">
         <h2 className="text-lg font-semibold tracking-tight">Nytt quiz</h2>
         <form action={saveQuizAction} className="mt-4 space-y-4">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-zinc-700">Titel</label>
+            <label htmlFor="title" className="block text-sm font-medium text-ink">Titel</label>
             <input id="title" name="title" required className={FIELD} />
           </div>
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-zinc-700">
+            <label htmlFor="description" className="block text-sm font-medium text-ink">
               Beskrivning (valfri)
             </label>
             <textarea id="description" name="description" rows={2} className={FIELD} />
           </div>
           <div>
-            <label htmlFor="brandId" className="block text-sm font-medium text-zinc-700">
+            <label htmlFor="brandId" className="block text-sm font-medium text-ink">
               Varumärke (valfritt)
             </label>
             <select id="brandId" name="brandId" defaultValue="" className={FIELD}>
@@ -50,7 +50,7 @@ export default async function AdminQuizzesPage() {
               ))}
             </select>
           </div>
-          <button type="submit" className="h-12 w-full rounded-2xl bg-zinc-900 font-semibold text-white">
+          <button type="submit" className="h-12 w-full rounded-2xl bg-primary font-semibold text-on-primary">
             Skapa quiz
           </button>
         </form>
@@ -61,24 +61,24 @@ export default async function AdminQuizzesPage() {
           <li key={quiz.id}>
             <Link
               href={`/admin/quizzes/${quiz.id}`}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm transition hover:border-zinc-300"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-3 shadow-sm transition hover:border-control"
             >
               <span className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="truncate font-medium">{quiz.title}</span>
                   <span
                     className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
-                      quiz.published ? "bg-brand-50 text-brand-700" : "bg-zinc-100 text-zinc-500"
+                      quiz.published ? "bg-raised text-primary" : "bg-raised text-muted"
                     }`}
                   >
                     {quiz.published ? "Publicerad" : "Utkast"}
                   </span>
                 </span>
-                <span className="mt-0.5 block text-sm text-zinc-500">
+                <span className="mt-0.5 block text-sm text-muted">
                   {quiz.questionCount} frågor{quiz.brandName ? ` · ${quiz.brandName}` : ""}
                 </span>
               </span>
-              <span aria-hidden className="text-zinc-500">›</span>
+              <span aria-hidden className="text-muted">›</span>
             </Link>
           </li>
         ))}

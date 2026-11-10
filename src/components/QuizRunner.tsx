@@ -73,18 +73,18 @@ export default function QuizRunner({
 
   if (phase === "intro") {
     return (
-      <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <section className="mt-6 rounded-2xl border border-line bg-surface p-5 shadow-sm">
         <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        {description ? <p className="mt-2 text-zinc-600">{description}</p> : null}
-        <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+        {description ? <p className="mt-2 text-muted">{description}</p> : null}
+        <p className="mt-4 rounded-xl bg-raised p-4 text-sm text-warning">
           {RESULT_VISIBILITY_NOTICE}
         </p>
-        <p className="mt-3 text-sm text-zinc-500">{questions.length} frågor.</p>
+        <p className="mt-3 text-sm text-muted">{questions.length} frågor.</p>
         <button
           type="button"
           onClick={() => setPhase("asking")}
           disabled={questions.length === 0}
-          className="mt-4 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
+          className="mt-4 h-12 w-full rounded-2xl bg-primary px-6 font-semibold text-on-primary transition active:scale-[0.99] disabled:bg-raised disabled:text-muted"
         >
           {questions.length === 0 ? "Inga frågor än" : "Starta"}
         </button>
@@ -94,23 +94,23 @@ export default function QuizRunner({
 
   if (phase === "done" && result) {
     return (
-      <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-6 text-center shadow-sm">
-        <p className="text-sm uppercase tracking-wide text-zinc-500">Resultat</p>
+      <section className="mt-6 rounded-2xl border border-line bg-surface p-6 text-center shadow-sm">
+        <p className="text-sm uppercase tracking-wide text-muted">Resultat</p>
         <p className="mt-2 text-4xl font-semibold tabular-nums">
           {result.score}/{result.total}
         </p>
-        <p className="mt-1 text-zinc-600">{percentage(result.score, result.total)} % rätt</p>
+        <p className="mt-1 text-muted">{percentage(result.score, result.total)} % rätt</p>
         <div className="mt-6 flex flex-col gap-2">
           <button
             type="button"
             onClick={restart}
-            className="h-12 rounded-2xl bg-zinc-900 font-semibold text-white transition active:scale-[0.99]"
+            className="h-12 rounded-2xl bg-primary font-semibold text-on-primary transition active:scale-[0.99]"
           >
             Gör om quizet
           </button>
           <Link
             href="/staff/quizzes"
-            className="flex h-12 items-center justify-center rounded-2xl border border-zinc-200 font-medium transition hover:bg-zinc-50"
+            className="flex h-12 items-center justify-center rounded-2xl border border-line font-medium transition hover:bg-raised"
           >
             Till alla quiz
           </Link>
@@ -123,18 +123,18 @@ export default function QuizRunner({
 
   return (
     <section className="mt-6">
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-muted">
         Fråga {index + 1} av {questions.length}
       </p>
       <div
-        className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200"
+        className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-raised"
         role="progressbar"
         aria-valuenow={index + 1}
         aria-valuemin={1}
         aria-valuemax={questions.length}
       >
         <div
-          className="h-full rounded-full bg-zinc-900 transition-all"
+          className="h-full rounded-full bg-primary transition-all"
           style={{ width: `${((index + 1) / questions.length) * 100}%` }}
         />
       </div>
@@ -155,10 +155,10 @@ export default function QuizRunner({
                 disabled={revealed}
                 className={`flex min-h-14 w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left text-[15px] transition ${
                   revealed && isCorrect
-                    ? "border-brand-600 bg-brand-50 font-medium"
+                    ? "border-primary bg-raised font-medium"
                     : revealed && isChosen
-                      ? "border-red-300 bg-red-50"
-                      : "border-zinc-200 bg-white hover:border-zinc-300"
+                      ? "border-danger bg-raised"
+                      : "border-line bg-surface hover:border-control"
                 }`}
               >
                 <span aria-hidden className="w-5 shrink-0 text-center">
@@ -174,7 +174,7 @@ export default function QuizRunner({
       {chosen !== null ? (
         <div
           role="status"
-          className={`mt-4 rounded-2xl p-4 ${correct ? "bg-brand-50" : "bg-zinc-100"}`}
+          className={`mt-4 rounded-2xl p-4 ${correct ? "bg-raised" : "bg-raised"}`}
         >
           <p className="font-medium">{correct ? "Rätt!" : "Inte riktigt."}</p>
           {question.explanation ? (
@@ -186,7 +186,7 @@ export default function QuizRunner({
       ) : null}
 
       {error ? (
-        <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">
+        <p role="alert" className="mt-3 rounded-xl bg-raised p-3 text-sm text-danger">
           {error}
         </p>
       ) : null}
@@ -195,7 +195,7 @@ export default function QuizRunner({
         type="button"
         onClick={next}
         disabled={chosen === null || saving}
-        className="mt-5 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
+        className="mt-5 h-12 w-full rounded-2xl bg-primary px-6 font-semibold text-on-primary transition active:scale-[0.99] disabled:bg-raised disabled:text-muted"
       >
         {saving
           ? "Sparar…"

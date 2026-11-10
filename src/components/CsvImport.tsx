@@ -57,15 +57,15 @@ export default function CsvImport() {
   const lineCount = csv.trim() ? csv.trim().split("\n").length - 1 : 0;
 
   return (
-    <section className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <section className="mt-6 rounded-2xl border border-line bg-surface p-5 shadow-sm">
       <h2 className="text-lg font-semibold tracking-tight">Importera produktkatalog (CSV)</h2>
-      <p className="mt-1 text-sm text-zinc-600">
+      <p className="mt-1 text-sm text-muted">
         Kolumner: <code className="font-mono">brand, flavor, strength, format, pricePerStock</code>.
         Komma eller semikolon som avgränsare. <code className="font-mono">format</code> gissas från
         namnet om kolumnen saknas.
       </p>
 
-      <label className="mt-4 flex h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-300 text-center transition hover:border-zinc-400">
+      <label className="mt-4 flex h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-control text-center transition hover:border-control">
         <input
           type="file"
           accept=".csv,text/csv,text/plain"
@@ -76,7 +76,7 @@ export default function CsvImport() {
           }}
         />
         <span className="font-medium">{fileName ?? "Välj CSV-fil"}</span>
-        <span className="mt-1 text-sm text-zinc-500">
+        <span className="mt-1 text-sm text-muted">
           {csv ? `${lineCount} rader inlästa` : "eller klistra in nedan"}
         </span>
       </label>
@@ -90,15 +90,15 @@ export default function CsvImport() {
         rows={6}
         spellCheck={false}
         placeholder={"brand,flavor,strength,format,pricePerStock\nZyn,Cool Mint,6mg,Mini,449"}
-        className="mt-4 w-full rounded-xl border border-zinc-200 p-3 font-mono text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+        className="mt-4 w-full bg-raised rounded-xl border border-control p-3 font-mono text-sm text-ink placeholder:text-muted outline-none transition focus:border-primary focus:ring-2 focus:ring-focus"
       />
 
       <fieldset className="mt-4">
-        <legend className="text-sm font-medium text-zinc-600">Läge</legend>
+        <legend className="text-sm font-medium text-muted">Läge</legend>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           <label
             className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
-              mode === "merge" ? "border-brand-500 bg-brand-50" : "border-zinc-200"
+              mode === "merge" ? "border-primary bg-raised" : "border-line"
             }`}
           >
             <input
@@ -110,7 +110,7 @@ export default function CsvImport() {
             />
             <span>
               <span className="block font-medium">Lägg till / uppdatera</span>
-              <span className="block text-sm text-zinc-600">
+              <span className="block text-sm text-muted">
                 Rör inte produkter som saknas i filen.
               </span>
             </span>
@@ -118,7 +118,7 @@ export default function CsvImport() {
 
           <label
             className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition ${
-              mode === "replace" ? "border-brand-500 bg-brand-50" : "border-zinc-200"
+              mode === "replace" ? "border-primary bg-raised" : "border-line"
             }`}
           >
             <input
@@ -130,7 +130,7 @@ export default function CsvImport() {
             />
             <span>
               <span className="block font-medium">Ersätt katalogen</span>
-              <span className="block text-sm text-zinc-600">
+              <span className="block text-sm text-muted">
                 Produkter utanför filen döljs (men raderas aldrig).
               </span>
             </span>
@@ -142,7 +142,7 @@ export default function CsvImport() {
         type="button"
         onClick={runImport}
         disabled={busy || csv.trim() === ""}
-        className="mt-4 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
+        className="mt-4 h-12 w-full rounded-2xl bg-primary px-6 font-semibold text-on-primary transition active:scale-[0.99] disabled:bg-raised disabled:text-muted"
       >
         {busy ? "Importerar…" : "Importera"}
       </button>
@@ -151,7 +151,7 @@ export default function CsvImport() {
         <div
           role="status"
           className={`mt-4 rounded-xl p-4 text-sm ${
-            failed ? "bg-red-50 text-red-800" : "bg-brand-50 text-brand-700"
+            failed ? "bg-raised text-danger" : "bg-raised text-primary"
           }`}
         >
           {result.error ? (

@@ -18,7 +18,7 @@ export default async function StaffQuizPage({ params }: { params: Promise<{ id: 
     <main className="mx-auto max-w-2xl px-4 pb-20 pt-6">
       <Link
         href="/staff/quizzes"
-        className="inline-flex h-9 items-center text-sm text-zinc-500 underline underline-offset-4"
+        className="inline-flex h-9 items-center text-sm text-muted underline underline-offset-4"
       >
         ← Alla quiz
       </Link>

@@ -16,7 +16,7 @@ import { requireAdmin } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 const SELECT =
-  "min-h-tap w-full rounded-xl border border-zinc-200 bg-white px-2 text-sm outline-none transition focus:border-zinc-400";
+  "min-h-tap w-full rounded-xl border border-control bg-raised px-2 text-sm text-ink placeholder:text-muted outline-none transition focus:border-primary";
 
 export default async function TooEasyMappingPage() {
   await requireAdmin();
@@ -78,8 +78,8 @@ export default async function TooEasyMappingPage() {
       <h1 className="text-xl font-semibold tracking-tight">TooEasy-koppling</h1>
 
       {/* ---- status panel ---- */}
-      <section className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Status</h2>
+      <section className="mt-4 rounded-2xl border border-line bg-surface p-4 shadow-sm">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">Status</h2>
         <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
           <Row label="Aktiv källa" value={providerName} />
           <Row
@@ -117,14 +117,14 @@ export default async function TooEasyMappingPage() {
           />
           <Row label="Kopplingar" value={`${mappedUsers}/${users.length} konton, ${mappedStores}/${stores.length} butiker`} />
         </dl>
-        <p className="mt-3 text-xs text-zinc-500">
+        <p className="mt-3 text-xs text-muted">
           Statusen gäller den här serverprocessen och nollställs vid omstart. Inga hemligheter
           eller personuppgifter lagras här.
         </p>
       </section>
 
       {environment === "demo" ? (
-        <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="mt-4 rounded-2xl bg-raised p-4 text-sm text-warning">
           <p className="font-medium">URL:en pekar på en demomiljö</p>
           <p className="mt-1">
             Bekräfta med TooEasy om den speglar produktion innan schemat används skarpt.
@@ -133,7 +133,7 @@ export default async function TooEasyMappingPage() {
       ) : null}
 
       {directoryError ? (
-        <div role="alert" className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-900">
+        <div role="alert" className="mt-4 rounded-2xl bg-raised p-4 text-sm text-danger">
           <p className="font-medium">Medarbetarlistan kunde inte hämtas</p>
           <p className="mt-1 font-mono text-xs">{directoryError}</p>
           <p className="mt-1">Du kan fortfarande koppla för hand nedan.</p>
@@ -141,7 +141,7 @@ export default async function TooEasyMappingPage() {
       ) : null}
 
       {directory && directory.protectedCount > 0 ? (
-        <div className="mt-4 rounded-2xl bg-zinc-100 p-4 text-sm text-zinc-700">
+        <div className="mt-4 rounded-2xl bg-raised p-4 text-sm text-ink">
           <p>
             <strong>{directory.protectedCount}</strong> medarbetare med skyddad identitet visas
             inte i listan. De måste kopplas för hand av en administratör som känner till deras
@@ -151,7 +151,7 @@ export default async function TooEasyMappingPage() {
       ) : null}
 
       {staleUsers.length > 0 ? (
-        <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="mt-4 rounded-2xl bg-raised p-4 text-sm text-warning">
           <p className="font-medium">Kopplingar som inte längre finns i TooEasy</p>
           <ul className="mt-1 list-disc pl-5">
             {staleUsers.map((user) => (
@@ -167,7 +167,7 @@ export default async function TooEasyMappingPage() {
       <form action={saveTooEasyMappingAction} className="mt-6 space-y-8">
         <section>
           <h2 className="text-lg font-semibold tracking-tight">Medarbetare</h2>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-muted">
             {directory
               ? "Välj motsvarande person i TooEasy. Förslag är bara en gissning — inget sparas förrän du klickar Spara."
               : "Skriv TooEasys EmployeeId för hand. Tomt fält tar bort kopplingen."}
@@ -180,20 +180,20 @@ export default async function TooEasyMappingPage() {
               return (
                 <li
                   key={user.id}
-                  className="grid gap-2 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm sm:grid-cols-[1fr_260px] sm:items-center"
+                  className="grid gap-2 rounded-2xl border border-line bg-surface p-3 shadow-sm sm:grid-cols-[1fr_260px] sm:items-center"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium">
                       {user.name ?? user.email}
                       {!current ? (
-                        <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                        <span className="ml-2 rounded-full bg-raised px-2 py-0.5 text-xs font-medium text-warning">
                           Okopplad
                         </span>
                       ) : null}
                     </p>
-                    <p className="truncate text-sm text-zinc-500">{user.email}</p>
+                    <p className="truncate text-sm text-muted">{user.email}</p>
                     {suggestion && !current ? (
-                      <p className="mt-0.5 text-xs text-zinc-500">
+                      <p className="mt-0.5 text-xs text-muted">
                         Förslag: <strong>{suggestion.displayName}</strong> (
                         <code className="font-mono">{suggestion.employeeId}</code>) — välj i listan
                         och spara för att bekräfta.
@@ -234,16 +234,16 @@ export default async function TooEasyMappingPage() {
           </ul>
 
           {directory && unmappedTooEasy.length > 0 ? (
-            <details className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-sm">
+            <details className="mt-3 rounded-2xl border border-line bg-raised p-3 text-sm">
               <summary className="cursor-pointer font-medium">
                 {unmappedTooEasy.length} medarbetare i TooEasy utan koppling hos oss
               </summary>
               <ul className="mt-2 grid gap-1 sm:grid-cols-2">
                 {unmappedTooEasy.map((option) => (
-                  <li key={option.employeeId} className="text-zinc-600">
+                  <li key={option.employeeId} className="text-muted">
                     {option.displayName}{" "}
                     <code className="font-mono text-xs">{option.employeeId}</code>
-                    {option.inactive ? <span className="text-zinc-500"> (inaktiv)</span> : null}
+                    {option.inactive ? <span className="text-muted"> (inaktiv)</span> : null}
                   </li>
                 ))}
               </ul>
@@ -253,7 +253,7 @@ export default async function TooEasyMappingPage() {
 
         <section>
           <h2 className="text-lg font-semibold tracking-tight">Butiker</h2>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-muted">
             TooEasys <code className="font-mono">StoreNumber</code>. Pass från en okopplad butik
             hoppas över i stället för att gissas.
           </p>
@@ -261,18 +261,18 @@ export default async function TooEasyMappingPage() {
             {stores.map((store) => (
               <li
                 key={store.id}
-                className="grid gap-2 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm sm:grid-cols-[1fr_260px] sm:items-center"
+                className="grid gap-2 rounded-2xl border border-line bg-surface p-3 shadow-sm sm:grid-cols-[1fr_260px] sm:items-center"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium">
                     {store.name}
                     {!store.tooEasyStoreNumber ? (
-                      <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      <span className="ml-2 rounded-full bg-raised px-2 py-0.5 text-xs font-medium text-warning">
                         Okopplad
                       </span>
                     ) : null}
                   </p>
-                  <p className="truncate text-sm text-zinc-500">
+                  <p className="truncate text-sm text-muted">
                     {store.region ?? "Ingen region"}
                   </p>
                 </div>
@@ -290,7 +290,7 @@ export default async function TooEasyMappingPage() {
 
         <button
           type="submit"
-          className="h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99]"
+          className="h-12 w-full rounded-2xl bg-primary px-6 font-semibold text-on-primary transition active:scale-[0.99]"
         >
           Spara kopplingar
         </button>
@@ -319,10 +319,10 @@ function Row({
 }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs text-zinc-500">{label}</dt>
+      <dt className="text-xs text-muted">{label}</dt>
       <dd
         className={`truncate text-sm font-medium ${
-          tone === "warn" ? "text-amber-700" : tone === "ok" ? "text-brand-700" : "text-zinc-900"
+          tone === "warn" ? "text-warning" : tone === "ok" ? "text-primary" : "text-ink"
         }`}
         title={value}
       >

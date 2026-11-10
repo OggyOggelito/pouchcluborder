@@ -32,24 +32,24 @@ export default async function SettingsPage() {
         <h2 className="font-semibold tracking-tight">Konto</h2>
         <dl className="mt-2 space-y-1 text-[15px]">
           <div className="flex gap-2">
-            <dt className="w-28 shrink-0 text-zinc-600">Namn</dt>
+            <dt className="w-28 shrink-0 text-muted">Namn</dt>
             <dd className="min-w-0">{user.name?.trim() || "—"}</dd>
           </div>
           <div className="flex gap-2">
-            <dt className="w-28 shrink-0 text-zinc-600">E-post</dt>
+            <dt className="w-28 shrink-0 text-muted">E-post</dt>
             <dd className="min-w-0 break-words">{user.email}</dd>
           </div>
           <div className="flex gap-2">
-            <dt className="w-28 shrink-0 text-zinc-600">Roll</dt>
+            <dt className="w-28 shrink-0 text-muted">Roll</dt>
             <dd className="min-w-0">
               {ROLE_LABELS[user.role]}
-              <span className="block text-sm text-zinc-600">
+              <span className="block text-sm text-muted">
                 {ROLE_DESCRIPTIONS[user.role]}
               </span>
             </dd>
           </div>
           <div className="flex gap-2">
-            <dt className="w-28 shrink-0 text-zinc-600">Butiker</dt>
+            <dt className="w-28 shrink-0 text-muted">Butiker</dt>
             <dd className="min-w-0">
               {user.stores.length === 0
                 ? "Ingen butik kopplad"
@@ -57,7 +57,7 @@ export default async function SettingsPage() {
             </dd>
           </div>
         </dl>
-        <p className="mt-3 text-sm text-zinc-600">
+        <p className="mt-3 text-sm text-muted">
           Behöver något ändras — namn, lösenord eller butik — hör av dig till en administratör.
         </p>
       </Card>
@@ -68,9 +68,9 @@ export default async function SettingsPage() {
           {Object.values(TERMS).map((term) => (
             <div key={term.one}>
               <dt className="font-medium">
-                {term.one} <span className="font-normal text-zinc-600">({term.many})</span>
+                {term.one} <span className="font-normal text-muted">({term.many})</span>
               </dt>
-              <dd className="text-zinc-600">{term.explanation}</dd>
+              <dd className="text-muted">{term.explanation}</dd>
             </div>
           ))}
         </dl>
@@ -79,7 +79,7 @@ export default async function SettingsPage() {
       {features.push ? (
         <Card className="mb-3">
           <h2 className="font-semibold tracking-tight">Aviseringar i mobilen</h2>
-          <p className="mt-1 text-sm text-zinc-600">
+          <p className="mt-1 text-sm text-muted">
             Push är konfigurerat för den här installationen.
           </p>
         </Card>
@@ -87,7 +87,7 @@ export default async function SettingsPage() {
 
       <Card>
         <h2 className="font-semibold tracking-tight">Vad som är igång</h2>
-        <p className="mt-1 text-sm text-zinc-600">
+        <p className="mt-1 text-sm text-muted">
           Delar av appen visas först när de är konfigurerade och har innehåll. Det som inte är
           igång döljs helt i menyn.
         </p>
@@ -106,7 +106,7 @@ export default async function SettingsPage() {
           ).map(([label, on]) => (
             <li key={label} className="flex items-center justify-between gap-3">
               <span>{label}</span>
-              <span className={on ? "text-brand-700" : "text-zinc-600"}>
+              <span className={on ? "text-primary" : "text-muted"}>
                 {on ? "Igång" : "Inte igång"}
               </span>
             </li>

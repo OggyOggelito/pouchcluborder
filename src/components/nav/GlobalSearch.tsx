@@ -142,7 +142,7 @@ export default function GlobalSearch() {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="grid h-11 w-11 place-items-center rounded-xl text-zinc-600 transition hover:bg-zinc-100"
+        className="grid h-11 w-11 place-items-center rounded-xl text-muted transition hover:bg-raised"
       >
         <NavIcon name="search" className="h-5 w-5" />
         <span className="sr-only">Sök</span>
@@ -154,21 +154,21 @@ export default function GlobalSearch() {
             type="button"
             aria-label="Stäng sök"
             onClick={close}
-            className="absolute inset-0 bg-zinc-900/40"
+            className="absolute inset-0 bg-scrim"
           />
 
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="absolute inset-x-0 top-0 mx-auto flex max-h-[90dvh] max-w-2xl flex-col overflow-hidden bg-white shadow-2xl sm:mt-10 sm:rounded-3xl"
+            className="absolute inset-x-0 top-0 mx-auto flex max-h-[90dvh] max-w-2xl flex-col overflow-hidden bg-surface shadow-2xl sm:mt-10 sm:rounded-3xl"
           >
             <h2 id={titleId} className="sr-only">
               Sök i appen
             </h2>
 
-            <div className="flex items-center gap-2 border-b border-zinc-100 px-3 py-2">
-              <NavIcon name="search" className="h-5 w-5 shrink-0 text-zinc-500" />
+            <div className="flex items-center gap-2 border-b border-line px-3 py-2">
+              <NavIcon name="search" className="h-5 w-5 shrink-0 text-muted" />
               <input
                 ref={inputRef}
                 type="search"
@@ -176,12 +176,12 @@ export default function GlobalSearch() {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Sök produkter, märken, nyheter, rutiner…"
                 aria-label="Sök produkter, märken, nyheter och rutiner"
-                className="h-11 min-w-0 flex-1 bg-transparent text-base outline-none"
+                className="h-11 min-w-0 flex-1 bg-transparent text-base text-ink placeholder:text-muted outline-none"
               />
               <button
                 type="button"
                 onClick={close}
-                className="h-11 shrink-0 rounded-xl px-3 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100"
+                className="h-11 shrink-0 rounded-xl px-3 text-sm font-medium text-muted transition hover:bg-raised"
               >
                 Avbryt
               </button>
@@ -191,7 +191,7 @@ export default function GlobalSearch() {
               {!searched ? (
                 recent.length > 0 ? (
                   <section>
-                    <h3 className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    <h3 className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-muted">
                       Senaste sökningar
                     </h3>
                     <ul>
@@ -200,7 +200,7 @@ export default function GlobalSearch() {
                           <button
                             type="button"
                             onClick={() => setQuery(item)}
-                            className="flex min-h-11 w-full items-center rounded-xl px-3 text-left text-[15px] text-zinc-700 transition hover:bg-zinc-100"
+                            className="flex min-h-11 w-full items-center rounded-xl px-3 text-left text-[15px] text-ink transition hover:bg-raised"
                           >
                             {item}
                           </button>
@@ -209,21 +209,21 @@ export default function GlobalSearch() {
                     </ul>
                   </section>
                 ) : (
-                  <p className="px-3 py-6 text-center text-sm text-zinc-500">
+                  <p className="px-3 py-6 text-center text-sm text-muted">
                     Skriv minst {MIN_QUERY_LENGTH} tecken.
                   </p>
                 )
               ) : pending && sections.length === 0 ? (
-                <p className="px-3 py-6 text-center text-sm text-zinc-500">Söker…</p>
+                <p className="px-3 py-6 text-center text-sm text-muted">Söker…</p>
               ) : sections.length === 0 ? (
                 <div className="px-3 py-6 text-center">
-                  <p className="text-sm text-zinc-600">
+                  <p className="text-sm text-muted">
                     Inget matchade <span className="font-medium">”{query.trim()}”</span>.
                   </p>
                   <Link
                     href={`/requests/new?q=${encodeURIComponent(query.trim())}`}
                     onClick={close}
-                    className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-zinc-200 px-4 text-sm font-medium"
+                    className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-control px-4 text-sm font-medium"
                   >
                     Logga som kundönskemål
                   </Link>
@@ -231,7 +231,7 @@ export default function GlobalSearch() {
               ) : (
                 sections.map((section) => (
                   <section key={section.group}>
-                    <h3 className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    <h3 className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-muted">
                       {section.label}
                     </h3>
                     <ul>
@@ -240,11 +240,11 @@ export default function GlobalSearch() {
                           <button
                             type="button"
                             onClick={() => openHit(hit)}
-                            className="flex min-h-12 w-full flex-col justify-center rounded-xl px-3 py-1.5 text-left transition hover:bg-zinc-100"
+                            className="flex min-h-12 w-full flex-col justify-center rounded-xl px-3 py-1.5 text-left transition hover:bg-raised"
                           >
-                            <span className="truncate text-[15px] text-zinc-900">{hit.title}</span>
+                            <span className="truncate text-[15px] text-ink">{hit.title}</span>
                             {hit.subtitle ? (
-                              <span className="truncate text-xs text-zinc-500">{hit.subtitle}</span>
+                              <span className="truncate text-xs text-muted">{hit.subtitle}</span>
                             ) : null}
                           </button>
                         </li>

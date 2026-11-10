@@ -1,0 +1,71 @@
+/**
+ * Pouch Club brand tokens — the only file in this repo allowed to contain a
+ * raw colour value. `npm run lint:colors` fails the build if a hex, an rgb()
+ * or a Tailwind palette class appears anywhere else.
+ *
+ * The app is dark: navy background, yellow text. There is no light theme and
+ * no toggle. The one exception is print, handled in globals.css.
+ *
+ * Contrast, measured against the surfaces each token is used on:
+ *
+ *   --text          on --bg 11.3:1 · --surface 9.7:1 · --surface-raised 7.9:1
+ *   --text-muted    at least 6.3:1 on all three
+ *   semantic colours at least 5.0:1 on all three
+ *   --border-control 4.4:1 on --bg, 3.1:1 on --surface-raised
+ *
+ * Those numbers are asserted by tests/theme-contrast.test.ts, which recomputes
+ * every pair from these values and fails under 4.5:1 for text or 3:1 for
+ * control borders. Changing a value here without checking that test will break
+ * the build, which is the point.
+ */
+:root {
+  /* Surfaces, darkest first. Three layers, so a dialog on a card on the page
+     can still be told apart. */
+  --bg: #02152d;
+  --surface: #0a2442;
+  --surface-raised: #12335c;
+
+  /* Text. Yellow is the brand colour and carries the body copy; muted is for
+     anything secondary — hints, captions, timestamps. */
+  --text: #f8c50b;
+  --text-muted: #a9b8cc;
+
+  /* Primary action. Filled yellow with navy text; nothing else is filled
+     yellow except small badges, so a yellow block always means "press me". */
+  --primary: #f8c50b;
+  --on-primary: #02152d;
+  --primary-hover: #ffd23a;
+  --primary-pressed: #dcaa00;
+
+  /* Borders. `--border` is decoration — dividers, card edges. Anything a
+     finger interacts with gets `--border-control`, which is lighter so the
+     edge of an input is visible rather than implied. */
+  --border: #2c4a75;
+  --border-control: #5b7fae;
+
+  --focus: #f8c50b;
+
+  /* Status. Never yellow: yellow is the brand, and a yellow warning is
+     indistinguishable from ordinary text on this background. */
+  --danger: #ff7b7b;
+  --success: #5ee08a;
+  --info: #7cc7ff;
+  --warning: #ff9a3c;
+
+  /* Added, not in the brief: the backdrop behind a modal. A dialog needs
+     something between it and the page, and the old value was a zinc black at
+     40% that read as grey smudge over navy. Navy at 72% keeps the page
+     recognisable underneath while clearly pushing it back. */
+  --scrim: rgb(2 21 45 / 0.72);
+
+  /* Print. The one place the app is not dark — a följesedel or a routine on
+     a stockroom wall has to come out of a laser printer legibly, which navy
+     and yellow do not. Kept here so globals.css holds no colour literal. */
+  --print-bg: #ffffff;
+  --print-text: #000000;
+  --print-border: #666666;
+
+  /* Native controls — selects, date pickers, scrollbars, autofill — read this
+     and render their own dark variants. Without it they come back white. */
+  color-scheme: dark;
+}

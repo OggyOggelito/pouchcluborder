@@ -40,16 +40,16 @@ export default async function TeamSchedulePage({
         <h1 className="text-xl font-semibold tracking-tight">Teamschema</h1>
         <div
           role="alert"
-          className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-red-900"
+          className="mt-6 rounded-2xl border border-danger bg-raised p-5 text-danger"
         >
           <p className="font-semibold">Schemat kunde inte hämtas</p>
           <p className="mt-1 text-sm">
             Ingen är nödvändigtvis ledig — vi når bara inte {outcome.providerName}.
           </p>
-          <p className="mt-2 font-mono text-xs text-red-800">{outcome.error}</p>
+          <p className="mt-2 font-mono text-xs text-danger">{outcome.error}</p>
           <Link
             href="/team-schedule?refresh=1"
-            className="mt-3 inline-flex min-h-tap items-center rounded-xl border border-red-300 px-4 text-sm font-medium transition hover:bg-red-100"
+            className="mt-3 inline-flex min-h-tap items-center rounded-xl border border-danger px-4 text-sm font-medium transition hover:bg-raised"
           >
             Försök igen
           </Link>
@@ -73,19 +73,19 @@ export default async function TeamSchedulePage({
         <h1 className="text-xl font-semibold tracking-tight">Teamschema</h1>
         <Link
           href={`/team-schedule?refresh=1${offDay ? `&off=${offDay.key}` : ""}`}
-          className="inline-flex min-h-tap items-center text-sm text-zinc-600 underline underline-offset-4 transition hover:text-zinc-900"
+          className="inline-flex min-h-tap items-center text-sm text-muted underline underline-offset-4 transition hover:text-ink"
         >
           Uppdatera
         </Link>
       </div>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         {regions.length > 0 ? regions.join(", ") : "Ingen region satt"} · {members.length} personer
         · {days.length} dagar
       </p>
 
-      <section className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <section className="mt-4 rounded-2xl border border-line bg-surface p-4 shadow-sm">
         <p className="text-sm font-medium">Vem är ledig?</p>
-        <p className="mt-0.5 text-sm text-zinc-500">
+        <p className="mt-0.5 text-sm text-muted">
           Välj en dag för att bara visa de som inte har pass — de kan tillfrågas om att täcka
           någon annanstans.
         </p>
@@ -95,8 +95,8 @@ export default async function TeamSchedulePage({
             aria-current={offDay ? undefined : "true"}
             className={`h-9 rounded-full border px-4 text-sm font-medium leading-[2rem] transition ${
               offDay
-                ? "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
-                : "border-zinc-900 bg-zinc-900 text-white"
+                ? "border-control bg-surface text-muted hover:border-control"
+                : "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
             }`}
           >
             Alla
@@ -108,8 +108,8 @@ export default async function TeamSchedulePage({
               aria-current={offDay?.key === day.key ? "true" : undefined}
               className={`h-9 rounded-full border px-3 text-sm font-medium leading-[2rem] transition ${
                 offDay?.key === day.key
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
+                  ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                  : "border-control bg-surface text-muted hover:border-control"
               }`}
             >
               <span className="capitalize">{WEEKDAY.format(day.date)}</span>{" "}
@@ -126,24 +126,24 @@ export default async function TeamSchedulePage({
       </section>
 
       {visibleMembers.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-6 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           {offDay
             ? "Alla i regionen har pass den dagen."
             : "Inga medarbetare kopplade till butikerna i din region."}
         </p>
       ) : (
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div className="mt-5 overflow-x-auto rounded-2xl border border-line bg-surface shadow-sm">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-zinc-200">
-                <th className="sticky left-0 z-10 bg-white px-3 py-2 text-left font-semibold">
+              <tr className="border-b border-line">
+                <th className="sticky left-0 z-10 bg-surface px-3 py-2 text-left font-semibold">
                   Medarbetare
                 </th>
                 {days.map((day) => (
                   <th
                     key={day.key}
                     className={`px-2 py-2 text-center font-medium ${
-                      offDay?.key === day.key ? "bg-zinc-100 text-zinc-900" : "text-zinc-500"
+                      offDay?.key === day.key ? "bg-raised text-ink" : "text-muted"
                     }`}
                   >
                     <span className="block capitalize">{WEEKDAY.format(day.date)}</span>
@@ -154,24 +154,24 @@ export default async function TeamSchedulePage({
             </thead>
             <tbody>
               {visibleMembers.map((member) => (
-                <tr key={member.id} className="border-b border-zinc-100 last:border-b-0">
-                  <td className="sticky left-0 z-10 bg-white px-3 py-2 align-top">
+                <tr key={member.id} className="border-b border-line last:border-b-0">
+                  <td className="sticky left-0 z-10 bg-surface px-3 py-2 align-top">
                     <span className="block font-medium">{member.name ?? member.email}</span>
-                    <span className="block text-xs text-zinc-500">
+                    <span className="block text-xs text-muted">
                       {member.storeNames.join(", ")}
                     </span>
                     <span className="mt-0.5 block text-xs">
                       {member.phone ? (
                         <a
                           href={`tel:${member.phone.replace(/\s/g, "")}`}
-                          className="text-zinc-500 underline underline-offset-2"
+                          className="text-muted underline underline-offset-2"
                         >
                           {member.phone}
                         </a>
                       ) : (
                         <a
                           href={`mailto:${member.email}`}
-                          className="text-zinc-500 underline underline-offset-2"
+                          className="text-muted underline underline-offset-2"
                         >
                           {member.email}
                         </a>
@@ -186,16 +186,16 @@ export default async function TeamSchedulePage({
                       <td
                         key={day.key}
                         className={`px-2 py-2 text-center align-top ${
-                          offDay?.key === day.key ? "bg-zinc-50" : ""
+                          offDay?.key === day.key ? "bg-raised" : ""
                         }`}
                       >
                         {isOff ? (
-                          <span className="text-xs font-medium text-zinc-500">Ledig</span>
+                          <span className="text-xs font-medium text-muted">Ledig</span>
                         ) : (
                           shifts.map((shift) => (
                             <span
                               key={`${shift.startTime}-${shift.storeName}`}
-                              className="mb-1 block rounded-md bg-brand-50 px-1 py-0.5 text-xs text-brand-700"
+                              className="mb-1 block rounded-md bg-raised px-1 py-0.5 text-xs text-primary"
                             >
                               <span className="block font-medium">{shift.storeName}</span>
                               <span className="block tabular-nums">
@@ -214,7 +214,7 @@ export default async function TeamSchedulePage({
         </div>
       )}
 
-      <p className="mt-4 text-xs text-zinc-500">
+      <p className="mt-4 text-xs text-muted">
         Källa: {outcome.providerName}. Kontaktuppgifter kommer från våra egna konton.
       </p>
     </main>

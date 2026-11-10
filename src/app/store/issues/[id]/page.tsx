@@ -53,20 +53,20 @@ export default async function StoreIssuePage({
       <h1 className="mt-2 text-xl font-semibold tracking-tight">
         {ISSUE_CATEGORY_LABELS[issue.category]}
       </h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         {issue.storeName} · {formatDateTime(issue.createdAt)} · status{" "}
-        <strong className="text-zinc-800">{ISSUE_STATUS_LABELS[issue.status]}</strong>
+        <strong className="text-ink">{ISSUE_STATUS_LABELS[issue.status]}</strong>
         {issue.assigneeName ? ` · tilldelad ${issue.assigneeName}` : ""}
       </p>
 
-      <section className="mt-4 rounded-2xl border border-zinc-200 bg-white p-4">
-        <p className="whitespace-pre-wrap text-[17px] leading-relaxed text-zinc-800">
+      <section className="mt-4 rounded-2xl border border-line bg-surface p-4">
+        <p className="whitespace-pre-wrap text-[17px] leading-relaxed text-ink">
           {issue.text}
         </p>
         {issue.productLabel ? (
-          <p className="mt-2 text-sm text-zinc-500">{issue.productLabel}</p>
+          <p className="mt-2 text-sm text-muted">{issue.productLabel}</p>
         ) : null}
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="mt-2 text-xs text-muted">
           Rapporterad av {issue.reporterName ?? "okänd"}
         </p>
       </section>
@@ -78,7 +78,7 @@ export default async function StoreIssuePage({
 
       <form action={commentIssueAction} className="mt-6">
         <input type="hidden" name="issueId" value={issue.id} />
-        <label htmlFor="comment" className="block text-sm font-medium text-zinc-700">
+        <label htmlFor="comment" className="block text-sm font-medium text-ink">
           Lägg till en kommentar
         </label>
         <textarea
@@ -86,12 +86,12 @@ export default async function StoreIssuePage({
           name="text"
           rows={3}
           maxLength={MAX_COMMENT_LENGTH}
-          className="mt-1 w-full rounded-2xl border border-zinc-200 px-4 py-3 text-base outline-none transition focus:border-zinc-400"
+          className="mt-1 w-full bg-raised rounded-2xl border border-control px-4 py-3 text-base text-ink placeholder:text-muted outline-none transition focus:border-primary"
         />
-        <p className="mt-1 text-sm text-zinc-500">{NO_PERSONAL_DATA_SHORT}</p>
+        <p className="mt-1 text-sm text-muted">{NO_PERSONAL_DATA_SHORT}</p>
         <button
           type="submit"
-          className="mt-3 h-12 w-full rounded-2xl bg-zinc-900 px-6 font-semibold text-white transition active:scale-[0.99]"
+          className="mt-3 h-12 w-full rounded-2xl bg-primary px-6 font-semibold text-on-primary transition active:scale-[0.99]"
         >
           Kommentera
         </button>

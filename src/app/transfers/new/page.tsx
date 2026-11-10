@@ -38,7 +38,7 @@ export default async function NewTransferPage() {
   return (
     <main className="mx-auto max-w-lg px-4 pb-20 pt-6">
       <h1 className="text-2xl font-semibold tracking-tight">Ny förfrågan</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         Fråga en annan butik om de kan avvara något.
       </p>
 

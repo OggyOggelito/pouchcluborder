@@ -21,7 +21,7 @@ export default async function StaffPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-4">
       <h1 className="text-2xl font-semibold tracking-tight">Varumärkesguide</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         Hur produkterna tillverkas, hur nikotinet blandas och vad som skiljer märkena åt.
       </p>
 
@@ -33,7 +33,7 @@ export default async function StaffPage() {
       <NewsWidget />
 
       {brands.length === 0 ? (
-        <p className="mt-8 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-8 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga publicerade varumärken än. Skriv innehåll under{" "}
           <span className="font-mono">/admin/brands</span> och publicera det.
         </p>

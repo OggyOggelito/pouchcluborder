@@ -19,10 +19,10 @@ export default async function FinderPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-4">
       <h1 className="text-2xl font-semibold tracking-tight">Produktsök</h1>
-      <p className="mt-1 text-zinc-600">
+      <p className="mt-1 text-muted">
         Hitta rätt produkt åt kunden — filtrera på kategori, styrka, format och smak.
       </p>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         Visar vårt sortiment, inte vad som finns i hyllan just nu.
       </p>
 

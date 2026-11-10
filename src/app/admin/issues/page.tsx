@@ -85,7 +85,7 @@ export default async function AdminIssuesPage({
   return (
     <main className="mx-auto max-w-3xl px-4 pb-20 pt-6">
       <h1 className="text-xl font-semibold tracking-tight">Problemrapporter</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         {open === 0
           ? "Inga öppna rapporter."
           : open === 1
@@ -95,7 +95,7 @@ export default async function AdminIssuesPage({
       </p>
 
       {params.stale ? (
-        <p role="alert" className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+        <p role="alert" className="mt-3 rounded-xl bg-raised p-3 text-sm text-warning">
           Rapporten hade redan ändrats — statusen här är den aktuella.
         </p>
       ) : null}
@@ -105,7 +105,7 @@ export default async function AdminIssuesPage({
           <Link
             href={query({ status: undefined })}
             className={`${CHIP} ${
-              status ? "border-zinc-200 bg-white text-zinc-600" : "border-zinc-900 bg-zinc-900 text-white"
+              status ? "border-control bg-surface text-muted" : "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
             }`}
           >
             Alla status
@@ -116,8 +116,8 @@ export default async function AdminIssuesPage({
               href={query({ status: candidate })}
               className={`${CHIP} ${
                 status === candidate
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white text-zinc-600"
+                  ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                  : "border-control bg-surface text-muted"
               }`}
             >
               {ISSUE_STATUS_LABELS[candidate]}
@@ -129,7 +129,7 @@ export default async function AdminIssuesPage({
           <Link
             href={query({ store: undefined })}
             className={`${CHIP} ${
-              storeId ? "border-zinc-200 bg-white text-zinc-600" : "border-zinc-900 bg-zinc-900 text-white"
+              storeId ? "border-control bg-surface text-muted" : "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
             }`}
           >
             Alla butiker
@@ -140,8 +140,8 @@ export default async function AdminIssuesPage({
               href={query({ store: store.id })}
               className={`${CHIP} ${
                 storeId === store.id
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white text-zinc-600"
+                  ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                  : "border-control bg-surface text-muted"
               }`}
             >
               {store.name}
@@ -153,7 +153,7 @@ export default async function AdminIssuesPage({
           <Link
             href={query({ category: undefined })}
             className={`${CHIP} ${
-              category ? "border-zinc-200 bg-white text-zinc-600" : "border-zinc-900 bg-zinc-900 text-white"
+              category ? "border-control bg-surface text-muted" : "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
             }`}
           >
             Alla typer
@@ -164,8 +164,8 @@ export default async function AdminIssuesPage({
               href={query({ category: candidate })}
               className={`${CHIP} ${
                 category === candidate
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white text-zinc-600"
+                  ? "border-primary bg-raised font-semibold text-ink ring-1 ring-primary"
+                  : "border-control bg-surface text-muted"
               }`}
             >
               {ISSUE_CATEGORY_LABELS[candidate]}
@@ -175,7 +175,7 @@ export default async function AdminIssuesPage({
       </div>
 
       {issues.length === 0 ? (
-        <p className="mt-6 rounded-2xl border border-dashed border-zinc-300 p-6 text-center text-zinc-500">
+        <p className="mt-6 rounded-2xl border border-dashed border-control p-6 text-center text-muted">
           Inga rapporter matchar filtret.
         </p>
       ) : (
@@ -185,33 +185,33 @@ export default async function AdminIssuesPage({
             return (
               <li
                 key={issue.id}
-                className={`rounded-2xl border bg-white p-4 ${
-                  isOpen ? "border-zinc-900" : "border-zinc-200"
+                className={`rounded-2xl border bg-surface p-4 ${
+                  isOpen ? "border-primary" : "border-line"
                 }`}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       issue.status === "RESOLVED"
-                        ? "bg-zinc-100 text-zinc-600"
+                        ? "bg-raised text-muted"
                         : issue.status === "IN_PROGRESS"
-                          ? "bg-blue-100 text-blue-900"
-                          : "bg-amber-100 text-amber-900"
+                          ? "bg-raised text-info"
+                          : "bg-raised text-warning"
                     }`}
                   >
                     {ISSUE_STATUS_LABELS[issue.status]}
                   </span>
-                  <span className="text-xs font-medium text-zinc-500">
+                  <span className="text-xs font-medium text-muted">
                     {ISSUE_CATEGORY_LABELS[issue.category]}
                   </span>
-                  <span className="text-xs text-zinc-500">{issue.storeName}</span>
+                  <span className="text-xs text-muted">{issue.storeName}</span>
                 </div>
 
-                <p className="mt-2 whitespace-pre-wrap text-[15px] text-zinc-800">{issue.text}</p>
+                <p className="mt-2 whitespace-pre-wrap text-[15px] text-ink">{issue.text}</p>
                 {issue.productLabel ? (
-                  <p className="mt-1 text-sm text-zinc-500">{issue.productLabel}</p>
+                  <p className="mt-1 text-sm text-muted">{issue.productLabel}</p>
                 ) : null}
-                <p className="mt-2 text-xs text-zinc-500">
+                <p className="mt-2 text-xs text-muted">
                   {issue.reporterName ?? "Okänd"} · {formatDateTime(issue.createdAt)}
                   {issue.assigneeName ? ` · tilldelad ${issue.assigneeName}` : " · inte tilldelad"}
                 </p>
@@ -226,7 +226,7 @@ export default async function AdminIssuesPage({
                 </p>
 
                 {isOpen && selected ? (
-                  <div className="mt-4 border-t border-zinc-100 pt-4">
+                  <div className="mt-4 border-t border-line pt-4">
                     <div className="flex flex-wrap gap-2">
                       {ALLOWED_ISSUE_TRANSITIONS[selected.status].map((target) => (
                         <form key={target} action={setIssueStatusAction}>
@@ -234,7 +234,7 @@ export default async function AdminIssuesPage({
                           <input type="hidden" name="status" value={target} />
                           <button
                             type="submit"
-                            className="h-11 rounded-xl bg-zinc-900 px-4 text-sm font-semibold text-white"
+                            className="h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary"
                           >
                             {target === "RESOLVED"
                               ? "Markera som löst"
@@ -252,7 +252,7 @@ export default async function AdminIssuesPage({
                         name="assigneeId"
                         defaultValue={selected.assigneeId ?? ""}
                         aria-label="Tilldela"
-                        className="h-11 min-w-48 flex-1 rounded-xl border border-zinc-200 px-3 text-sm"
+                        className="h-11 min-w-48 flex-1 rounded-xl border border-line px-3 text-sm"
                       >
                         <option value="">Ingen tilldelad</option>
                         {admins.map((admin) => (
@@ -263,7 +263,7 @@ export default async function AdminIssuesPage({
                       </select>
                       <button
                         type="submit"
-                        className="h-11 rounded-xl border border-zinc-200 px-4 text-sm font-medium"
+                        className="h-11 rounded-xl border border-control px-4 text-sm font-medium"
                       >
                         Spara tilldelning
                       </button>
@@ -276,7 +276,7 @@ export default async function AdminIssuesPage({
                       <input type="hidden" name="issueId" value={selected.id} />
                       <label
                         htmlFor={`comment-${selected.id}`}
-                        className="block text-sm font-medium text-zinc-700"
+                        className="block text-sm font-medium text-ink"
                       >
                         Kommentar till butiken
                       </label>
@@ -285,12 +285,12 @@ export default async function AdminIssuesPage({
                         name="text"
                         rows={3}
                         maxLength={MAX_COMMENT_LENGTH}
-                        className="mt-1 w-full rounded-2xl border border-zinc-200 px-4 py-3 text-base outline-none transition focus:border-zinc-400"
+                        className="mt-1 w-full bg-raised rounded-2xl border border-control px-4 py-3 text-base text-ink placeholder:text-muted outline-none transition focus:border-primary"
                       />
-                      <p className="mt-1 text-sm text-zinc-500">{NO_PERSONAL_DATA_SHORT}</p>
+                      <p className="mt-1 text-sm text-muted">{NO_PERSONAL_DATA_SHORT}</p>
                       <button
                         type="submit"
-                        className="mt-2 h-11 rounded-xl border border-zinc-200 px-4 text-sm font-medium"
+                        className="mt-2 h-11 rounded-xl border border-control px-4 text-sm font-medium"
                       >
                         Kommentera
                       </button>

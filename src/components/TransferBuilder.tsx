@@ -9,7 +9,7 @@ type ProductHit = { id: string; label: string };
 type Line = { productId: string; label: string; quantity: number; unit: string };
 
 const FIELD =
-  "mt-1 h-12 w-full rounded-2xl border border-zinc-200 px-4 text-base outline-none transition focus:border-zinc-400";
+  "mt-1 h-12 w-full bg-raised rounded-2xl border border-control px-4 text-base text-ink placeholder:text-muted outline-none transition focus:border-primary";
 
 export default function TransferBuilder({
   stores,
@@ -56,7 +56,7 @@ export default function TransferBuilder({
 
       {stores.length > 1 ? (
         <div>
-          <label htmlFor="from" className="block text-sm font-medium text-zinc-700">
+          <label htmlFor="from" className="block text-sm font-medium text-ink">
             Vi som frågar
           </label>
           <select
@@ -73,7 +73,7 @@ export default function TransferBuilder({
       ) : null}
 
       <div>
-        <label htmlFor="target" className="block text-sm font-medium text-zinc-700">
+        <label htmlFor="target" className="block text-sm font-medium text-ink">
           Fråga
         </label>
         <select
@@ -88,7 +88,7 @@ export default function TransferBuilder({
             <option key={store.id} value={store.id}>{store.name}</option>
           ))}
         </select>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-muted">
           {targetStoreId
             ? "Bara den butiken ser förfrågan."
             : targetable.length === 0
@@ -98,7 +98,7 @@ export default function TransferBuilder({
       </div>
 
       <div>
-        <label htmlFor="product" className="block text-sm font-medium text-zinc-700">
+        <label htmlFor="product" className="block text-sm font-medium text-ink">
           Lägg till produkt
         </label>
         <input
@@ -121,7 +121,7 @@ export default function TransferBuilder({
                     ]);
                     setQuery("");
                   }}
-                  className="min-h-12 w-full rounded-xl border border-zinc-200 px-3 py-2 text-left text-sm transition hover:border-zinc-300"
+                  className="min-h-12 w-full rounded-xl border border-line px-3 py-2 text-left text-sm transition hover:border-control"
                 >
                   {hit.label}
                 </button>
@@ -136,7 +136,7 @@ export default function TransferBuilder({
           {lines.map((line, index) => (
             <li
               key={line.productId}
-              className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm"
+              className="rounded-2xl border border-line bg-surface p-3 shadow-sm"
             >
               <input type="hidden" name="productId" value={line.productId} />
               <p className="font-medium">{line.label}</p>
@@ -156,7 +156,7 @@ export default function TransferBuilder({
                     )
                   }
                   aria-label={`Antal ${line.label}`}
-                  className="h-12 w-24 rounded-xl border border-zinc-200 px-3 text-center text-base tabular-nums"
+                  className="h-12 w-24 rounded-xl border border-line px-3 text-center text-base tabular-nums"
                 />
                 {/* The unit is stored, never assumed. */}
                 <select
@@ -170,7 +170,7 @@ export default function TransferBuilder({
                     )
                   }
                   aria-label={`Enhet ${line.label}`}
-                  className="h-12 rounded-xl border border-zinc-200 px-3 text-base"
+                  className="h-12 rounded-xl border border-line px-3 text-base"
                 >
                   {TRANSFER_UNITS.map((unit) => (
                     <option key={unit} value={unit}>{TRANSFER_UNIT_LABELS[unit]}</option>
@@ -179,7 +179,7 @@ export default function TransferBuilder({
                 <button
                   type="button"
                   onClick={() => setLines((current) => current.filter((_, i) => i !== index))}
-                  className="ml-auto h-12 rounded-xl border border-red-200 px-4 text-sm text-red-700"
+                  className="ml-auto h-12 rounded-xl border border-danger px-4 text-sm text-danger"
                 >
                   Ta bort
                 </button>
@@ -190,22 +190,22 @@ export default function TransferBuilder({
       ) : null}
 
       <div>
-        <label htmlFor="note" className="block text-sm font-medium text-zinc-700">
+        <label htmlFor="note" className="block text-sm font-medium text-ink">
           Meddelande (valfritt)
         </label>
         <textarea id="note" name="note" rows={2} className={`${FIELD} h-auto py-2`} />
       </div>
 
-      <p className="rounded-xl bg-zinc-100 p-3 text-sm text-zinc-600">{NO_RESERVATION_NOTICE}</p>
+      <p className="rounded-xl bg-raised p-3 text-sm text-muted">{NO_RESERVATION_NOTICE}</p>
 
       {state.error ? (
-        <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{state.error}</p>
+        <p role="alert" className="rounded-xl bg-raised p-3 text-sm text-danger">{state.error}</p>
       ) : null}
 
       <button
         type="submit"
         disabled={pending || lines.length === 0}
-        className="h-14 w-full rounded-2xl bg-zinc-900 px-6 text-lg font-semibold text-white transition active:scale-[0.99] disabled:bg-zinc-200 disabled:text-zinc-500"
+        className="h-14 w-full rounded-2xl bg-primary px-6 text-lg font-semibold text-on-primary transition active:scale-[0.99] disabled:bg-raised disabled:text-muted"
       >
         {pending ? "Skickar…" : "Skicka förfrågan"}
       </button>

@@ -19,18 +19,18 @@ export default async function LoginPage({
   return (
     <main className="mx-auto max-w-sm px-4 py-12">
       <h1 className="text-2xl font-semibold tracking-tight">Logga in</h1>
-      <p className="mt-1 text-zinc-600">För att lägga en beställning.</p>
+      <p className="mt-1 text-muted">För att lägga en beställning.</p>
 
       <LoginForm next={safeNext} />
 
-      <p className="mt-6 text-sm text-zinc-500">
+      <p className="mt-6 text-sm text-muted">
         Inget konto? Konton skapas av administratören — hör av dig till kontoret.
       </p>
       <p className="mt-4 text-sm">
-        <Link href="/staff" className="text-zinc-600 underline underline-offset-4">
+        <Link href="/staff" className="text-muted underline underline-offset-4">
           Till varumärkesguiden
         </Link>{" "}
-        <span className="text-zinc-500">(kräver ingen inloggning)</span>
+        <span className="text-muted">(kräver ingen inloggning)</span>
       </p>
     </main>
   );

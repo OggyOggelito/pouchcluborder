@@ -42,13 +42,13 @@ export default async function RoutinePage({ params }: { params: Promise<{ slug: 
       </p>
 
       {!article.published ? (
-        <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900 print:hidden">
+        <p className="mt-3 rounded-xl bg-raised p-3 text-sm text-warning print:hidden">
           Utkast — syns bara för administratörer.
         </p>
       ) : null}
 
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">{article.title}</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         {article.category ? `${article.category} · ` : ""}
         senast uppdaterad {formatDateTime(article.updatedAt)}
         {article.updatedByName ? ` av ${article.updatedByName}` : ""}

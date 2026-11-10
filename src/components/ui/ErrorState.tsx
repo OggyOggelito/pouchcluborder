@@ -16,10 +16,10 @@ export default function ErrorState({
   return (
     <div
       role="alert"
-      className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-6 text-center"
+      className="rounded-2xl border border-warning bg-raised px-5 py-6 text-center"
     >
-      <p className="font-medium text-amber-900">{title}</p>
-      <p className="mt-1 text-sm text-amber-800">
+      <p className="font-medium text-warning">{title}</p>
+      <p className="mt-1 text-sm text-warning">
         {detail ?? "Försök igen om en stund. Det är appen som strular, inte du."}
       </p>
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
