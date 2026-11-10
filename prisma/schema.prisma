@@ -15,27 +15,36 @@ datasource db {
 }
 
 model Store {
-  id     String  @id @default(cuid())
-  name   String  @unique
-  slug   String  @unique
-  city   String?
+  id                 String            @id @default(cuid())
+  name               String            @unique
+  slug               String            @unique
+  city               String?
   /// Groups stores a manager looks after together, e.g. "Stockholm".
   /// Free text rather than an enum so a region can be added without a migration.
-  region String?
+  region             String?
   /// TooEasy's `StoreNumber`. Needed as well as the employee mapping: a shift
   /// comes back keyed by TooEasy's store, and ShiftEntry carries ours.
-  tooEasyStoreNumber String? @unique
-  orders Order[]
-  access StoreAccess[]
-  shifts Shift[]
-  checklistRuns ChecklistRun[]
-  customerRequests  CustomerRequest[]
-  transfersRequested StockTransfer[] @relation("requestingStore")
-  transfersTargeted  StockTransfer[] @relation("targetStore")
-  transfersAccepted  StockTransfer[] @relation("acceptingStore")
-  shiftNotes   ShiftNote[]
-  issueReports IssueReport[]
-  orderDrafts  OrderDraft[]
+  tooEasyStoreNumber String?           @unique
+  orders             Order[]
+  access             StoreAccess[]
+  shifts             Shift[]
+  checklistRuns      ChecklistRun[]
+  customerRequests   CustomerRequest[]
+  transfersRequested StockTransfer[]   @relation("requestingStore")
+  transfersTargeted  StockTransfer[]   @relation("targetStore")
+  transfersAccepted  StockTransfer[]   @relation("acceptingStore")
+  shiftNotes         ShiftNote[]
+  issueReports       IssueReport[]
+  orderDrafts        OrderDraft[]
+
+  openingHours       StoreOpeningHours[]
+  openingExceptions  StoreOpeningException[]
+  employees          Employee[]
+  scheduleShifts     ScheduleShift[]
+  scheduleChanges    ScheduleChange[]
+  nearbyFrom         StoreNearby[]           @relation("nearbyFrom")
+  nearbyTo           StoreNearby[]           @relation("nearbyTo")
+  extraShiftRequests ExtraShiftRequest[]     @relation("extraShiftRequests")
 
   @@index([region])
   @@map("stores")
@@ -43,13 +52,13 @@ model Store {
 
 /// Accounts are created by an admin — there is no self-signup.
 model User {
-  id             String @id @default(cuid())
-  email          String @unique
+  id             String  @id @default(cuid())
+  email          String  @unique
   hashedPassword String
   name           String?
   /// OWNER | ADMIN. Kept as a string rather than an enum so more roles can be
   /// added without a migration; validated in src/lib/roles.ts.
-  role String @default("OWNER")
+  role           String  @default("OWNER")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -63,25 +72,33 @@ model User {
   /// between the two systems, so this is never inferred.
   tooEasyEmployeeId String? @unique
 
-  storeAccess   StoreAccess[]
-  orders        Order[]
-  shifts        Shift[]
-  announcements Announcement[]
-  checklistRuns ChecklistRun[]
-  checkedItems  ChecklistRunItem[]
-  quizAttempts  QuizAttempt[]
+  storeAccess      StoreAccess[]
+  orders           Order[]
+  shifts           Shift[]
+  announcements    Announcement[]
+  checklistRuns    ChecklistRun[]
+  checkedItems     ChecklistRunItem[]
+  quizAttempts     QuizAttempt[]
   customerRequests CustomerRequest[]
   transfersCreated StockTransfer[]
   transferEvents   StockTransferEvent[]
   notifications    Notification[]
-  authoredNotes    ShiftNote[]   @relation("authoredNotes")
-  resolvedNotes    ShiftNote[]   @relation("resolvedNotes")
-  reportedIssues   IssueReport[] @relation("reportedIssues")
-  assignedIssues   IssueReport[] @relation("assignedIssues")
+  authoredNotes    ShiftNote[]          @relation("authoredNotes")
+  resolvedNotes    ShiftNote[]          @relation("resolvedNotes")
+  reportedIssues   IssueReport[]        @relation("reportedIssues")
+  assignedIssues   IssueReport[]        @relation("assignedIssues")
   issueEvents      IssueEvent[]
-  editedArticles   KnowledgeArticle[] @relation("editedArticles")
+  editedArticles   KnowledgeArticle[]   @relation("editedArticles")
   orderDrafts      OrderDraft[]
   preference       UserPreference?
+
+  /// The employee record this account belongs to, when there is one. Without
+  /// it "Mitt schema" has no shifts to show — an account is not a person.
+  employee                  Employee?
+  createdShifts             ScheduleShift[]     @relation("createdShifts")
+  scheduleChanges           ScheduleChange[]
+  createdExtraShiftRequests ExtraShiftRequest[] @relation("createdExtraShiftRequests")
+  extraShiftEvents          ExtraShiftEvent[]
 
   @@map("users")
 }
@@ -98,17 +115,17 @@ model Shift {
   store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   /// Local calendar date, midnight UTC, so a day is one value to group by.
-  date DateTime
+  date      DateTime
   /// "07:30" / "16:00" — local wall-clock, kept as text so an import cannot
   /// shift a shift by an hour through a timezone conversion.
   startTime String
   endTime   String
 
   /// Which import produced it, e.g. "csv" or "ics".
-  source     String
+  source      String
   /// Batch marker, so re-importing the same file replaces rather than duplicates.
   importBatch String?
-  importedAt DateTime @default(now())
+  importedAt  DateTime @default(now())
 
   /// One person cannot hold two shifts starting at the same time on a day.
   @@unique([userId, date, startTime])
@@ -182,11 +199,11 @@ model Brand {
   strengthUnit String?
 
   /// One paragraph: what the brand is and how it is positioned.
-  shortDescription String?
+  shortDescription     String?
   /// Markdown. How the pouches or vapes are actually made.
   manufacturingProcess String?
   /// Markdown. How nicotine, tobacco and flavouring are blended or dosed.
-  blendingNotes String?
+  blendingNotes        String?
 
   logoUrl      String?
   heroImageUrl String?
@@ -206,13 +223,13 @@ model Brand {
 }
 
 model Product {
-  id     String @id @default(cuid())
-  brand  String
-  flavor String
+  id            String  @id @default(cuid())
+  brand         String
+  flavor        String
   /// Nicotine strength as displayed, e.g. "10mg".
-  strength String
+  strength      String
   /// Mini | Slim | Normal | Large
-  format   String
+  format        String
   /// What one stock costs the store in SEK (a stock = `unitsPerStock` cans).
   pricePerStock Float
   active        Boolean @default(true)
@@ -223,27 +240,27 @@ model Product {
   // ---------------------------------------------------------------
 
   /// Art.nr. — the supplier's article number, the real business key.
-  sku String?
+  sku              String?
   /// Nicotine pouch | Nicotine-free pouch | Tobacco snus | Vape
-  category String?
+  category         String?
   /// Fabr./Repr. — distributor code (LUNA, SMD, ECIGG...), NOT a retail brand.
   manufacturerCode String?
   /// Leverantör
-  supplier String?
+  supplier         String?
   /// Innehåll DFP — cans per stock.
-  unitsPerStock Int?
+  unitsPerStock    Int?
   /// Pris 1st inkl. moms — shelf price for one can, not what the store pays.
-  unitPrice Float?
+  unitPrice        Float?
   /// Pris 2st inkl. moms
-  casePrice Float?
+  casePrice        Float?
   /// Inpris — what the store pays per can. This is what pricePerStock is built from.
-  costPrice Float?
-  eanKfp    String?
-  eanDfp    String?
-  stockMin  Int?
-  stockMax  Int?
+  costPrice        Float?
+  eanKfp           String?
+  eanDfp           String?
+  stockMin         Int?
+  stockMax         Int?
   /// Raw Benämning, kept so a bad parse can always be traced back.
-  sourceName String?
+  sourceName       String?
 
   /// Supplier flavour description, shown under the flavour on the brand page.
   /// Filled from content/source/* by `npm run brands:import`; no import path
@@ -252,13 +269,13 @@ model Product {
 
   /// Comma-separated flavour groups from src/lib/flavor-tags.ts, e.g.
   /// "berry,mint". Derived, except where an admin has set them by hand.
-  flavorTags String?
+  flavorTags        String?
   /// True once an admin edits the tags. The re-tagging job skips these rows,
   /// so a catalog re-import can never undo hand-sorted products.
   tagsEditedByAdmin Boolean @default(false)
   /// Set when the name parser was not confident; see reviewNotes.
-  needsReview Boolean @default(false)
-  reviewNotes String?
+  needsReview       Boolean @default(false)
+  reviewNotes       String?
 
   // ---------------------------------------------------------------
   // Facts matched in from snusbolaget.se by EAN (npm run enrich:strengths).
@@ -273,14 +290,14 @@ model Product {
   /// Manufacturer's nicotine content per portion, e.g. 9 for "9 mg/portion".
   nicotineMgPerPortion Float?
   /// Manufacturer's nicotine content per gram.
-  nicotineMgPerGram Float?
-  portionsPerCan    Int?
+  nicotineMgPerGram    Float?
+  portionsPerCan       Int?
   /// Who actually makes it, e.g. "Swedish Match". Distinct from
   /// `manufacturerCode`, which is the masterdoc's distributor code.
-  manufacturer String?
+  manufacturer         String?
   /// Where the figures came from, e.g. "snusbolaget.se".
-  nicotineSource String?
-  nicotineCheckedAt DateTime?
+  nicotineSource       String?
+  nicotineCheckedAt    DateTime?
 
   /// Link to the editorial Brand record. Backfilled from `brand` by
   /// `npm run backfill:brands`; the importer keeps it in sync on every import.
@@ -290,7 +307,7 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orderLines OrderLine[]
+  orderLines       OrderLine[]
   customerRequests CustomerRequest[]
   transferLines    StockTransferLine[]
   issueReports     IssueReport[]
@@ -311,7 +328,7 @@ model Order {
   store       Store    @relation(fields: [storeId], references: [id])
   submittedAt DateTime @default(now())
   /// Free-text note from the store, optional.
-  note String?
+  note        String?
 
   /// Who submitted it. Nullable: orders placed before logins existed have no
   /// user, and those rows must stay valid.
@@ -349,12 +366,12 @@ model OrderLine {
 /// src/lib/checklists.ts. A string rather than an enum so a fifth type needs
 /// no migration.
 model ChecklistTemplate {
-  id       String  @id @default(cuid())
-  type     String
-  title    String
+  id     String  @id @default(cuid())
+  type   String
+  title  String
   /// Shown above the items; markdown.
-  intro    String?
-  active   Boolean @default(true)
+  intro  String?
+  active Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -367,7 +384,7 @@ model ChecklistTemplate {
 }
 
 model ChecklistItem {
-  id         String  @id @default(cuid())
+  id         String            @id @default(cuid())
   templateId String
   template   ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
@@ -375,9 +392,9 @@ model ChecklistItem {
   /// Markdown.
   description String?
   /// Internal link, e.g. "/staff/brands/zyn". Relative paths only.
-  linkUrl  String?
-  required Boolean @default(true)
-  position Int     @default(0)
+  linkUrl     String?
+  required    Boolean @default(true)
+  position    Int     @default(0)
 
   @@index([templateId, position])
   @@map("checklist_items")
@@ -388,7 +405,7 @@ model ChecklistItem {
 /// A run copies its items at creation (ChecklistRunItem), so editing a
 /// template never rewrites history for a run already in progress.
 model ChecklistRun {
-  id         String @id @default(cuid())
+  id         String            @id @default(cuid())
   templateId String
   template   ChecklistTemplate @relation(fields: [templateId], references: [id])
 
@@ -419,7 +436,7 @@ model ChecklistRun {
 }
 
 model ChecklistRunItem {
-  id    String @id @default(cuid())
+  id    String       @id @default(cuid())
   runId String
   run   ChecklistRun @relation(fields: [runId], references: [id], onDelete: Cascade)
 
@@ -430,11 +447,11 @@ model ChecklistRunItem {
   required    Boolean @default(true)
   position    Int     @default(0)
 
-  checkedAt     DateTime?
-  checkedById   String?
-  checkedBy     User?     @relation(fields: [checkedById], references: [id])
+  checkedAt   DateTime?
+  checkedById String?
+  checkedBy   User?     @relation(fields: [checkedById], references: [id])
   /// Free text from whoever worked the list.
-  note String?
+  note        String?
 
   @@index([runId, position])
   @@map("checklist_run_items")
@@ -449,9 +466,9 @@ model Quiz {
   title       String
   description String?
   /// Optional link to a brand the quiz is about.
-  brandId String?
-  brand   Brand?  @relation(fields: [brandId], references: [id])
-  published Boolean @default(false)
+  brandId     String?
+  brand       Brand?  @relation(fields: [brandId], references: [id])
+  published   Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -468,14 +485,14 @@ model QuizQuestion {
   quizId String
   quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
-  text String
+  text          String
   /// JSON array of option strings.
-  options String
+  options       String
   /// Index into `options`.
   correctOption Int
   /// Markdown, shown after answering.
-  explanation String?
-  position    Int    @default(0)
+  explanation   String?
+  position      Int     @default(0)
 
   @@index([quizId, position])
   @@map("quiz_questions")
@@ -488,8 +505,8 @@ model QuizAttempt {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  score Int
-  total Int
+  score       Int
+  total       Int
   /// JSON: questionId -> chosen option index.
   answers     String
   startedAt   DateTime @default(now())
@@ -577,7 +594,7 @@ model StockTransfer {
   createdBy   User?   @relation(fields: [createdById], references: [id])
 
   /// REQUESTED | ACCEPTED | SENT | RECEIVED | DECLINED | CANCELLED
-  status String @default("REQUESTED")
+  status String  @default("REQUESTED")
   note   String?
 
   createdAt DateTime @default(now())
@@ -594,7 +611,7 @@ model StockTransfer {
 }
 
 model StockTransferLine {
-  id         String @id @default(cuid())
+  id         String        @id @default(cuid())
   transferId String
   transfer   StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
 
@@ -604,7 +621,7 @@ model StockTransferLine {
   quantity Int
   /// STOCK | CAN. Stored explicitly and never assumed — a store asking for
   /// "two" means very different things depending on which.
-  unit String @default("STOCK")
+  unit     String @default("STOCK")
 
   @@index([transferId])
   @@map("stock_transfer_lines")
@@ -612,7 +629,7 @@ model StockTransferLine {
 
 /// Append-only timeline.
 model StockTransferEvent {
-  id         String @id @default(cuid())
+  id         String        @id @default(cuid())
   transferId String
   transfer   StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
 
@@ -677,11 +694,11 @@ model ShiftNote {
   author   User?   @relation("authoredNotes", fields: [authorId], references: [id])
 
   /// Free text, capped at MAX_NOTE_LENGTH in src/lib/shift-notes.ts.
-  text String
+  text     String
   /// INFO | IMPORTANT | TODO — validated in src/lib/shift-notes.ts.
-  category String @default("INFO")
+  category String  @default("INFO")
   /// Keeps a note out of the archive regardless of age.
-  pinned Boolean @default(false)
+  pinned   Boolean @default(false)
 
   /// TODO only: who ticked it off, and when.
   resolvedAt   DateTime?
@@ -811,7 +828,7 @@ model OrderDraft {
   /// JSON: { "<productId>": quantity }. A document rather than rows because a
   /// draft is written on every keystroke-ish change and read whole; rows would
   /// mean a delete-and-insert per autosave.
-  lines String @default("{}")
+  lines String  @default("{}")
   note  String?
 
   /// Bumped on every save. The client sends the version it last saw, so a
@@ -844,4 +861,267 @@ model UserPreference {
   updatedAt DateTime @updatedAt
 
   @@map("user_preferences")
+}
+
+// ---------------------------------------------------------------------------
+// Teamschema: opening hours, employees, entered shifts, extra-shift requests
+//
+// The schedule is typed into the portal by each store, not imported. TooEasy
+// WFM never gave us API access, so `Shift` above (the import table) and the
+// whole TooEasy client stay in place but dormant — see SCHEDULE_PROVIDER.
+//
+// Dates and times are local Europe/Stockholm strings, "2026-11-04" and
+// "10:00", never UTC instants. A shift is a wall-clock fact about a shop: the
+// 10:00 opening is 10:00 on both sides of the March clock change, and storing
+// an instant is what makes it move.
+//
+// Privacy: an employee row is a name, a home store and shifts. Nothing else
+// belongs here — no personnummer, no payroll, no contact details, no absence
+// reasons. Other stores are shown even less; see `availability.ts`.
+// ---------------------------------------------------------------------------
+
+/// When a store is open, per weekday. The schedule grid is built from this.
+model StoreOpeningHours {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// 1 = Monday ... 7 = Sunday, as ISO-8601 numbers them.
+  weekday Int
+
+  /// Local wall-clock, "10:00". Kept even when `closed` is true, so turning a
+  /// day back on does not mean retyping the times.
+  opensAt  String
+  closesAt String
+  closed   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([storeId, weekday])
+  @@map("store_opening_hours")
+}
+
+/// A single day that does not follow the weekly pattern.
+///
+/// Swedish public holidays are deliberately not hard-coded: a chain of five
+/// shops in four towns does not have one closing rule, and a wrong built-in
+/// calendar is worse than an empty one. ADMIN and OWNER enter these.
+model StoreOpeningException {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// Local date, "2026-12-24".
+  date String
+
+  closed   Boolean @default(false)
+  /// Null when `closed`, otherwise the hours that replace the weekday's.
+  opensAt  String?
+  closesAt String?
+  /// Why, e.g. "Julafton". Not personal data — it describes the shop.
+  note     String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([storeId, date])
+  @@index([storeId, date])
+  @@map("store_opening_exceptions")
+}
+
+/// A person who works shifts.
+///
+/// Separate from `User` because most staff have no portal account: an employee
+/// is a name on the grid. `userId` links the two when someone does have one,
+/// which is the only way "Mitt schema" can know whose shifts to show.
+///
+/// Never deleted — deactivated, so last month's grid still says who worked.
+model Employee {
+  id   String @id @default(cuid())
+  name String
+
+  homeStoreId String
+  homeStore   Store  @relation(fields: [homeStoreId], references: [id], onDelete: Cascade)
+
+  active Boolean @default(true)
+
+  /// Optional portal account. One account is one person, hence unique.
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  /// The employee has agreed to be shown to nearby stores as available for an
+  /// extra shift. Off by default: being offered around is a choice, and the
+  /// cross-store view is the one place an employee is visible to people who
+  /// are not their own manager.
+  openToExtraShifts Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shifts        ScheduleShift[]
+  extraRequests ExtraShiftRequest[]
+
+  @@index([homeStoreId, active])
+  @@index([active])
+  @@map("employees")
+}
+
+/// One shift, as typed in by a store.
+///
+/// `storeId` is where the work happens, which is not always the home store —
+/// that is the whole point of an extra shift.
+model ScheduleShift {
+  id String @id @default(cuid())
+
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// Local date, "2026-11-04".
+  date     String
+  /// Local wall-clock, "10:00" / "20:00".
+  startsAt String
+  endsAt   String
+
+  /// Max 120 characters, enforced in src/lib/schedule/week.ts. About the
+  /// shift, not the person — the form says so under the box.
+  note String?
+
+  /// PLANNED is the only status today. Kept as a column so "inställt" or
+  /// "sjukanmält" can be added without a migration — though a reason for an
+  /// absence must never be stored here.
+  status String @default("PLANNED")
+
+  /// Set when this shift came out of an accepted extra-shift request. Drives
+  /// the "Extrapass" marker, and makes the shift traceable to who agreed.
+  extraShiftRequestId String?            @unique
+  extraShiftRequest   ExtraShiftRequest? @relation(fields: [extraShiftRequestId], references: [id], onDelete: SetNull)
+
+  createdById String?
+  createdBy   User?   @relation("createdShifts", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// One person cannot be entered twice at the same start time on a day.
+  /// Overlaps that are not identical are warned about, not blocked — a store
+  /// sometimes does need two part-shifts that touch.
+  @@unique([employeeId, date, startsAt])
+  @@index([storeId, date])
+  @@index([employeeId, date])
+  @@map("schedule_shifts")
+}
+
+/// Who changed a week's schedule, and when. Enough to trace a mistake.
+///
+/// Deliberately a short summary string rather than a before/after diff: this
+/// is a trail for "who moved my Saturday", not an audit log, and the less
+/// personal detail it keeps the better. Rows older than
+/// CHANGE_LOG_RETENTION_DAYS are pruned on write.
+model ScheduleChange {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// ISO week the change touched, "2026-W45", so a week view shows its own.
+  weekKey String
+
+  /// CREATED | UPDATED | DELETED | DAY_OFF | COPIED_WEEK | COPIED_DAY | EXTRA_SHIFT
+  type String
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  /// Short and already safe to show, e.g. "Anna A · ons 4 nov 10:00–18:00".
+  detail String?
+
+  createdAt DateTime @default(now())
+
+  @@index([storeId, weekKey, createdAt])
+  @@index([createdAt])
+  @@map("schedule_changes")
+}
+
+/// Which stores may see each other's free staff.
+///
+/// Geography is never assumed. One row per direction, written in pairs, so the
+/// read is a plain lookup — and so an admin could in principle make the
+/// relation one-way without a schema change. While the table is empty, stores
+/// in the same region count as nearby; see `nearbyStoreIds`.
+model StoreNearby {
+  id      String @id @default(cuid())
+  storeId String
+  store   Store  @relation("nearbyFrom", fields: [storeId], references: [id], onDelete: Cascade)
+
+  nearbyStoreId String
+  nearbyStore   Store  @relation("nearbyTo", fields: [nearbyStoreId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([storeId, nearbyStoreId])
+  @@index([nearbyStoreId])
+  @@map("store_nearby")
+}
+
+/// "Can we borrow someone on Saturday?", as a record instead of a phone call.
+///
+/// The employee's own store decides — they are that store's staff. Accepting
+/// creates the shift at the requesting store inside a transaction, so an
+/// employee who picked up another shift in the meantime cannot be double
+/// booked.
+model ExtraShiftRequest {
+  id String @id @default(cuid())
+
+  requestingStoreId String
+  requestingStore   Store  @relation("extraShiftRequests", fields: [requestingStoreId], references: [id], onDelete: Cascade)
+
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  /// Local date and wall-clock times, as everywhere else here.
+  date     String
+  startsAt String
+  endsAt   String
+
+  /// About the work, max 200 characters. Not about the person.
+  note String?
+
+  /// REQUESTED | ACCEPTED | DECLINED | CANCELLED
+  status String @default("REQUESTED")
+
+  createdById String?
+  createdBy   User?   @relation("createdExtraShiftRequests", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// The shift accepting produced, if any.
+  shift  ScheduleShift?
+  events ExtraShiftEvent[]
+
+  @@index([requestingStoreId, status])
+  @@index([employeeId, date])
+  @@index([status])
+  @@map("extra_shift_requests")
+}
+
+/// Append-only timeline for one request.
+model ExtraShiftEvent {
+  id        String            @id @default(cuid())
+  requestId String
+  request   ExtraShiftRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  /// CREATED, or the status it moved to.
+  type   String
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// Short human-readable addition, e.g. the deciding store's name.
+  detail String?
+
+  createdAt DateTime @default(now())
+
+  @@index([requestId, createdAt])
+  @@map("extra_shift_events")
 }

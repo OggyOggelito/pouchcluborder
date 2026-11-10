@@ -22,12 +22,36 @@ const ACCOUNTS = {
 type RoleKey = keyof typeof ACCOUNTS;
 
 const PAGES: { role: RoleKey; routes: string[] }[] = [
-  { role: "owner", routes: ["/", "/order", "/orders", "/transfers"] },
+  {
+    role: "owner",
+    routes: [
+      "/",
+      "/order",
+      "/orders",
+      "/transfers",
+      "/store/schedule",
+      "/store/schedule/copy",
+      "/schedule/available",
+      "/schedule/extra",
+      "/store/employees",
+    ],
+  },
   {
     role: "staff",
-    routes: ["/staff", "/staff/finder", "/news", "/my-schedule", "/store/notes", "/staff/routines"],
+    routes: ["/staff", "/staff/finder", "/news", "/schedule", "/store/notes", "/staff/routines"],
   },
-  { role: "admin", routes: ["/admin", "/admin/requests", "/admin/issues", "/admin/review", "/settings"] },
+  {
+    role: "admin",
+    routes: [
+      "/admin",
+      "/admin/requests",
+      "/admin/issues",
+      "/admin/review",
+      "/admin/schedule",
+      "/admin/nearby",
+      "/settings",
+    ],
+  },
 ];
 
 async function signIn(page: Page, role: RoleKey) {

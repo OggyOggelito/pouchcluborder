@@ -42,6 +42,7 @@ the seed again updates existing rows instead of duplicating them.
 | `npm run parse:collisions <file.xlsx>` | List articles that parse to the same variant |
 | `npm run seed:users` | Create the ADMIN + one OWNER per store (idempotent) |
 | `npm run seed:schedule` | Give stores a region and users a placeholder phone |
+| `npm run seed:hours` | Seed the stores' opening hours (see Teamschema) |
 | `npm run seed:shopfloor` | EXEMPEL checklist templates and a placeholder quiz |
 | `npm run seed:routines` | One EXEMPEL routine article explaining how to write them |
 | `npm run flavors:retag` | Derive flavour groups (skips hand-edited rows) |
@@ -276,12 +277,123 @@ coming from snusbolaget.se, rather than presenting it as something the supplier 
 
 ---
 
-## Schema (Part A)
+## Teamschema
 
-Staff see their own shifts at **`/my-schedule`**; managers see coverage across their
-region at **`/team-schedule`**. Both are read-only — there is no shift-swap workflow.
-A manager who wants cover phones or emails the person, so their contact details are in
-the grid.
+> The delivery report — which stores matched the seeded hours, which have no nearby
+> store, what I assumed and what raises a privacy question — is in
+> [`docs/teamschema.md`](docs/teamschema.md).
+
+**The stores write their own schedule.** TooEasy WFM never granted API access, so the
+plan changed: each owner enters their employees' shifts in the portal, and because
+every shop is in the same system, nearby stores can see who is free and ask to borrow
+them.
+
+| Page | Who | What |
+| --- | --- | --- |
+| `/schedule` | everyone | Your own shifts, and your store's week read-only |
+| `/store/schedule` | OWNER, ADMIN | The week grid — where the schedule is entered |
+| `/store/schedule/copy` | OWNER, ADMIN | Preview before copying a week or a day |
+| `/schedule/available` | OWNER, ADMIN | Who is free at nearby stores |
+| `/schedule/extra` | OWNER, ADMIN | Extra-shift requests, in and out |
+| `/store/employees` | OWNER, ADMIN | The staff list |
+| `/admin/stores/[id]/hours` | ADMIN, OWNER for own store | Opening hours and red days |
+| `/admin/nearby` | ADMIN | Which stores may see each other's free staff |
+
+`/my-schedule` and `/team-schedule` are **308 redirects** to the first two.
+
+### Local time, never instants
+
+Dates are `"2026-11-04"` and times are `"10:00"`, stored as text. A shift is a
+wall-clock fact about a shop: the 10:00 opening is 10:00 on both sides of the clock
+change, and storing an instant is what makes it move. `src/lib/schedule/time.ts` is
+the only place that knows how to read them, and `tests/schedule-rules.test.ts` walks
+both 2026 and 2027 DST dates to prove nothing shifts.
+
+### Opening hours drive the grid
+
+`StoreOpeningHours` holds a row per weekday; `StoreOpeningException` holds the days
+that do not follow it. **Swedish public holidays are deliberately not built in** —
+five shops in four towns do not have one closing rule, and a wrong built-in calendar
+would be trusted. ADMIN and OWNER enter their own.
+
+Everything the grid says about a day is computed from those two: the one-tap templates
+(`Hel dag` is open to close; `Öppning` and `Stängning` split the day at the half hour
+and take the buffer), the coverage line (`Öppet 10–20, lucka 15–17`) and the warnings.
+
+`SCHEDULE_SHIFT_BUFFER_MINUTES` (default 30, clamped 0–120) is how far outside opening
+hours a shift may run before the grid warns. Somebody has to unlock, count the till and
+cash up, so clock-hours are never shift hours.
+
+Seed the hours the chain gave us:
+
+```bash
+npm run seed:hours                                        # idempotent
+npm run seed:hours -- --force                             # overwrite edits
+npm run seed:hours -- --alias "Kungsholmen=Västermalmsgallerian"
+```
+
+Stores are matched **by name**. A name with no store is reported and skipped — nothing
+is invented. Today `Kungsholmen` matches nothing; the database calls that shop
+`Västermalmsgallerian`.
+
+### Warnings warn, they never block
+
+A shift outside opening hours, two shifts that overlap for one person, a shift on a
+closed day, a day with nobody in it, a gap in the coverage: all of them say so and
+save anyway. A grid that refuses to record what the shop is actually doing gets worked
+around in a chat group, and then the portal is wrong. The only refusals are a date
+that is not a date, a time that is not a time, an end before its start, and a note
+over 120 characters.
+
+Warnings are text **and** an icon, never colour alone.
+
+### Copying
+
+"Kopiera förra veckan" previews first and writes from a plan recomputed on the server.
+Nothing is overwritten: a destination that already holds that person at that start time
+keeps what it has. Somebody who has left is not resurrected, and a **borrowed** shift is
+never copied — an extra pass is another store's employee, agreed once, for one day.
+
+### Cross-store availability
+
+`/schedule/available` shows a name, a home store and the word "ledig". Not their hours,
+not where they are working instead, not a phone number. Three gates, all server-side:
+
+1. The employee's own `openToExtraShifts` consent, off by default.
+2. The employee's home store must be **nearby** — explicit pairs set by an ADMIN at
+   `/admin/nearby`, or, while no pairs exist at all, the same `region`. As soon as one
+   pair is entered, region stops applying everywhere; falling back per store would mean
+   unlinking a pair silently re-opened a whole region.
+3. No shift that day, or none overlapping the asked-for times.
+
+An ADMIN is not limited by the nearby setting. Consent still applies to them: an admin
+who needs the full picture opens the store's grid, which is a different question from
+"who may we ask".
+
+### Extra shifts
+
+The asking store sends a request; the employee's **own** store accepts or declines,
+because they are that store's staff. Accepting creates the shift at the asking store
+inside one transaction, marked `Extrapass`. Two races are closed there: a conditional
+update on the status means two simultaneous answers cannot both land, and the
+employee's shifts for that date are re-read inside the transaction, so somebody who
+picked up work in the meantime cannot be double booked. Nothing throws inside the
+transaction — a refusal is a returned value.
+
+In-app notifications go out on request, accept, decline and withdrawal. There is still
+no mail transport and no push keys in this app.
+
+### Privacy
+
+An employee row is a name, a home store, an active flag, a consent flag and an optional
+account link. There is no field for a personnummer, payroll, a phone number, an email,
+an absence reason or a note about the person, and the forms have no box to type them
+into. A day off is the absence of a shift, not a record — once the app can store
+"ledig" it is one step from storing why, and a reason for an absence is health
+information.
+
+The per-week change trail keeps who and when as a short summary string, pruned after
+90 days on write.
 
 ### The provider seam
 
@@ -301,13 +413,31 @@ Which implementation is live is one value, `SCHEDULE_PROVIDER` in `.env`:
 
 | Value | Implementation | State |
 | --- | --- | --- |
-| `manual` (default) | `ManualImportScheduleProvider` | **Working.** Reads shifts uploaded at `/admin/schedule`. |
-| `tooeasy` | `TooEasyApiScheduleProvider` | **Implemented**, but off until the demo-vs-production question below is settled. Throws if selected without credentials. |
+| `manual` (default) | `StoreEnteredScheduleProvider` | **Working.** The schedule the stores type in. |
+| `import` | `ManualImportScheduleProvider` | **Working but unused.** The CSV/ICS upload at `/admin/schedule`. |
+| `tooeasy` | `TooEasyApiScheduleProvider` | **Implemented**, dormant. Throws if selected without credentials. |
 
 An unrecognised value throws rather than falling back, so a typo cannot silently
 serve data from a different source than the one asked for.
 
-### Importing shifts today
+`manual` used to mean the CSV upload; it now means the portal's own Teamschema, which
+is what "manual" means to anybody using the app. **Nothing was deleted.** The uploader,
+the TooEasy client, mapper, provider and probe are all still there — the TooEasy admin
+pages simply hide from navigation while the integration is off (`features.tooeasy`),
+and the uploader only appears when `import` is the live source, because importing into
+a table nothing reads is a trap.
+
+### Switching back to TooEasy later
+
+1. Put the credentials in `.env.local` and set `SCHEDULE_PROVIDER=tooeasy`.
+2. Map employees at `/admin/tooeasy`, which reappears in the admin hub on its own.
+3. `/schedule` and the Idag card read TooEasy from that moment.
+
+The week grid at `/store/schedule` always reads the portal's own table — it is the
+manual system's own UI — so it shows a warning while another provider is live, saying
+that what you type there will not appear under Mitt schema.
+
+### Importing shifts the old way (`SCHEDULE_PROVIDER=import`)
 
 `/admin/schedule` (ADMIN only) takes a **CSV** or **`.ics`** export from TooEasy or
 anywhere else. The format is detected from the file's contents, not its extension,
@@ -860,16 +990,25 @@ staff-like role before — only OWNER and ADMIN — so this one is new.
 
 | | STAFF | OWNER | ADMIN |
 | --- | --- | --- | --- |
-| `/staff/*`, finder, `/news`, `/my-schedule`, checklists, quizzes | yes | yes | yes |
-| `/` and `/orders` (ordering) | **no** | yes | yes |
-| `/team-schedule` | **no** | yes | yes |
-| `/admin/*` | **no** | **no** | yes |
+| `/staff/*`, finder, `/news`, `/schedule`, checklists, quizzes | yes | yes | yes |
+| `/order` and `/orders` (ordering) | **no** | yes | yes |
+| `/store/schedule`, `/store/employees` (writing the rota) | **no** | yes | yes |
+| `/schedule/available`, `/schedule/extra` (other stores' staff) | **no** | yes | yes |
+| `/admin/stores/[id]/hours` | **no** | own store | yes |
+| `/admin/*` otherwise | **no** | **no** | yes |
 
 Pages and routes ask the capability helpers (`canPlaceOrders`,
-`canViewTeamSchedule`, `canAccessAdmin`, `canActOnStore`) rather than comparing
-role strings, so a fourth role means editing one file. Checks are server-side;
-a hidden nav link is not a permission. Verified end to end — a STAFF account
-gets **404** on `/`, `/orders` and `/team-schedule`.
+`canViewTeamSchedule`, `canEditSchedule`, `canManageEmployees`,
+`canViewAvailability`, `canEditOpeningHours`, `canManageNearbyStores`,
+`canAccessAdmin`, `canActOnStore`) rather than comparing role strings, so a
+fourth role means editing one file. Checks are server-side; a hidden nav link is
+not a permission. Verified end to end — signed in as each role in turn, a STAFF
+account renders `/schedule` and nothing else in that list, and an OWNER renders
+everything except the two ADMIN-only pages.
+
+`/admin/stores/[id]/hours` is the one page under `/admin` that is not ADMIN-only,
+so it cannot use `requireAdmin`: an OWNER edits their own store's hours there, and
+the per-store check is the whole protection.
 
 Create staff accounts at `/admin/users`. Every non-ADMIN account needs at least
 one store, or it has no checklists and no schedule to show.

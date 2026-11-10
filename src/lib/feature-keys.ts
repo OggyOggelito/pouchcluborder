@@ -17,6 +17,7 @@ export const FEATURE_KEYS = [
   "routines",
   "guide",
   "push",
+  "tooeasy",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];

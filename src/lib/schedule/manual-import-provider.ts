@@ -9,9 +9,11 @@ import type {
 /**
  * Reads the shifts put into our own database by the admin CSV/ICS upload.
  *
- * This is the working path today: whatever TooEasy (or any other scheduling
- * tool) can export gets uploaded on whatever cadence, and everything downstream
- * reads it through the same interface a live API would use.
+ * Dormant. It was the working path while we were waiting on TooEasy's API, and
+ * it still works — `SCHEDULE_PROVIDER=import` selects it — but the stores now
+ * type their own schedule into the portal and `manual` means
+ * `StoreEnteredScheduleProvider`. Kept because an upload is still the quickest
+ * way to get a roster out of another tool and into this one.
  */
 export class ManualImportScheduleProvider implements ScheduleProvider {
   readonly name = "Manuell import (CSV/ICS)";

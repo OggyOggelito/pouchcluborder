@@ -7,9 +7,14 @@ import {
   canActOnStore,
   canArchiveNotes,
   canDeleteNotes,
+  canEditOpeningHours,
   canEditRoutines,
+  canEditSchedule,
+  canManageEmployees,
   canManageIssues,
+  canManageNearbyStores,
   canPlaceOrders,
+  canViewAvailability,
   canViewTeamSchedule,
   toRole,
   visibleStoreIds,
@@ -27,6 +32,11 @@ describe("role capabilities", () => {
     deleteNotes: boolean;
     manageIssues: boolean;
     editRoutines: boolean;
+    editSchedule: boolean;
+    manageEmployees: boolean;
+    viewAvailability: boolean;
+    editOpeningHours: boolean;
+    manageNearby: boolean;
   }> = {
     STAFF: {
       allStores: false,
@@ -37,6 +47,11 @@ describe("role capabilities", () => {
       deleteNotes: false,
       manageIssues: false,
       editRoutines: false,
+      editSchedule: false,
+      manageEmployees: false,
+      viewAvailability: false,
+      editOpeningHours: false,
+      manageNearby: false,
     },
     OWNER: {
       allStores: false,
@@ -47,6 +62,11 @@ describe("role capabilities", () => {
       deleteNotes: false,
       manageIssues: false,
       editRoutines: false,
+      editSchedule: true,
+      manageEmployees: true,
+      viewAvailability: true,
+      editOpeningHours: true,
+      manageNearby: false,
     },
     ADMIN: {
       allStores: true,
@@ -57,6 +77,11 @@ describe("role capabilities", () => {
       deleteNotes: true,
       manageIssues: true,
       editRoutines: true,
+      editSchedule: true,
+      manageEmployees: true,
+      viewAvailability: true,
+      editOpeningHours: true,
+      manageNearby: true,
     },
   };
 
@@ -71,7 +96,43 @@ describe("role capabilities", () => {
       assert.equal(canDeleteNotes(role), expected.deleteNotes, `${role} deleteNotes`);
       assert.equal(canManageIssues(role), expected.manageIssues, `${role} manageIssues`);
       assert.equal(canEditRoutines(role), expected.editRoutines, `${role} editRoutines`);
+      assert.equal(canEditSchedule(role), expected.editSchedule, `${role} editSchedule`);
+      assert.equal(canManageEmployees(role), expected.manageEmployees, `${role} manageEmployees`);
+      assert.equal(
+        canViewAvailability(role),
+        expected.viewAvailability,
+        `${role} viewAvailability`
+      );
+      assert.equal(
+        canEditOpeningHours(role),
+        expected.editOpeningHours,
+        `${role} editOpeningHours`
+      );
+      assert.equal(
+        canManageNearbyStores(role),
+        expected.manageNearby,
+        `${role} manageNearby`
+      );
     }
+  });
+
+  it("lets an OWNER run their own schedule but not decide who sees whose staff", () => {
+    // Entering shifts and managing a staff list is a store's own business.
+    // Which stores may see each other's free employees is not — it decides
+    // who sees whose people, so it stays with an ADMIN.
+    assert.equal(canEditSchedule("OWNER"), true);
+    assert.equal(canManageEmployees("OWNER"), true);
+    assert.equal(canEditOpeningHours("OWNER"), true);
+    assert.equal(canManageNearbyStores("OWNER"), false);
+  });
+
+  it("keeps STAFF out of the schedule, the staff list and the cross-store view", () => {
+    // STAFF read their own shifts and their own store's week. They do not
+    // write, and they never see another store's employees.
+    assert.equal(canEditSchedule("STAFF"), false);
+    assert.equal(canManageEmployees("STAFF"), false);
+    assert.equal(canViewAvailability("STAFF"), false);
+    assert.equal(canEditOpeningHours("STAFF"), false);
   });
 
   it("lets an OWNER archive a shift note but never delete one", () => {

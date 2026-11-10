@@ -21,6 +21,7 @@
     "crosscheck": "tsx scripts/crosscheck-assortment.ts",
     "seed:brand-content": "tsx scripts/seed-brand-content.ts",
     "seed:schedule": "tsx prisma/seed-schedule.ts",
+    "seed:hours": "tsx --env-file-if-exists=.env prisma/seed-opening-hours.ts",
     "tooeasy:probe": "tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/tooeasy-probe.ts",
     "test": "node --import tsx --test tests/*.test.ts",
     "ux:shots": "tsx scripts/ux/shots.ts",

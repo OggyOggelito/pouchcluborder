@@ -12,7 +12,9 @@ import { getTodayChecklists } from "@/lib/repositories/checklists";
 import { listDraftsForUser } from "@/lib/repositories/order-drafts";
 import { listPublished } from "@/lib/repositories/announcements";
 import { countUnreadNews } from "@/lib/repositories/preferences";
-import { canAccessAdmin, canPlaceOrders } from "@/lib/roles";
+import { countIncomingRequests } from "@/lib/repositories/extra-shifts";
+import { countShiftsForStores } from "@/lib/repositories/schedule-week";
+import { canAccessAdmin, canPlaceOrders, canViewAvailability } from "@/lib/roles";
 import { getMyShifts } from "@/lib/schedule/queries";
 import { lineCount, totalQuantity } from "@/lib/order-drafts";
 import { requireUser } from "@/lib/session";
@@ -47,7 +49,18 @@ export default async function TodayPage() {
   const mayOrder = canPlaceOrders(user.role);
   const isAdmin = canAccessAdmin(user.role);
 
-  const [shifts, checklists, drafts, unreadNews, latestNews, adminCounts] = await Promise.all([
+  const mayManageSchedule = canViewAvailability(user.role);
+
+  const [
+    shifts,
+    checklists,
+    drafts,
+    unreadNews,
+    latestNews,
+    adminCounts,
+    extraShifts,
+    storeShiftCount,
+  ] = await Promise.all([
     features.schedule ? getMyShifts(user.id) : null,
     features.checklists
       ? getTodayChecklists({ storeIds, dateKey: stockholmDateKey() })
@@ -56,6 +69,8 @@ export default async function TodayPage() {
     features.news ? countUnreadNews(user.id) : 0,
     features.news ? listPublished(undefined, 3) : [],
     isAdmin ? getAdminCounts() : null,
+    mayManageSchedule ? countIncomingRequests(storeIds) : 0,
+    mayManageSchedule && features.schedule ? countShiftsForStores(storeIds) : 1,
   ]);
 
   // ShiftEntry.date is a Date at local midnight; compare on the Stockholm
@@ -142,11 +157,40 @@ export default async function TodayPage() {
             ))}
           </ul>
           <Link
-            href="/my-schedule"
+            href="/schedule"
             className="mt-3 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
           >
             Hela schemat
           </Link>
+        </Card>
+      ) : null}
+
+      {/* A store with nothing entered is not an error and not an outage — it
+          is a job for whoever runs the rota. Said once, to them. */}
+      {mayManageSchedule && features.schedule && storeShiftCount === 0 ? (
+        <Card href="/store/schedule" className="mb-3">
+          <span className="block font-semibold tracking-tight">Inget schema inlagt ännu</span>
+          <span className="mt-1 block text-sm text-muted">
+            Butikens vecka är tom. Lägg in passen i teamschemat.
+          </span>
+        </Card>
+      ) : null}
+
+      {extraShifts > 0 ? (
+        <Card href="/schedule/extra" className="mb-3">
+          <div className="flex items-start justify-between gap-3">
+            <span className="min-w-0">
+              <span className="block font-semibold tracking-tight">
+                {extraShifts === 1
+                  ? "1 förfrågan om extrapass"
+                  : `${extraShifts} förfrågningar om extrapass`}
+              </span>
+              <span className="block text-sm text-muted">
+                En annan butik vill låna någon av era medarbetare.
+              </span>
+            </span>
+            <StatusBadge tone="info">Svara</StatusBadge>
+          </div>
         </Card>
       ) : null}
 
@@ -230,6 +274,8 @@ export default async function TodayPage() {
       openChecklists.length === 0 &&
       unreadNews === 0 &&
       drafts.length === 0 &&
+      extraShifts === 0 &&
+      !(mayManageSchedule && features.schedule && storeShiftCount === 0) &&
       outstandingAdmin === 0 ? (
         <Card>
           <p className="font-medium text-ink">Inget särskilt idag.</p>

@@ -16,7 +16,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   STAFF: "Guide, produktsök, nyheter, eget schema, checklistor och quiz.",
-  OWNER: "Allt ovan, plus beställningar och teamschema för sina butiker.",
+  OWNER: "Allt ovan, plus beställningar, schemaläggning och teamschema för sina butiker.",
   ADMIN: "Allt, inklusive adminsidorna.",
 };
 
@@ -81,6 +81,48 @@ export function canManageIssues(role: Role): boolean {
 
 /** Writing and publishing routine articles. */
 export function canEditRoutines(role: Role): boolean {
+  return role === "ADMIN";
+}
+
+// ---------------------------------------------------------------------------
+// Teamschema
+//
+// The schedule is entered by the stores themselves, so an OWNER writes here
+// rather than only reading. Scope is a separate question from capability:
+// these say what a role may do at all, and `canActOnStore` says where.
+// ---------------------------------------------------------------------------
+
+/** Entering and changing shifts in the week grid. STAFF may only look. */
+export function canEditSchedule(role: Role): boolean {
+  return role === "OWNER" || role === "ADMIN";
+}
+
+/** Adding employees, linking accounts, deactivating people who have left. */
+export function canManageEmployees(role: Role): boolean {
+  return role === "OWNER" || role === "ADMIN";
+}
+
+/**
+ * Seeing who is free at other stores, and asking for them.
+ *
+ * STAFF deliberately cannot: this is the one view where an employee is visible
+ * to people outside their own shop, and it exists for the managers who do the
+ * asking.
+ */
+export function canViewAvailability(role: Role): boolean {
+  return role === "OWNER" || role === "ADMIN";
+}
+
+/** A store's opening hours and its holiday exceptions. */
+export function canEditOpeningHours(role: Role): boolean {
+  return role === "OWNER" || role === "ADMIN";
+}
+
+/**
+ * Deciding which stores may see each other's free staff. ADMIN only — it
+ * controls who sees whose employees, which is not one store's call.
+ */
+export function canManageNearbyStores(role: Role): boolean {
   return role === "ADMIN";
 }
 

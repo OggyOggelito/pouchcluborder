@@ -27,12 +27,18 @@ const PAGES: [RoleKey, string][] = [
   ["staff", "/staff"],
   ["staff", "/staff/finder"],
   ["staff", "/news"],
-  ["staff", "/my-schedule"],
+  ["staff", "/schedule"],
   ["staff", "/store/notes"],
   ["staff", "/staff/checklists"],
   ["staff", "/settings"],
+  ["owner", "/store/schedule"],
+  ["owner", "/schedule/available"],
+  ["owner", "/schedule/extra"],
+  ["owner", "/store/employees"],
   ["admin", "/admin"],
   ["admin", "/admin/requests"],
+  ["admin", "/admin/nearby"],
+  ["admin", "/admin/schedule"],
 ];
 
 async function signIn(page: Page, role: RoleKey) {

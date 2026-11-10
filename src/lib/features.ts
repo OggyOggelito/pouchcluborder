@@ -28,18 +28,28 @@ function envFlag(name: string): boolean {
 /**
  * Is the schedule backend actually producing shifts?
  *
- * `SCHEDULE_PROVIDER=tooeasy` needs all three credentials — the repo ships
- * them as empty strings, which `envFlag` treats as absent. `manual` needs at
- * least one imported shift, because a manual provider with nothing imported
- * shows every employee an empty week.
+ * `tooeasy` needs all three credentials — the repo ships them as empty
+ * strings, which `envFlag` treats as absent. `import` needs at least one
+ * uploaded shift, because an import with nothing imported shows every
+ * employee an empty week.
+ *
+ * `manual` — the stores' own schedule, and the default — is always live. It
+ * cannot wait for content the way the other modules do: the content is typed
+ * in through these very pages, so hiding them until a shift exists would hide
+ * the only way to create one.
  */
 async function scheduleIsLive(): Promise<boolean> {
-  if (process.env.SCHEDULE_PROVIDER === "tooeasy") {
+  const provider = (process.env.SCHEDULE_PROVIDER ?? "manual").toLowerCase();
+
+  if (provider === "tooeasy") {
     return (
       envFlag("TOOEASY_BASE_URL") && envFlag("TOOEASY_USERNAME") && envFlag("TOOEASY_PASSWORD")
     );
   }
-  return (await prisma.shift.count()) > 0;
+  if (provider === "import") {
+    return (await prisma.shift.count()) > 0;
+  }
+  return true;
 }
 
 export const getFeatures = cache(async (): Promise<Features> => {
@@ -65,10 +75,14 @@ export const getFeatures = cache(async (): Promise<Features> => {
       // No web-push keys exist in this app. Kept as a flag so the settings
       // screen has something to ask, rather than a `false` buried in a view.
       push: envFlag("VAPID_PUBLIC_KEY") && envFlag("VAPID_PRIVATE_KEY"),
+      // The TooEasy integration is dormant. Its admin pages — the employee
+      // mapping and the status probe — hide while it is off; the code behind
+      // them is untouched and comes back with the flag.
+      tooeasy: (process.env.SCHEDULE_PROVIDER ?? "manual").toLowerCase() === "tooeasy",
     };
   } catch {
     // A flag query failing must not blank the navigation. Showing a module
     // that turns out to be empty is the lesser harm.
-    return { ...ALL_FEATURES, push: false };
+    return { ...ALL_FEATURES, push: false, tooeasy: false };
   }
 });

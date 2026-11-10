@@ -210,22 +210,55 @@ export const NAV_ENTRIES: NavEntry[] = [
     searchable: true,
   },
   {
-    href: "/my-schedule",
+    href: "/schedule",
     label: "Mitt schema",
-    description: "Dina pass de närmaste 14 dagarna.",
+    description: "Dina pass och butikens vecka.",
     roles: ALL_ROLES,
     feature: "schedule",
     group: "me",
     icon: "schedule",
     searchable: true,
   },
+  // Entering the schedule, finding cover and the extra-shift queue are three
+  // steps of one job, so they sit together under "I butiken" rather than with
+  // the personal pages. All three are registered so search can find them.
   {
-    href: "/team-schedule",
-    label: "Teamets schema",
-    description: "Vem jobbar och vem är ledig i regionen.",
+    href: "/store/schedule",
+    label: "Teamschema",
+    description: "Skriv in butikens vecka.",
     roles: MANAGERS,
     feature: "schedule",
-    group: "me",
+    group: "shop",
+    icon: "team",
+    searchable: true,
+  },
+  {
+    href: "/schedule/available",
+    label: "Lediga hos andra",
+    description: "Vem kan ta ett extrapass hos er.",
+    roles: MANAGERS,
+    feature: "schedule",
+    group: "shop",
+    icon: "schedule",
+    searchable: true,
+  },
+  {
+    href: "/schedule/extra",
+    label: "Extrapass",
+    description: "Förfrågningar in och ut.",
+    roles: MANAGERS,
+    feature: "schedule",
+    group: "shop",
+    icon: "request",
+    searchable: true,
+  },
+  {
+    href: "/store/employees",
+    label: "Anställda",
+    description: "Butikens personal och vem som får erbjudas extrapass.",
+    roles: MANAGERS,
+    feature: "schedule",
+    group: "shop",
     icon: "team",
     searchable: true,
   },
@@ -289,6 +322,12 @@ export type AdminEntry = {
   label: string;
   description: string;
   section: AdminSection;
+  /**
+   * Hidden while this feature flag is false — same rule as a NavEntry.
+   * The TooEasy pages use it: a mapping screen for an integration that is
+   * switched off is a dead end, and the code behind it is still there.
+   */
+  feature?: FeatureKey;
   /**
    * Which "behöver åtgärd" count belongs on this card, if any. Resolved in
    * src/lib/repositories/admin-counts.ts — a key rather than a number so this
@@ -384,7 +423,14 @@ export const ADMIN_ENTRIES: AdminEntry[] = [
   {
     href: "/admin/schedule",
     label: "Schema",
-    description: "Importera pass.",
+    description: "Öppettider, medarbetare och aktiv källa.",
+    section: "people",
+    searchable: true,
+  },
+  {
+    href: "/admin/nearby",
+    label: "Närliggande butiker",
+    description: "Vilka butiker som ser varandras lediga medarbetare.",
     section: "people",
     searchable: true,
   },
@@ -393,6 +439,7 @@ export const ADMIN_ENTRIES: AdminEntry[] = [
     label: "TooEasy",
     description: "Schemakoppling och status.",
     section: "integrations",
+    feature: "tooeasy",
     searchable: true,
   },
 ];
@@ -439,12 +486,27 @@ export function groupedNavFor(
   })).filter((section) => section.entries.length > 0);
 }
 
-/** Admin hub cards, grouped by job. */
-export function adminSections(): { section: AdminSection; label: string; entries: AdminEntry[] }[] {
+function adminFeatureOn(entry: AdminEntry, features: Features | null): boolean {
+  if (!entry.feature) return true;
+  if (!features) return true;
+  return features[entry.feature];
+}
+
+/**
+ * Admin hub cards, grouped by job.
+ *
+ * Passing no flags lists every card, which is what the config test wants:
+ * hiding is a rendering decision, and the registry itself stays complete.
+ */
+export function adminSections(
+  features: Features | null = null
+): { section: AdminSection; label: string; entries: AdminEntry[] }[] {
   return ADMIN_SECTIONS.map((section) => ({
     section,
     label: ADMIN_SECTION_LABELS[section],
-    entries: ADMIN_ENTRIES.filter((entry) => entry.section === section),
+    entries: ADMIN_ENTRIES.filter(
+      (entry) => entry.section === section && adminFeatureOn(entry, features)
+    ),
   })).filter((group) => group.entries.length > 0);
 }
 
@@ -459,7 +521,9 @@ export function searchablePagesFor(
 
   if (role === "ADMIN") {
     pages.push(
-      ...ADMIN_ENTRIES.filter((entry) => entry.searchable).map((entry) => ({
+      ...ADMIN_ENTRIES.filter(
+        (entry) => entry.searchable && adminFeatureOn(entry, features)
+      ).map((entry) => ({
         href: entry.href,
         label: `Admin · ${entry.label}`,
         description: entry.description,

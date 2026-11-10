@@ -4,6 +4,7 @@ import SupplierImport from "@/components/SupplierImport";
 import Card from "@/components/ui/Card";
 import PageHeader from "@/components/ui/PageHeader";
 import { adminSections } from "@/config/navigation";
+import { getFeatures } from "@/lib/features";
 import { countFor, getAdminCounts } from "@/lib/repositories/admin-counts";
 import { countProducts } from "@/lib/repositories/products";
 import { requireAdmin } from "@/lib/session";
@@ -24,8 +25,14 @@ export const metadata = {
 export default async function AdminPage() {
   await requireAdmin();
 
-  const [counts, products] = await Promise.all([getAdminCounts(), countProducts()]);
-  const sections = adminSections();
+  const [counts, products, features] = await Promise.all([
+    getAdminCounts(),
+    countProducts(),
+    getFeatures(),
+  ]);
+  // Cards for a switched-off integration leave the hub rather than greying
+  // out. The TooEasy pages are the case today.
+  const sections = adminSections(features);
   const outstanding =
     counts.openIssues + counts.newRequests + counts.openTransfers + counts.needsReview;
 

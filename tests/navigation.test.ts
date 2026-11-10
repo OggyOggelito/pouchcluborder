@@ -45,6 +45,40 @@ describe("navigation per role", () => {
     }
   });
 
+  it("lets STAFF read a schedule but never write one or see other stores", () => {
+    const staff = navFor("STAFF", ALL_ON).map((entry) => entry.href);
+    assert.ok(staff.includes("/schedule"), "STAFF see their own schedule");
+    for (const href of [
+      "/store/schedule",
+      "/schedule/available",
+      "/schedule/extra",
+      "/store/employees",
+    ]) {
+      assert.ok(!staff.includes(href), `STAFF must not be offered ${href}`);
+    }
+
+    for (const role of ["OWNER", "ADMIN"] as const) {
+      const hrefs = navFor(role, ALL_ON).map((entry) => entry.href);
+      for (const href of [
+        "/schedule",
+        "/store/schedule",
+        "/schedule/available",
+        "/schedule/extra",
+        "/store/employees",
+      ]) {
+        assert.ok(hrefs.includes(href), `${role} should be offered ${href}`);
+      }
+    }
+  });
+
+  it("no longer offers the old schedule addresses", () => {
+    // They still work — they redirect. But a menu pointing at a redirect is a
+    // menu that lies about where you are going.
+    const hrefs = NAV_ENTRIES.map((entry) => entry.href);
+    assert.ok(!hrefs.includes("/my-schedule"));
+    assert.ok(!hrefs.includes("/team-schedule"));
+  });
+
   it("keeps ordering away from STAFF", () => {
     const staff = navFor("STAFF", ALL_ON).map((entry) => entry.href);
     assert.ok(!staff.includes("/order"), "STAFF cannot place orders");
@@ -89,7 +123,8 @@ describe("feature flags hide, they do not protect", () => {
     const hrefs = navFor("OWNER", nothingOn).map((entry) => entry.href);
     assert.ok(!hrefs.includes("/order"), "ordering off should hide /order");
     assert.ok(!hrefs.includes("/news"), "news off should hide /news");
-    assert.ok(!hrefs.includes("/my-schedule"), "schedule off should hide the schedule");
+    assert.ok(!hrefs.includes("/schedule"), "schedule off should hide the schedule");
+    assert.ok(!hrefs.includes("/store/schedule"), "schedule off should hide the week grid");
     assert.ok(!hrefs.includes("/staff/quizzes"), "no published quiz should hide the quiz");
   });
 
@@ -116,6 +151,9 @@ describe("active state", () => {
 
   it("matches the deepest registered route", () => {
     assert.equal(activeHref("/store/issues/new", entries), "/store/issues");
+    assert.equal(activeHref("/schedule/available", entries), "/schedule/available");
+    assert.equal(activeHref("/schedule/extra/abc123", entries), "/schedule/extra");
+    assert.equal(activeHref("/store/schedule/copy", entries), "/store/schedule");
     assert.equal(activeHref("/staff/finder", entries), "/staff/finder");
     assert.equal(activeHref("/staff/brands/zyn", entries), "/staff");
   });
@@ -132,6 +170,27 @@ describe("active state", () => {
 });
 
 describe("admin hub", () => {
+  it("drops the dormant TooEasy cards while the integration is off", () => {
+    const off: Features = { ...ALL_FEATURES, tooeasy: false };
+    const hrefs = adminSections(off).flatMap((section) =>
+      section.entries.map((entry) => entry.href)
+    );
+    assert.ok(!hrefs.includes("/admin/tooeasy"), "the mapping page should leave the hub");
+    assert.ok(hrefs.includes("/admin/schedule"), "the schedule page stays");
+
+    const searchable = searchablePagesFor("ADMIN", off).map((page) => page.href);
+    assert.ok(
+      !searchable.includes("/admin/tooeasy"),
+      "and must not be findable through search either"
+    );
+
+    // Switched on, it comes straight back — nothing was deleted.
+    const on = adminSections(ALL_ON).flatMap((section) =>
+      section.entries.map((entry) => entry.href)
+    );
+    assert.ok(on.includes("/admin/tooeasy"));
+  });
+
   it("files every admin page under exactly one job", () => {
     const grouped = adminSections().flatMap((section) => section.entries);
     assert.equal(grouped.length, ADMIN_ENTRIES.length);
