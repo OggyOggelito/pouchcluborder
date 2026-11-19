@@ -43,7 +43,7 @@ export default function AppError({
             Försök igen
           </button>
           <a
-            href="/"
+            href="/idag"
             className="flex min-h-tap flex-1 items-center justify-center rounded-2xl border border-warning px-5 font-medium text-warning"
           >
             Till startsidan

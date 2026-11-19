@@ -45,6 +45,7 @@ the seed again updates existing rows instead of duplicating them.
 | `npm run seed:hours` | Seed the stores' opening hours (see Teamschema) |
 | `npm run seed:shopfloor` | EXEMPEL checklist templates and a placeholder quiz |
 | `npm run seed:routines` | One EXEMPEL routine article explaining how to write them |
+| `npm run seed:supplier-demo` | Fake supplier logins and invented sales, for testing (`-- --remove` undoes it) |
 | `npm run flavors:retag` | Derive flavour groups (skips hand-edited rows) |
 | `npm test` | Run the test suite |
 | `npm run ux:shots -- before\|after` | Screenshots of the main screens at 390x844 |
@@ -791,6 +792,210 @@ that an account with no stores sees nothing rather than everything), archiving,
 
 ---
 
+## Två dörrar: personal och leverantör
+
+> The delivery report — which account to give `canViewStats`, how supplier
+> isolation is enforced, what to get from the statistics lead and from Örebro,
+> and the privacy questions this raises — is in
+> [`docs/supplier-portal.md`](docs/supplier-portal.md).
+
+`/` is the portal's front door and shows exactly two choices, **Personal** and
+**Leverantör**, with the Pouch Club name above them and nothing else. No
+search, no menu, no "läs mer": a supplier is an external person, and a link
+into the staff portal — even one that would refuse them — says what exists.
+
+Signed-in people never see it. Staff go to `/idag`, and a browser that last
+came in through the supplier door goes to `/supplier`.
+
+### Two complete authentication paths
+
+Not one login with a role check. Two Auth.js instances, two tables, two cookies:
+
+| | Staff | Supplier |
+| --- | --- | --- |
+| Login | `/login` | `/supplier/login` |
+| Table | `users` | `supplier_users` |
+| Auth endpoints | `/api/auth/*` | `/supplier/api/auth/*` |
+| Cookie | `authjs.session-token`, path `/` | `pc-supplier.session-token`, path **`/supplier`** |
+| Session helper | `src/lib/session.ts` | `src/lib/supplier-session.ts` |
+| Shell | `src/app/(staff)/layout.tsx` | `src/app/supplier/layout.tsx` |
+
+The supplier cookie's **path** is the load-bearing part: a browser never sends
+it to a staff route, so a supplier session is not refused in the staff app —
+it does not arrive there. The staff cookie keeps path `/` and does reach
+`/supplier`, which is how the portal answers "Du är inloggad som personal,
+logga ut för att logga in som leverantör" instead of a login loop.
+
+Each door's `authorize` reads one table. A supplier email typed into the staff
+form finds nothing and gets the same **"Fel e-post eller lösenord"** as any
+wrong password; a staff email in the supplier form, the same. Neither form can
+be used to find out whether an account exists on the other side.
+
+Both logins are rate limited — ten attempts per address per quarter of an hour,
+in `src/lib/rate-limit.ts`. It is process-local and in memory, which is honest
+for one Node process and the first thing to move into a shared store if this is
+ever scaled out.
+
+`src/app/(staff)/` is a **route group**: a folder that is not part of the URL.
+It exists so the two apps can have different shells. The staff chrome — header,
+sidebar, bottom bar, global search — lives in that group's layout and cannot
+render for a supplier.
+
+### Supplier accounts
+
+Created by an ADMIN at `/admin/suppliers`. There is no self-signup.
+
+An account starts with **no password**. The admin gets a one-time link, valid
+72 hours, shown on screen once and never stored — only its SHA-256 hash is
+kept, which is why it cannot be shown again. There is no mail transport in this
+app, so the admin copies the link into whatever channel they already use.
+"Glömt lösenordet" is the same machinery: the admin issues a reset link.
+
+Deactivating an account stops the login **and** voids any outstanding link.
+
+## Leverantörsportalen
+
+Everything a supplier can reach is under `/supplier`, with a navigation written
+in `src/components/supplier/SupplierNav.tsx` rather than read from
+`src/config/navigation.ts` — that file is the staff menu, and a shared config is
+one `roles: ALL_ROLES` away from putting an internal page in front of an
+external person.
+
+| Page | What |
+| --- | --- |
+| `/supplier` | Start: new answers, next demo day, shortcuts |
+| `/supplier/boka` | Book a demo day in one, several or all stores |
+| `/supplier/bokningar` | Status per store, and cancelling |
+| `/supplier/stats` | Their own brand's sales (only when statistics are on) |
+| `/supplier/byt-losenord` | Change password |
+| `/supplier/aktivera?token=…` | Activate an invite or a reset link |
+
+### Demodagar
+
+A request for three stores is three rows sharing a `groupId`: **each store
+answers for itself**, so a group can come back half confirmed, which is the
+honest outcome when three shops have three different weeks.
+
+The booking form asks for the date first, because everything else depends on
+it. Each store then shows that day's opening hours from `StoreOpeningHours` and
+its exceptions, or why it cannot be picked — `Stängt den dagen`,
+`Öppettider saknas`, or `Redan bokad`. **"Redan bokad" is all a blocked store
+says**: naming the brand that holds the day would tell one supplier what another
+is doing. "Alla butiker" ticks the ones that can be booked and nothing else.
+
+Rules, all constants at the top of `src/lib/demo-days.ts`:
+
+| Rule | Default |
+| --- | --- |
+| Earliest | 7 days ahead |
+| Latest | 60 days ahead |
+| Supplier may cancel until | 3 days before |
+| Note | 300 characters, "Skriv inte personuppgifter om kunder" |
+| Per store per day | at most one **live** booking |
+
+That last one is enforced in a transaction rather than by a unique constraint:
+a declined or cancelled booking frees the day, and "unique unless the status is
+one of these three" is not something a constraint can say.
+
+Staff see demo days at `/store/demo-days` (STAFF read, OWNER and ADMIN answer)
+and admins see every store at `/admin/demo-days` with filters and an Excel
+export. A confirmed demo day today also appears on the Idag card, so nobody is
+surprised by a stranger with a roll-up.
+
+Staff are notified in-app on a new request and a cancellation. The supplier is
+told **in the portal** — a "svar sedan sist" marker on their start page — because
+there is still no mail transport here. If suppliers will not log in to check,
+that needs an email sender before it is useful.
+
+## Försäljningsstatistik
+
+Off unless `SALES_STATS_ENABLED=1`. With it off there is no route, no menu item
+and no supplier tab.
+
+### The provider seam
+
+The same shape as `ScheduleProvider`. Everything reads one interface, so
+swapping the CSV upload for the Sharp API later is a new class and a config
+value:
+
+```ts
+interface SalesProvider {
+  readonly name: string;
+  readonly canPull: boolean;
+  pull(range: SalesRange): Promise<SalesLine[]>;
+}
+```
+
+| `SALES_PROVIDER` | Implementation | State |
+| --- | --- | --- |
+| `manual` (default) | `ManualSalesProvider` | **Working.** Files an ADMIN uploads. `canPull` is false — it is pushed, not pulled, and says so instead of returning an empty list. |
+| `sharp` | `SharpSalesProvider` | **A stub that throws.** We have no specification; see [`docs/sharp-api-intake.md`](./docs/sharp-api-intake.md). |
+
+The CSV parser produces the same `SalesLine[]` the real provider will, so the
+whole path behind the seam is already being exercised by real imports.
+
+### What is stored
+
+`SalesDaily` is **one row per store, day and product**. No receipt lines, no
+time of day, no till, no operator, nothing about a customer — the grain is the
+smallest thing a supplier may see and the smallest thing worth keeping, and it
+is enforced in the schema rather than in a display rule.
+
+Re-importing a day **replaces** it. The same file twice is the same figures,
+not double. A row that cannot be tied to a product goes to `SalesUnmatched` and
+is listed for an admin to map; nothing is ever dropped silently.
+
+Matching is EAN first, then article number, and nothing else. A name is not a
+key.
+
+### What a supplier sees, and does not
+
+`/supplier/stats` shows their own brand: totals, a trend per day, week or
+month, a table per product and per store, a custom date range and an Excel
+export of their own figures.
+
+They do not see other brands' numbers, a ranking, **market share**, or our cost
+prices and margins. Market share is the interesting omission: it looks harmless
+and is arithmetic away from a competitor's volume. It is not built. If it is
+ever wanted it should be ADMIN-only and off by default.
+
+`getBrandSales` takes a brand id and has no "all brands" branch; the id comes
+from the session, never from a query string.
+
+### Who may read it internally
+
+`/admin/stats` needs the **ADMIN role and** a per-account `canViewStats` flag,
+off by default and granted at `/admin/suppliers`. The figures are a supplier's
+commercial data and "every admin" is a wider audience than anybody agreed to.
+
+The page also has **"Se som leverantör"**, which renders the very same component
+the supplier gets — so what an admin checks cannot drift from what a supplier
+sees.
+
+## Pausa beställningar
+
+`/admin/order-pause`, ADMIN only. A pause is a window with a message, not a
+switch:
+
+- **Scope** — all stores, one store, or one brand. A brand pause only bites
+  when the basket actually contains that brand; pausing one supplier must not
+  stop a store ordering everything else.
+- **Start** now or later, **end** optional. Open-ended means until somebody
+  lifts it, which is what a pause usually is.
+- **Message** required, max 200 characters. It is all a store sees.
+
+Lifting records who and when rather than deleting the row, so "varför gick det
+inte att beställa i tisdags" has an answer.
+
+While a pause is on: `POST /api/orders` refuses with **409** and the message.
+Drafts keep saving and are never lost, viewing, exporting and receiving
+existing orders are untouched, and the order screen says so rather than just
+refusing. An ADMIN may push one order through with a **required reason**, which
+is logged against the pause with the account and the order id.
+
+The banner appears on the Idag card and on the order screen, and a scheduled
+pause shows as "Beställningar pausas från 1 dec: …".
+
 ## Struktur och navigering
 
 The portal grew from an order form into eleven features, and the risk stopped
@@ -799,13 +1004,17 @@ stockroom". This is what the simplification pass changed. The measurements
 behind it are in [`docs/ux/`](./docs/ux/): `audit.md` (before), `after.md`
 (after), and `usability-test.md` (a script for testing it on colleagues).
 
-### "Idag" at `/`
+### "Idag" at `/idag`
 
 `/` used to be the order form, which calls `requireOrderingUser()` — so **a
 STAFF member opening the app got Next's default English 404**. That was the
 worst thing the audit found, and it is the reason this page exists.
 
-`/` is now a role-aware home. Every card hides completely when it has nothing
+It lived at `/` until the portal grew a second front door; `/` is now the entry
+page with the two login choices on it, and the staff home moved to `/idag`. A
+signed-in staff user opening `/` is redirected there.
+
+`/idag` is a role-aware home. Every card hides completely when it has nothing
 to say or its module is not set up; a greyed-out card is still something to
 read and decide about on a phone.
 
@@ -988,20 +1197,29 @@ Four staff-facing tools: a product finder, checklists, onboarding and quizzes.
 `ROLES` is now `STAFF | OWNER | ADMIN` (`src/lib/roles.ts`). There was no
 staff-like role before — only OWNER and ADMIN — so this one is new.
 
-| | STAFF | OWNER | ADMIN |
-| --- | --- | --- | --- |
-| `/staff/*`, finder, `/news`, `/schedule`, checklists, quizzes | yes | yes | yes |
-| `/order` and `/orders` (ordering) | **no** | yes | yes |
-| `/store/schedule`, `/store/employees` (writing the rota) | **no** | yes | yes |
-| `/schedule/available`, `/schedule/extra` (other stores' staff) | **no** | yes | yes |
-| `/admin/stores/[id]/hours` | **no** | own store | yes |
-| `/admin/*` otherwise | **no** | **no** | yes |
+| | STAFF | OWNER | ADMIN | SUPPLIER |
+| --- | --- | --- | --- | --- |
+| `/staff/*`, finder, `/news`, `/schedule`, checklists, quizzes | yes | yes | yes | **no** |
+| `/order` and `/orders` (ordering) | **no** | yes | yes | **no** |
+| `/store/schedule`, `/store/employees` (writing the rota) | **no** | yes | yes | **no** |
+| `/schedule/available`, `/schedule/extra` (other stores' staff) | **no** | yes | yes | **no** |
+| `/store/demo-days` (reading) | yes | yes | yes | **no** |
+| `/store/demo-days` (answering) | **no** | own store | yes | **no** |
+| `/admin/stores/[id]/hours` | **no** | own store | yes | **no** |
+| `/admin/stats` | **no** | **no** | with `canViewStats` | **no** |
+| `/admin/*` otherwise | **no** | **no** | yes | **no** |
+| `/supplier/*` | **no** | **no** | **no** | own brand |
+
+A supplier is not a staff account with fewer rights: `SUPPLIER` is deliberately
+absent from `ROLES`, suppliers live in their own table, and their session
+cookie is scoped to `/supplier` so it never reaches any row above it.
 
 Pages and routes ask the capability helpers (`canPlaceOrders`,
 `canViewTeamSchedule`, `canEditSchedule`, `canManageEmployees`,
 `canViewAvailability`, `canEditOpeningHours`, `canManageNearbyStores`,
-`canAccessAdmin`, `canActOnStore`) rather than comparing role strings, so a
-fourth role means editing one file. Checks are server-side; a hidden nav link is
+`canManageSuppliers`, `canDecideDemoDays`, `canPauseOrders`,
+`canOverrideOrderPause`, `canViewSalesStats`, `canAccessAdmin`, `canActOnStore`)
+rather than comparing role strings, so a fourth role means editing one file. Checks are server-side; a hidden nav link is
 not a permission. Verified end to end — signed in as each role in turn, a STAFF
 account renders `/schedule` and nothing else in that list, and an OWNER renders
 everything except the two ADMIN-only pages.

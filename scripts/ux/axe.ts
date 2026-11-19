@@ -21,6 +21,16 @@ const ACCOUNTS = {
 
 type RoleKey = keyof typeof ACCOUNTS;
 
+/**
+ * The supplier portal is a separate login, so it is scanned separately — the
+ * staff sign-in would land on the "du är inloggad som personal" notice.
+ */
+const SUPPLIER_ROUTES = ["/supplier", "/supplier/boka", "/supplier/bokningar", "/supplier/stats"];
+const SUPPLIER_ACCOUNT = {
+  email: process.env.UX_SUPPLIER_EMAIL ?? "demo.77@example.test",
+  password: process.env.UX_SUPPLIER_PASSWORD ?? "demo-losenord-1234",
+};
+
 const PAGES: { role: RoleKey; routes: string[] }[] = [
   {
     role: "owner",
@@ -34,6 +44,7 @@ const PAGES: { role: RoleKey; routes: string[] }[] = [
       "/schedule/available",
       "/schedule/extra",
       "/store/employees",
+      "/store/demo-days",
     ],
   },
   {
@@ -44,6 +55,10 @@ const PAGES: { role: RoleKey; routes: string[] }[] = [
     role: "admin",
     routes: [
       "/admin",
+      "/admin/suppliers",
+      "/admin/order-pause",
+      "/admin/demo-days",
+      "/admin/stats",
       "/admin/requests",
       "/admin/issues",
       "/admin/review",
@@ -53,6 +68,31 @@ const PAGES: { role: RoleKey; routes: string[] }[] = [
     ],
   },
 ];
+
+/** One page, reported in one line. Serious and critical only. */
+async function scan(page: Page, route: string, who: string): Promise<number> {
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+
+  const serious = results.violations.filter(
+    (violation) => violation.impact === "serious" || violation.impact === "critical"
+  );
+
+  const summary = serious.map((violation) => `${violation.id}(${violation.nodes.length})`).join(", ");
+  console.log(`${route.padEnd(22)} ${who.padEnd(9)} ${serious.length === 0 ? "clean" : summary}`);
+
+  if (asJson && serious.length > 0) {
+    for (const violation of serious) {
+      console.log(`    ${violation.id}: ${violation.help}`);
+      for (const node of violation.nodes.slice(0, 3)) {
+        console.log(`      ${node.target.join(" ")}`);
+      }
+    }
+  }
+
+  return serious.length;
+}
 
 async function signIn(page: Page, role: RoleKey) {
   const { email, password } = ACCOUNTS[role];
@@ -70,6 +110,34 @@ async function main() {
   let total = 0;
 
   try {
+    // The entry page first: signed out, no shell, two choices.
+    {
+      const context = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        locale: "sv-SE",
+      });
+      const page = await context.newPage();
+      await page.goto(`${BASE}/`, { waitUntil: "networkidle" }).catch(() => undefined);
+      total += await scan(page, "/", "anon");
+
+      await page.goto(`${BASE}/supplier/login`, { waitUntil: "networkidle" }).catch(() => undefined);
+      total += await scan(page, "/supplier/login", "anon");
+
+      await page.fill('input[type="email"]', SUPPLIER_ACCOUNT.email);
+      await page.fill('input[type="password"]', SUPPLIER_ACCOUNT.password);
+      await Promise.all([
+        page.waitForURL((url) => !url.pathname.endsWith("/login"), { timeout: 15_000 }),
+        page.click('button[type="submit"]'),
+      ]).catch(() => undefined);
+
+      for (const route of SUPPLIER_ROUTES) {
+        await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" }).catch(() => undefined);
+        await page.waitForTimeout(300);
+        total += await scan(page, route, "supplier");
+      }
+      await context.close();
+    }
+
     for (const group of PAGES) {
       const context = await browser.newContext({
         viewport: { width: 390, height: 844 },
@@ -81,31 +149,7 @@ async function main() {
       for (const route of group.routes) {
         await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" }).catch(() => undefined);
         await page.waitForTimeout(300);
-
-        const results = await new AxeBuilder({ page })
-          .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-          .analyze();
-
-        const serious = results.violations.filter(
-          (violation) => violation.impact === "serious" || violation.impact === "critical"
-        );
-        total += serious.length;
-
-        const summary = serious
-          .map((violation) => `${violation.id}(${violation.nodes.length})`)
-          .join(", ");
-        console.log(
-          `${route.padEnd(22)} ${group.role.padEnd(6)} ${serious.length === 0 ? "clean" : summary}`
-        );
-
-        if (asJson && serious.length > 0) {
-          for (const violation of serious) {
-            console.log(`    ${violation.id}: ${violation.help}`);
-            for (const node of violation.nodes.slice(0, 3)) {
-              console.log(`      ${node.target.join(" ")}`);
-            }
-          }
-        }
+        total += await scan(page, route, group.role);
       }
 
       await context.close();

@@ -16,6 +16,7 @@ export type AdminCounts = {
   openTransfers: number;
   needsReview: number;
   draftContent: number;
+  pendingDemoDays: number;
 };
 
 export const EMPTY_COUNTS: AdminCounts = {
@@ -24,19 +25,29 @@ export const EMPTY_COUNTS: AdminCounts = {
   openTransfers: 0,
   needsReview: 0,
   draftContent: 0,
+  pendingDemoDays: 0,
 };
 
 export async function getAdminCounts(): Promise<AdminCounts> {
   try {
-    const [openIssues, newRequests, openTransfers, needsReview, draftContent] = await Promise.all([
+    const [openIssues, newRequests, openTransfers, needsReview, draftContent, pendingDemoDays] =
+      await Promise.all([
       prisma.issueReport.count({ where: { status: { in: ["NEW", "IN_PROGRESS"] } } }),
       prisma.customerRequest.count({ where: { status: "NEW" } }),
       prisma.stockTransfer.count({ where: { status: { in: ["REQUESTED", "ACCEPTED", "SENT"] } } }),
       prisma.product.count({ where: { needsReview: true, active: true } }),
       prisma.brand.count({ where: { published: false } }),
+      prisma.demoDayBooking.count({ where: { status: "REQUESTED" } }),
     ]);
 
-    return { openIssues, newRequests, openTransfers, needsReview, draftContent };
+    return {
+      openIssues,
+      newRequests,
+      openTransfers,
+      needsReview,
+      draftContent,
+      pendingDemoDays,
+    };
   } catch {
     // A hub that renders without badges is better than a hub that does not
     // render.

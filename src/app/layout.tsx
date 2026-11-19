@@ -1,14 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Link from "next/link";
-import BottomBar from "@/components/nav/BottomBar";
-import Wordmark from "@/components/nav/Wordmark";
-import GlobalSearch from "@/components/nav/GlobalSearch";
-import Sidebar from "@/components/nav/Sidebar";
-import SignOutButton from "@/components/nav/SignOutButton";
-import { bottomBarFor, groupedNavFor } from "@/config/navigation";
-import { getFeatures } from "@/lib/features";
-import { countUnreadNews } from "@/lib/repositories/preferences";
-import { getSessionUser } from "@/lib/session";
 import { THEME_COLOR } from "@/styles/tokens";
 import "./globals.css";
 
@@ -29,74 +19,21 @@ export const viewport: Viewport = {
 };
 
 /**
- * The app shell.
+ * The document, and nothing else.
  *
- * One header everywhere, a bottom bar on phones and a sidebar from `lg` up,
- * all rendered from src/config/navigation.ts so a new feature appears in every
- * menu at once. Feature flags are resolved here and passed down, so an
- * unconfigured module is never offered.
+ * There are two apps in here now and they must not share a shell: the staff
+ * portal has a header, a sidebar and a bottom bar full of links, and a
+ * supplier is an external person who may see none of them. So the chrome
+ * moved down into `(staff)/layout.tsx` and `supplier/layout.tsx`, and this
+ * file keeps only what a document needs.
+ *
+ * The entry page at `/` sits here with no shell at all — it is a front door
+ * with two choices on it, and a link into the system would be one too many.
  */
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const user = await getSessionUser();
-  const features = await getFeatures();
-
-  const role = user?.role ?? null;
-  const sections = groupedNavFor(role, features);
-  const bottomEntries = bottomBarFor(role, features);
-  const unreadNews = user && features.news ? await countUnreadNews(user.id) : 0;
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sv">
-      <body className="min-h-dvh antialiased">
-        <a
-          href="#innehall"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-xl focus:bg-primary focus:px-4 focus:py-3 focus:text-on-primary"
-        >
-          Hoppa till innehållet
-        </a>
-
-        <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur">
-          <div className="mx-auto flex max-w-[82rem] items-center justify-between gap-3 px-3 py-2">
-            <Link href="/" className="flex min-h-11 items-center rounded-xl px-1">
-              <Wordmark />
-            </Link>
-
-            <div className="flex items-center gap-1">
-              <GlobalSearch />
-              {!user ? (
-                <Link
-                  href="/login"
-                  className="flex min-h-11 items-center rounded-xl px-3 text-sm font-medium text-ink transition hover:bg-raised"
-                >
-                  Logga in
-                </Link>
-              ) : null}
-            </div>
-          </div>
-        </header>
-
-        <div className="mx-auto flex max-w-[82rem] gap-4 px-0 lg:px-3">
-          {user ? (
-            <Sidebar sections={sections} signOut={<SignOutButton />} newsBadge={unreadNews} />
-          ) : null}
-
-          {/* A div, not a <main>: every page already renders its own <main>,
-              and nesting one inside another is invalid and breaks the landmark.
-              pb-24 clears the bottom bar on phones; lg drops it again. */}
-          <div id="innehall" className="min-w-0 flex-1 pb-24 lg:pb-0">
-            {children}
-          </div>
-        </div>
-
-        {user ? (
-          <BottomBar
-            entries={bottomEntries}
-            sections={sections}
-            signOut={<SignOutButton />}
-            newsBadge={unreadNews}
-          />
-        ) : null}
-      </body>
+      <body className="min-h-dvh antialiased">{children}</body>
     </html>
   );
 }

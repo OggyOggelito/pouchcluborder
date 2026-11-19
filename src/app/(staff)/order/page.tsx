@@ -3,7 +3,9 @@ import OrderForm from "@/components/OrderForm";
 import StorePicker from "@/components/StorePicker";
 import EmptyState from "@/components/ui/EmptyState";
 import PageHeader from "@/components/ui/PageHeader";
+import OrderPauseNotice from "@/components/OrderPauseNotice";
 import { resolveOrderingStore } from "@/lib/current-store";
+import { pauseBanner } from "@/lib/repositories/order-pause";
 import { pruneToCatalog } from "@/lib/order-drafts";
 import { getDraft } from "@/lib/repositories/order-drafts";
 import { listActiveProducts } from "@/lib/repositories/products";
@@ -48,9 +50,10 @@ export default async function OrderPage({
     return <StorePicker stores={resolution.choices} />;
   }
 
-  const [products, draft] = await Promise.all([
+  const [products, draft, pauses] = await Promise.all([
     listActiveProducts(),
     getDraft(user.id, resolution.store.id),
+    pauseBanner({ storeIds: [resolution.store.id] }),
   ]);
 
   if (products.length === 0) {
@@ -91,6 +94,11 @@ export default async function OrderPage({
         draft && pruned
           ? { lines: pruned.lines, note: draft.note ?? "", version: draft.version }
           : null
+      }
+      pauseNotice={
+        pauses.active.length > 0 || pauses.scheduled.length > 0 ? (
+          <OrderPauseNotice active={pauses.active} scheduled={pauses.scheduled} explain />
+        ) : null
       }
     />
   );

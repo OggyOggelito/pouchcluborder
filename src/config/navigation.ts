@@ -80,7 +80,10 @@ const ADMIN_ONLY = ["ADMIN"] as const;
 
 export const NAV_ENTRIES: NavEntry[] = [
   {
-    href: "/",
+    // "/" is the portal's front door now — two choices, staff or supplier —
+    // so the staff home has an address of its own. A signed-in staff user is
+    // redirected there from "/" and never sees the choice again.
+    href: "/idag",
     label: "Idag",
     description: "Dagens pass, checklistor och nyheter.",
     roles: ALL_ROLES,
@@ -253,6 +256,16 @@ export const NAV_ENTRIES: NavEntry[] = [
     searchable: true,
   },
   {
+    href: "/store/demo-days",
+    label: "Demodagar",
+    description: "Leverantörer som vill stå i butiken.",
+    roles: ALL_ROLES,
+    feature: "demoDays",
+    group: "shop",
+    icon: "request",
+    searchable: true,
+  },
+  {
     href: "/store/employees",
     label: "Anställda",
     description: "Butikens personal och vem som får erbjudas extrapass.",
@@ -333,7 +346,19 @@ export type AdminEntry = {
    * src/lib/repositories/admin-counts.ts — a key rather than a number so this
    * file stays a plain config with no queries in it.
    */
-  actionCount?: "openIssues" | "newRequests" | "openTransfers" | "needsReview" | "draftContent";
+  actionCount?:
+    | "openIssues"
+    | "newRequests"
+    | "openTransfers"
+    | "needsReview"
+    | "draftContent"
+    | "pendingDemoDays";
+  /**
+   * A per-account permission on top of the role, for a card that not every
+   * ADMIN should see. `canViewStats` is the only one today; the page checks
+   * it again, because a hidden card is not a permission.
+   */
+  permission?: "canViewStats";
   searchable?: boolean;
 };
 
@@ -428,6 +453,38 @@ export const ADMIN_ENTRIES: AdminEntry[] = [
     searchable: true,
   },
   {
+    href: "/admin/demo-days",
+    label: "Demodagar",
+    description: "Alla butiker, filter och export.",
+    section: "orders",
+    feature: "demoDays",
+    actionCount: "pendingDemoDays",
+    searchable: true,
+  },
+  {
+    href: "/admin/order-pause",
+    label: "Pausa beställningar",
+    description: "Stoppa nya beställningar, nu eller planerat.",
+    section: "orders",
+    searchable: true,
+  },
+  {
+    href: "/admin/suppliers",
+    label: "Leverantörskonton",
+    description: "Externa inloggningar, en per varumärke.",
+    section: "people",
+    searchable: true,
+  },
+  {
+    href: "/admin/stats",
+    label: "Statistik",
+    description: "Försäljning per dag, produkt och butik.",
+    section: "orders",
+    feature: "stats",
+    permission: "canViewStats",
+    searchable: true,
+  },
+  {
     href: "/admin/nearby",
     label: "Närliggande butiker",
     description: "Vilka butiker som ser varandras lediga medarbetare.",
@@ -486,10 +543,17 @@ export function groupedNavFor(
   })).filter((section) => section.entries.length > 0);
 }
 
-function adminFeatureOn(entry: AdminEntry, features: Features | null): boolean {
-  if (!entry.feature) return true;
-  if (!features) return true;
-  return features[entry.feature];
+/** What the viewer holds beyond their role. Null means "do not filter". */
+export type AdminPermissions = { canViewStats: boolean } | null;
+
+function adminVisible(
+  entry: AdminEntry,
+  features: Features | null,
+  permissions: AdminPermissions
+): boolean {
+  if (entry.feature && features && !features[entry.feature]) return false;
+  if (entry.permission && permissions && !permissions[entry.permission]) return false;
+  return true;
 }
 
 /**
@@ -499,13 +563,14 @@ function adminFeatureOn(entry: AdminEntry, features: Features | null): boolean {
  * hiding is a rendering decision, and the registry itself stays complete.
  */
 export function adminSections(
-  features: Features | null = null
+  features: Features | null = null,
+  permissions: AdminPermissions = null
 ): { section: AdminSection; label: string; entries: AdminEntry[] }[] {
   return ADMIN_SECTIONS.map((section) => ({
     section,
     label: ADMIN_SECTION_LABELS[section],
     entries: ADMIN_ENTRIES.filter(
-      (entry) => entry.section === section && adminFeatureOn(entry, features)
+      (entry) => entry.section === section && adminVisible(entry, features, permissions)
     ),
   })).filter((group) => group.entries.length > 0);
 }
@@ -513,7 +578,8 @@ export function adminSections(
 /** Pages global search may offer. */
 export function searchablePagesFor(
   role: Role | null,
-  features: Features | null = null
+  features: Features | null = null,
+  permissions: AdminPermissions = null
 ): { href: string; label: string; description?: string }[] {
   const pages = navFor(role, features)
     .filter((entry) => entry.searchable)
@@ -522,7 +588,7 @@ export function searchablePagesFor(
   if (role === "ADMIN") {
     pages.push(
       ...ADMIN_ENTRIES.filter(
-        (entry) => entry.searchable && adminFeatureOn(entry, features)
+        (entry) => entry.searchable && adminVisible(entry, features, permissions)
       ).map((entry) => ({
         href: entry.href,
         label: `Admin · ${entry.label}`,
@@ -537,8 +603,9 @@ export function searchablePagesFor(
  * Which nav entry a pathname belongs to, for the active state.
  *
  * Longest matching href wins, so /store/issues/new highlights
- * "Problemrapporter" rather than falling through. "/" only ever matches
- * exactly, or it would own every path in the app.
+ * "Problemrapporter" rather than falling through. A one-segment href still
+ * matches only itself plus its own subtree, which is what keeps "/idag" from
+ * owning anything else.
  */
 export function activeHref(pathname: string, entries: NavEntry[]): string | null {
   let best: string | null = null;

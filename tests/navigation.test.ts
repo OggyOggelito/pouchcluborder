@@ -103,7 +103,7 @@ describe("navigation per role", () => {
     for (const role of ROLES) {
       const bar = bottomBarFor(role, ALL_ON);
       assert.ok(bar.length > 0 && bar.length <= 4, `${role} bottom bar was ${bar.length}`);
-      assert.equal(bar[0]?.href, "/", `${role} should start at Idag`);
+      assert.equal(bar[0]?.href, "/idag", `${role} should start at Idag`);
     }
   });
 
@@ -130,7 +130,7 @@ describe("feature flags hide, they do not protect", () => {
 
   it("keeps the unflagged essentials whatever is switched off", () => {
     const hrefs = navFor("OWNER", nothingOn).map((entry) => entry.href);
-    for (const href of ["/", "/settings", "/notifications", "/store/notes"]) {
+    for (const href of ["/idag", "/settings", "/notifications", "/store/notes"]) {
       assert.ok(hrefs.includes(href), `${href} has no flag and must always show`);
     }
   });
@@ -159,9 +159,11 @@ describe("active state", () => {
   });
 
   it("never lets the home entry own the whole app", () => {
-    assert.equal(activeHref("/", entries), "/");
+    assert.equal(activeHref("/idag", entries), "/idag");
     assert.equal(activeHref("/order", entries), "/order");
     assert.equal(activeHref("/news", entries), "/news");
+    // "/" is the portal's front door and belongs to no menu entry at all.
+    assert.equal(activeHref("/", entries), null);
   });
 
   it("returns null for a route nothing registers", () => {
@@ -235,23 +237,43 @@ describe("every registered route exists on disk", () => {
    */
   function pageFileFor(href: string): string | null {
     const segments = href.split("/").filter(Boolean);
-    let dir = path.join(process.cwd(), "src", "app");
 
-    for (const segment of segments) {
+    /**
+     * Route groups — `(staff)` — are folders that are not part of the URL, so
+     * the walk has to look inside them. The staff app and the supplier portal
+     * are in different groups, which is how they get different shells.
+     */
+    function walk(dir: string, rest: string[]): string | null {
+      if (rest.length === 0) {
+        const file = path.join(dir, "page.tsx");
+        return existsSync(file) ? file : null;
+      }
+
+      const [segment, ...remaining] = rest;
+
       const direct = path.join(dir, segment);
       if (existsSync(direct)) {
-        dir = direct;
-        continue;
+        const found = walk(direct, remaining);
+        if (found) return found;
       }
-      const dynamic = readdirSync(dir).find(
-        (entry) => entry.startsWith("[") && entry.endsWith("]")
-      );
-      if (!dynamic) return null;
-      dir = path.join(dir, dynamic);
+
+      const entries = readdirSync(dir);
+
+      const dynamic = entries.find((entry) => entry.startsWith("[") && entry.endsWith("]"));
+      if (dynamic) {
+        const found = walk(path.join(dir, dynamic), remaining);
+        if (found) return found;
+      }
+
+      for (const group of entries.filter((entry) => entry.startsWith("("))) {
+        const found = walk(path.join(dir, group), rest);
+        if (found) return found;
+      }
+
+      return null;
     }
 
-    const file = path.join(dir, "page.tsx");
-    return existsSync(file) ? file : null;
+    return walk(path.join(process.cwd(), "src", "app"), segments);
   }
 
   it("has a page for every navigation entry", () => {
@@ -266,15 +288,28 @@ describe("every registered route exists on disk", () => {
     }
   });
 
-  it("still serves the order form, at its new address", () => {
-    // It lived at "/" until the portal grew a role-aware home. "/" is now
-    // Idag — which is what the brief asks for, so there is nothing to
-    // redirect to: the home page's primary button is the way in.
+  it("still serves the order form, and the front door", () => {
+    // The order form lived at "/" until the portal grew a role-aware home;
+    // that home then moved to "/idag" when "/" became the entry page with the
+    // two login choices on it.
     assert.ok(pageFileFor("/order"), "the order form must exist at /order");
-    assert.ok(pageFileFor("/"), "/ must still serve something");
+    assert.ok(pageFileFor("/"), "/ must serve the entry page");
+    assert.ok(pageFileFor("/idag"), "the staff home must exist at /idag");
     assert.ok(
       NAV_ENTRIES.some((entry) => entry.href === "/order"),
-      "/ was never in the nav config; /order must be"
+      "/order must be in the nav config"
+    );
+  });
+
+  it("has a page for the supplier portal, outside the staff group", () => {
+    // Not a NAV_ENTRY — the staff menu must never link here — so it is
+    // asserted directly.
+    for (const href of ["/supplier", "/supplier/login", "/supplier/boka", "/supplier/stats"]) {
+      assert.ok(pageFileFor(href), `${href} has no page.tsx`);
+    }
+    assert.ok(
+      !NAV_ENTRIES.some((entry) => entry.href.startsWith("/supplier")),
+      "the staff navigation must not offer the supplier portal"
     );
   });
 });

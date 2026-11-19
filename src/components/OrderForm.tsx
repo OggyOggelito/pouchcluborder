@@ -39,6 +39,7 @@ export default function OrderForm({
   products,
   canSwitchStore = false,
   initialDraft,
+  pauseNotice = null,
 }: {
   store: StoreSummary;
   products: CatalogProduct[];
@@ -46,6 +47,11 @@ export default function OrderForm({
   canSwitchStore?: boolean;
   /** The server-side draft for this user and store, if there is one. */
   initialDraft: { lines: DraftLines; note: string; version: number } | null;
+  /**
+   * Rendered above the basket while ordering is paused. The server refuses a
+   * paused submit whatever this says — it is the explanation, not the guard.
+   */
+  pauseNotice?: React.ReactNode;
 }) {
   const router = useRouter();
   const localKey = `pc_draft_${store.id}`;
@@ -63,6 +69,9 @@ export default function OrderForm({
   const [submitted, setSubmitted] = useState<Submitted | null>(null);
   const [saveState, setSaveState] = useState<SaveState>({ kind: "idle" });
   const [toast, setToast] = useState<string | null>(null);
+  /** Set when the server refuses a submit because ordering is paused. */
+  const [paused, setPaused] = useState<{ message: string; mayOverride: boolean } | null>(null);
+  const [overrideReason, setOverrideReason] = useState("");
 
   const version = useRef(initialDraft?.version ?? 0);
   const hydrated = useRef(false);
@@ -296,14 +305,36 @@ export default function OrderForm({
           lines: Object.entries(quantities)
             .filter(([, quantity]) => quantity > 0)
             .map(([productId, quantity]) => ({ productId, quantity })),
+          // Empty unless an admin has typed a reason; the server requires one
+          // and logs it against the pause.
+          overrideReason: overrideReason.trim() || undefined,
         }),
       });
 
-      const payload = (await response.json()) as { id?: string; error?: string };
+      const payload = (await response.json()) as {
+        id?: string;
+        error?: string;
+        paused?: boolean;
+        mayOverride?: boolean;
+      };
+
+      // A pause is not a failure of the basket: the draft is untouched and the
+      // order can go the moment it lifts, so it gets its own notice rather
+      // than the generic error line.
+      if (response.status === 409 && payload.paused) {
+        setPaused({
+          message: payload.error ?? "Beställningar är pausade.",
+          mayOverride: payload.mayOverride === true,
+        });
+        return;
+      }
 
       if (!response.ok || !payload.id) {
         throw new Error(payload.error ?? "Kunde inte spara beställningen.");
       }
+
+      setPaused(null);
+      setOverrideReason("");
 
       setSubmitted({ id: payload.id, ...totals });
       setQuantities({});
@@ -349,6 +380,10 @@ export default function OrderForm({
         storeName={store.name}
         saving={saving}
         error={error}
+        paused={paused}
+        overrideReason={overrideReason}
+        onOverrideReason={setOverrideReason}
+        pauseNotice={pauseNotice}
         onBack={() => setStep("pick")}
         onSubmit={submitOrder}
       />
@@ -357,6 +392,7 @@ export default function OrderForm({
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-44 pt-4">
+      {pauseNotice}
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h1 className="text-xl font-semibold tracking-tight">{store.name}</h1>
         {canSwitchStore ? (
@@ -687,6 +723,10 @@ function ReviewStep({
   storeName,
   saving,
   error,
+  paused,
+  overrideReason,
+  onOverrideReason,
+  pauseNotice,
   onBack,
   onSubmit,
 }: {
@@ -699,6 +739,10 @@ function ReviewStep({
   storeName: string;
   saving: boolean;
   error: string | null;
+  paused: { message: string; mayOverride: boolean } | null;
+  overrideReason: string;
+  onOverrideReason: (value: string) => void;
+  pauseNotice: React.ReactNode;
   onBack: () => void;
   onSubmit: () => void;
 }) {
@@ -706,6 +750,7 @@ function ReviewStep({
 
   return (
     <main className="mx-auto max-w-2xl px-4 pb-44 pt-4">
+      {pauseNotice}
       <button
         type="button"
         onClick={onBack}
@@ -775,6 +820,41 @@ function ReviewStep({
         <p role="alert" className="mt-4 rounded-xl bg-raised p-3 text-sm text-danger">
           {error}
         </p>
+      ) : null}
+
+      {/* A refused submit. The basket is still here and the draft is saved,
+          which is the first thing this has to say. */}
+      {paused ? (
+        <div
+          role="alert"
+          className="mt-4 rounded-2xl border border-warning bg-raised p-4 text-sm text-warning"
+        >
+          <p className="font-semibold">
+            <span className="sr-only">Varning:</span>
+            <span aria-hidden="true">⚠ </span>
+            {paused.message}
+          </p>
+          <p className="mt-1">
+            Beställningen är inte skickad. Allt du har valt ligger kvar och sparas — skicka den
+            när pausen är över.
+          </p>
+
+          {paused.mayOverride ? (
+            <label className="mt-3 block">
+              <span className="block font-medium">Skicka ändå (anledning krävs)</span>
+              <input
+                value={overrideReason}
+                onChange={(event) => onOverrideReason(event.target.value)}
+                maxLength={200}
+                placeholder="T.ex. akut, överenskommet med leverantören"
+                className="mt-1 min-h-tap w-full rounded-xl border border-control bg-surface px-3 text-ink"
+              />
+              <span className="mt-1 block text-xs">
+                Anledningen loggas mot pausen tillsammans med ditt namn.
+              </span>
+            </label>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="fixed inset-x-0 bottom-[4.25rem] z-30 px-4 lg:bottom-4">

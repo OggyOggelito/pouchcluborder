@@ -106,14 +106,21 @@ export async function globalSearchAction(query: string): Promise<SearchHit[]> {
       },
     })),
 
-    ...collect(searchablePagesFor(user?.role ?? null, features), (page) => ({
-      fields: [page.label, page.description],
-      hit: {
-        group: "page",
-        href: page.href,
-        title: page.label,
-        subtitle: page.description,
-      },
-    })),
+    ...collect(
+      searchablePagesFor(
+        user?.role ?? null,
+        features,
+        user ? { canViewStats: user.canViewStats } : null
+      ),
+      (page) => ({
+        fields: [page.label, page.description],
+        hit: {
+          group: "page",
+          href: page.href,
+          title: page.label,
+          subtitle: page.description,
+        },
+      })
+    ),
   ];
 }

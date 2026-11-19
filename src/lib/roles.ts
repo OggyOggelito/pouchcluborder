@@ -126,6 +126,52 @@ export function canManageNearbyStores(role: Role): boolean {
   return role === "ADMIN";
 }
 
+// ---------------------------------------------------------------------------
+// Supplier portal, statistics and the order pause
+//
+// `SUPPLIER` is deliberately absent from `ROLES`. A supplier is not a staff
+// account with fewer rights: they are an external person, they live in their
+// own table, they sign in through their own door and their session cookie
+// never reaches a staff route. Adding the string here would put it in the
+// admin role picker, which is the one place it must never appear.
+// ---------------------------------------------------------------------------
+
+/** Creating supplier accounts and issuing their links. */
+export function canManageSuppliers(role: Role): boolean {
+  return role === "ADMIN";
+}
+
+/** Confirming or declining a demo day. The store answers for its own day. */
+export function canDecideDemoDays(role: Role): boolean {
+  return role === "OWNER" || role === "ADMIN";
+}
+
+/** Pausing ordering, and lifting a pause. */
+export function canPauseOrders(role: Role): boolean {
+  return role === "ADMIN";
+}
+
+/**
+ * Pushing an order through a pause, with a reason that is logged.
+ *
+ * Same answer as `canPauseOrders` today, and a separate function anyway:
+ * "may stop everyone ordering" and "may ignore that for one order" are
+ * different powers, and one of them is far more likely to be delegated.
+ */
+export function canOverrideOrderPause(role: Role): boolean {
+  return role === "ADMIN";
+}
+
+/**
+ * The sales statistics.
+ *
+ * A role is not enough: the per-account `canViewStats` flag has to be on too.
+ * Written as a predicate over both so no page can get the rule half right.
+ */
+export function canViewSalesStats(input: { role: Role; canViewStats: boolean }): boolean {
+  return input.role === "ADMIN" && input.canViewStats;
+}
+
 /**
  * Which stores a role may see, given the user's own StoreAccess rows and the
  * full list.

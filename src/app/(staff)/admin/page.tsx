@@ -23,7 +23,7 @@ export const metadata = {
  * admin does and used to be the first thing on the page.
  */
 export default async function AdminPage() {
-  await requireAdmin();
+  const user = await requireAdmin();
 
   const [counts, products, features] = await Promise.all([
     getAdminCounts(),
@@ -31,8 +31,10 @@ export default async function AdminPage() {
     getFeatures(),
   ]);
   // Cards for a switched-off integration leave the hub rather than greying
-  // out. The TooEasy pages are the case today.
-  const sections = adminSections(features);
+  // out, and a card gated on a per-account permission leaves it for anybody
+  // who does not hold that permission. Hiding is not the protection — the
+  // pages check again — it just keeps the hub honest about what you can open.
+  const sections = adminSections(features, { canViewStats: user.canViewStats });
   const outstanding =
     counts.openIssues + counts.newRequests + counts.openTransfers + counts.needsReview;
 

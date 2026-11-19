@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { ALL_FEATURES, type Features } from "@/lib/feature-keys";
+import { salesStatsEnabled } from "@/lib/sales";
 
 export { FEATURE_KEYS, ALL_FEATURES, NO_FEATURES } from "@/lib/feature-keys";
 export type { FeatureKey, Features } from "@/lib/feature-keys";
@@ -54,7 +55,16 @@ async function scheduleIsLive(): Promise<boolean> {
 
 export const getFeatures = cache(async (): Promise<Features> => {
   try {
-    const [schedule, news, checklists, quizzes, routines, brands, products] = await Promise.all([
+    const [
+      schedule,
+      news,
+      checklists,
+      quizzes,
+      routines,
+      brands,
+      products,
+      supplierAccounts,
+    ] = await Promise.all([
       scheduleIsLive(),
       prisma.announcement.count({ where: { publishedAt: { not: null } } }),
       prisma.checklistTemplate.count({ where: { active: true } }),
@@ -62,6 +72,7 @@ export const getFeatures = cache(async (): Promise<Features> => {
       prisma.knowledgeArticle.count({ where: { published: true } }),
       prisma.brand.count({ where: { published: true } }),
       prisma.product.count({ where: { active: true } }),
+      prisma.supplierUser.count({ where: { active: true } }),
     ]);
 
     return {
@@ -79,10 +90,18 @@ export const getFeatures = cache(async (): Promise<Features> => {
       // mapping and the status probe — hide while it is off; the code behind
       // them is untouched and comes back with the flag.
       tooeasy: (process.env.SCHEDULE_PROVIDER ?? "manual").toLowerCase() === "tooeasy",
+      // Demo days need somewhere to send the supplier and something for them
+      // to book, so the menu waits for the first supplier account rather than
+      // offering an empty queue to every store.
+      demoDays: supplierAccounts > 0,
+      // Statistics are an explicit switch, not a count: the figures are
+      // commercially sensitive and must not appear because a file happened to
+      // be imported.
+      stats: salesStatsEnabled(),
     };
   } catch {
     // A flag query failing must not blank the navigation. Showing a module
     // that turns out to be empty is the lesser harm.
-    return { ...ALL_FEATURES, push: false, tooeasy: false };
+    return { ...ALL_FEATURES, push: false, tooeasy: false, stats: salesStatsEnabled() };
   }
 });

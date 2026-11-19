@@ -19,6 +19,8 @@ export default function ConfirmButton({
   confirmLabel = "Ja, fortsätt",
   cancelLabel = "Avbryt",
   tone = "danger",
+  name,
+  value,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -27,6 +29,13 @@ export default function ConfirmButton({
   confirmLabel?: string;
   cancelLabel?: string;
   tone?: "danger" | "neutral";
+  /**
+   * Passed to the real submit button, for a form whose action depends on
+   * which button was pressed. The trigger stays a plain `type="button"`, so
+   * only a confirmed press submits anything.
+   */
+  name?: string;
+  value?: string;
 }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -88,6 +97,8 @@ export default function ConfirmButton({
               <button
                 ref={confirmRef}
                 type="submit"
+                name={name}
+                value={value}
                 className={`min-h-tap flex-1 rounded-2xl px-4 font-semibold text-on-primary transition ${
                   tone === "danger" ? "bg-danger" : "bg-primary"
                 }`}

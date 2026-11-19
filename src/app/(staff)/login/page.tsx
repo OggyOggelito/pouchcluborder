@@ -11,10 +11,10 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const user = await getSessionUser();
-  if (user) redirect("/");
+  if (user) redirect("/idag");
 
   const { next } = await searchParams;
-  const safeNext = next?.startsWith("/") && !next.startsWith("//") ? next : "/";
+  const safeNext = next?.startsWith("/") && !next.startsWith("//") ? next : "/idag";
 
   return (
     <main className="mx-auto max-w-sm px-4 py-12">
@@ -31,6 +31,11 @@ export default async function LoginPage({
           Till varumärkesguiden
         </Link>{" "}
         <span className="text-muted">(kräver ingen inloggning)</span>
+      </p>
+      <p className="mt-4 text-sm">
+        <Link href="/" className="text-muted underline underline-offset-4">
+          Byt inloggning
+        </Link>
       </p>
     </main>
   );

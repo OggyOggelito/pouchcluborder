@@ -7,12 +7,17 @@ import {
   canActOnStore,
   canArchiveNotes,
   canDeleteNotes,
+  canDecideDemoDays,
   canEditOpeningHours,
   canEditRoutines,
   canEditSchedule,
   canManageEmployees,
   canManageIssues,
   canManageNearbyStores,
+  canManageSuppliers,
+  canOverrideOrderPause,
+  canPauseOrders,
+  canViewSalesStats,
   canPlaceOrders,
   canViewAvailability,
   canViewTeamSchedule,
@@ -37,6 +42,9 @@ describe("role capabilities", () => {
     viewAvailability: boolean;
     editOpeningHours: boolean;
     manageNearby: boolean;
+    manageSuppliers: boolean;
+    decideDemoDays: boolean;
+    pauseOrders: boolean;
   }> = {
     STAFF: {
       allStores: false,
@@ -52,6 +60,9 @@ describe("role capabilities", () => {
       viewAvailability: false,
       editOpeningHours: false,
       manageNearby: false,
+      manageSuppliers: false,
+      decideDemoDays: false,
+      pauseOrders: false,
     },
     OWNER: {
       allStores: false,
@@ -67,6 +78,9 @@ describe("role capabilities", () => {
       viewAvailability: true,
       editOpeningHours: true,
       manageNearby: false,
+      manageSuppliers: false,
+      decideDemoDays: true,
+      pauseOrders: false,
     },
     ADMIN: {
       allStores: true,
@@ -82,6 +96,9 @@ describe("role capabilities", () => {
       viewAvailability: true,
       editOpeningHours: true,
       manageNearby: true,
+      manageSuppliers: true,
+      decideDemoDays: true,
+      pauseOrders: true,
     },
   };
 
@@ -113,7 +130,33 @@ describe("role capabilities", () => {
         expected.manageNearby,
         `${role} manageNearby`
       );
+      assert.equal(canManageSuppliers(role), expected.manageSuppliers, `${role} manageSuppliers`);
+      assert.equal(canDecideDemoDays(role), expected.decideDemoDays, `${role} decideDemoDays`);
+      assert.equal(canPauseOrders(role), expected.pauseOrders, `${role} pauseOrders`);
+      assert.equal(
+        canOverrideOrderPause(role),
+        expected.pauseOrders,
+        `${role} overrideOrderPause`
+      );
     }
+  });
+
+  it("needs both the role and the permission to read a supplier's figures", () => {
+    // The sales figures are a supplier's commercial data. The ADMIN role is
+    // necessary and not sufficient: the per-account flag has to be on too, and
+    // it is off by default.
+    assert.equal(canViewSalesStats({ role: "ADMIN", canViewStats: true }), true);
+    assert.equal(canViewSalesStats({ role: "ADMIN", canViewStats: false }), false);
+    assert.equal(canViewSalesStats({ role: "OWNER", canViewStats: true }), false);
+    assert.equal(canViewSalesStats({ role: "STAFF", canViewStats: true }), false);
+  });
+
+  it("keeps supplier accounts out of the staff role list entirely", async () => {
+    // SUPPLIER is not a staff role and must never appear in the admin role
+    // picker — a supplier is an external person in a separate table, not a
+    // staff account with fewer rights.
+    const { ROLES: staffRoles } = await import("../src/lib/roles");
+    assert.ok(!(staffRoles as readonly string[]).includes("SUPPLIER"));
   });
 
   it("lets an OWNER run their own schedule but not decide who sees whose staff", () => {

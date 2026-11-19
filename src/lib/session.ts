@@ -9,6 +9,7 @@ import {
   canAccessAllStores,
   canActOnStore,
   canPlaceOrders,
+  canViewSalesStats,
 } from "@/lib/roles";
 
 /**
@@ -75,5 +76,19 @@ export async function requireOrderingUser(next?: string): Promise<UserRecord> {
   if (!canPlaceOrders(user.role)) {
     notFound();
   }
+  return user;
+}
+
+/**
+ * The sales statistics.
+ *
+ * Two gates, not one: the ADMIN role and the per-account `canViewStats` flag.
+ * A supplier's sales figures are their commercial data, and "every admin" is a
+ * wider audience than anybody agreed to. 404 rather than a refusal page, like
+ * the rest of the admin area.
+ */
+export async function requireStatsUser(next = "/admin/stats"): Promise<UserRecord> {
+  const user = await requireUser(next);
+  if (!canViewSalesStats(user)) notFound();
   return user;
 }

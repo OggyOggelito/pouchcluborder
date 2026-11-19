@@ -6,6 +6,12 @@ export type UserRecord = {
   email: string;
   name: string | null;
   role: Role;
+  /**
+   * Seeing the sales statistics, on top of the ADMIN role. Off by default and
+   * granted per account: the figures are a supplier's commercial data and not
+   * every admin has a reason to read them.
+   */
+  canViewStats: boolean;
   stores: { id: string; name: string; slug: string; city: string | null }[];
 };
 
@@ -14,6 +20,7 @@ const USER_SELECT = {
   email: true,
   name: true,
   role: true,
+  canViewStats: true,
   storeAccess: {
     select: { store: { select: { id: true, name: true, slug: true, city: true } } },
     orderBy: { store: { name: "asc" } },
@@ -25,6 +32,7 @@ type RawUser = {
   email: string;
   name: string | null;
   role: string;
+  canViewStats: boolean;
   storeAccess: { store: { id: string; name: string; slug: string; city: string | null } }[];
 };
 
@@ -34,6 +42,7 @@ function toRecord(user: RawUser): UserRecord {
     email: user.email,
     name: user.name,
     role: toRole(user.role),
+    canViewStats: user.canViewStats,
     stores: user.storeAccess.map((access) => access.store),
   };
 }

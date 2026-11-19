@@ -46,6 +46,10 @@ model Store {
   nearbyTo           StoreNearby[]           @relation("nearbyTo")
   extraShiftRequests ExtraShiftRequest[]     @relation("extraShiftRequests")
 
+  salesDaily      SalesDaily[]
+  demoDayBookings DemoDayBooking[]
+  orderPauses     OrderPause[]
+
   @@index([region])
   @@map("stores")
 }
@@ -99,6 +103,18 @@ model User {
   scheduleChanges           ScheduleChange[]
   createdExtraShiftRequests ExtraShiftRequest[] @relation("createdExtraShiftRequests")
   extraShiftEvents          ExtraShiftEvent[]
+
+  /// Seeing the sales statistics is a per-account permission on top of the
+  /// ADMIN role, because the figures are commercially sensitive and not every
+  /// admin needs them. Default off; only an ADMIN can grant it.
+  canViewStats Boolean @default(false)
+
+  invitedSuppliers SupplierUser[]       @relation("invitedSuppliers")
+  salesImports     SalesImport[]
+  decidedDemoDays  DemoDayBooking[]     @relation("decidedDemoDays")
+  createdPauses    OrderPause[]         @relation("createdPauses")
+  liftedPauses     OrderPause[]         @relation("liftedPauses")
+  pauseOverrides   OrderPauseOverride[]
 
   @@map("users")
 }
@@ -218,6 +234,10 @@ model Brand {
   products Product[]
   quizzes  Quiz[]
 
+  supplierUsers   SupplierUser[]
+  demoDayBookings DemoDayBooking[]
+  orderPauses     OrderPause[]
+
   @@index([published])
   @@map("brands")
 }
@@ -308,6 +328,7 @@ model Product {
   updatedAt DateTime @updatedAt
 
   orderLines       OrderLine[]
+  salesDaily       SalesDaily[]
   customerRequests CustomerRequest[]
   transferLines    StockTransferLine[]
   issueReports     IssueReport[]
@@ -1124,4 +1145,275 @@ model ExtraShiftEvent {
 
   @@index([requestId, createdAt])
   @@map("extra_shift_events")
+}
+
+// ---------------------------------------------------------------------------
+// Supplier portal
+//
+// Suppliers are external people. They sign in through a separate door, with a
+// separate session cookie scoped to /supplier, and they live in a table of
+// their own rather than in `User`.
+//
+// The separate table is the point: every staff query that lists people reads
+// `users`, and one forgotten filter would put a supplier's account on an
+// internal screen. A supplier cannot be returned by a query that does not name
+// this table.
+//
+// What is stored about a supplier is a login and a brand. No phone, no
+// address, no company contact details, no customers — see docs/supplier-portal.md.
+// ---------------------------------------------------------------------------
+
+/// One login belonging to one brand. A brand may have several.
+model SupplierUser {
+  id    String @id @default(cuid())
+  email String @unique
+
+  /// Null between the invite being issued and the supplier choosing a
+  /// password. A row with no hash cannot sign in at all.
+  hashedPassword String?
+  name           String?
+
+  /// Exactly one brand. This is the whole of a supplier's authorization.
+  brandId String
+  brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  active Boolean @default(true)
+
+  /// Set when an admin issues a temporary password; cleared once changed.
+  mustChangePassword Boolean @default(false)
+
+  /// SHA-256 of the invite or reset token — never the token itself, which
+  /// exists only in the link the admin hands over.
+  inviteTokenHash String?   @unique
+  inviteExpiresAt DateTime?
+  /// INVITE | RESET, so an expired link can say which kind it was.
+  inviteKind      String?
+
+  invitedById String?
+  invitedBy   User?   @relation("invitedSuppliers", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  lastLoginAt DateTime?
+
+  /// When this supplier last opened their bookings. There is no mail
+  /// transport in this app, so a decision is announced by a marker in the
+  /// portal rather than an email; this is what makes it "new".
+  bookingsSeenAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings DemoDayBooking[]
+
+  @@index([brandId, active])
+  @@map("supplier_users")
+}
+
+// ---------------------------------------------------------------------------
+// Sales statistics
+//
+// Daily totals per store and product. Never receipt lines, never a till, never
+// a cashier, never a customer — the grain is the smallest thing a supplier is
+// allowed to see and the smallest thing worth keeping.
+// ---------------------------------------------------------------------------
+
+/// One run of the importer, so a day's figures can be traced to a file.
+model SalesImport {
+  id String @id @default(cuid())
+
+  /// Which provider produced it: "manual" (CSV) or "sharp" once that exists.
+  source   String
+  fileName String?
+
+  /// Local dates the file covered, "2026-11-04".
+  fromDate String
+  toDate   String
+
+  rowsRead      Int @default(0)
+  rowsStored    Int @default(0)
+  rowsUnmatched Int @default(0)
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  rows      SalesDaily[]
+  unmatched SalesUnmatched[]
+
+  @@index([createdAt])
+  @@map("sales_imports")
+}
+
+/// One product's sales in one store on one day.
+model SalesDaily {
+  id String @id @default(cuid())
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// Local date, "2026-11-04". Text, like every other date in this app: a
+  /// day's takings belong to the day the shop was open, not to an instant.
+  date String
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity Int
+  /// Gross sales in SEK, if the source gives it. Optional: a provider that
+  /// only reports units is still useful, and a zero would be a lie.
+  amount   Float?
+
+  importId String?
+  import   SalesImport? @relation(fields: [importId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  /// Re-importing a day replaces it. One row per store, day and product is
+  /// what makes that possible without ever doubling a figure.
+  @@unique([storeId, date, productId])
+  @@index([date])
+  @@index([productId, date])
+  @@map("sales_daily")
+}
+
+/// A sales row we could not tie to a product. Never dropped silently.
+model SalesUnmatched {
+  id String @id @default(cuid())
+
+  importId String
+  import   SalesImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  /// Whatever the file said, kept verbatim so an admin can map it by hand.
+  sku         String?
+  ean         String?
+  description String?
+  storeName   String?
+
+  storeId  String?
+  date     String
+  quantity Int
+  amount   Float?
+
+  resolvedAt        DateTime?
+  resolvedProductId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([importId])
+  @@index([resolvedAt])
+  @@map("sales_unmatched")
+}
+
+// ---------------------------------------------------------------------------
+// Demo days
+// ---------------------------------------------------------------------------
+
+/// One store's slot in a demo-day request.
+///
+/// A request for three stores is three rows sharing a `groupId`: each store
+/// answers for itself, so a group can be half confirmed, and the supplier sees
+/// a status per store rather than one verdict for all of them.
+model DemoDayBooking {
+  id String @id @default(cuid())
+
+  /// Shared by every store booked in one go.
+  groupId String
+
+  brandId String
+  brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  supplierUserId String?
+  supplierUser   SupplierUser? @relation(fields: [supplierUserId], references: [id], onDelete: SetNull)
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  /// Local date and wall-clock times, as everywhere else in this app.
+  date     String
+  startsAt String
+  endsAt   String
+
+  /// About the demo, max 300 characters. The form says so, and says not to
+  /// write anything about a customer.
+  note String?
+
+  /// REQUESTED | CONFIRMED | DECLINED | CANCELLED_BY_SUPPLIER | CANCELLED_BY_STORE
+  status String @default("REQUESTED")
+
+  decidedById  String?
+  decidedBy    User?     @relation("decidedDemoDays", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedAt    DateTime?
+  /// Optional, shown to the supplier. Written by staff about the shop.
+  decisionNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storeId, date])
+  @@index([brandId, date])
+  @@index([groupId])
+  @@index([status])
+  @@map("demo_day_bookings")
+}
+
+// ---------------------------------------------------------------------------
+// Order pause
+// ---------------------------------------------------------------------------
+
+/// A window during which orders are not accepted.
+///
+/// Open-ended by default: `endsAt` null means "until somebody lifts it", which
+/// is what a pause usually is. Lifting sets `liftedAt` rather than deleting
+/// the row, so the history says what happened and when.
+model OrderPause {
+  id String @id @default(cuid())
+
+  /// ALL | STORE | BRAND
+  scope String @default("ALL")
+
+  storeId String?
+  store   Store?  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  brandId String?
+  brand   Brand?  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  startsAt DateTime
+  endsAt   DateTime?
+
+  /// Shown to staff wherever ordering is. Swedish, max 200 characters.
+  message String
+
+  createdById String?
+  createdBy   User?   @relation("createdPauses", fields: [createdById], references: [id], onDelete: SetNull)
+
+  liftedAt   DateTime?
+  liftedById String?
+  liftedBy   User?     @relation("liftedPauses", fields: [liftedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  overrides OrderPauseOverride[]
+
+  @@index([startsAt])
+  @@index([liftedAt])
+  @@map("order_pauses")
+}
+
+/// An admin pushing an order through a pause. The reason is required.
+model OrderPauseOverride {
+  id      String     @id @default(cuid())
+  pauseId String
+  pause   OrderPause @relation(fields: [pauseId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  storeId String?
+  orderId String?
+  reason  String
+
+  createdAt DateTime @default(now())
+
+  @@index([pauseId, createdAt])
+  @@map("order_pause_overrides")
 }

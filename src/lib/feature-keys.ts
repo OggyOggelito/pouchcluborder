@@ -18,6 +18,8 @@ export const FEATURE_KEYS = [
   "guide",
   "push",
   "tooeasy",
+  "demoDays",
+  "stats",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];

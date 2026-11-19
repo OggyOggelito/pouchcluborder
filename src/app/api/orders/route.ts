@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
 import { createOrder, OrderValidationError } from "@/lib/repositories/orders";
 import { deleteDraft } from "@/lib/repositories/order-drafts";
+import { activePausesFor, recordOverride } from "@/lib/repositories/order-pause";
+import { describePause } from "@/lib/order-pause";
 import { canOrderForStore, getSessionUser } from "@/lib/session";
-import { canPlaceOrders } from "@/lib/roles";
+import { canOverrideOrderPause, canPlaceOrders } from "@/lib/roles";
 
 export const runtime = "nodejs";
 
@@ -10,6 +13,8 @@ type Payload = {
   storeId?: unknown;
   note?: unknown;
   lines?: unknown;
+  /** An ADMIN pushing an order through a pause. Required, and logged. */
+  overrideReason?: unknown;
 };
 
 export async function POST(request: Request) {
@@ -54,6 +59,32 @@ export async function POST(request: Request) {
     return [{ productId, quantity: Math.trunc(quantity) }];
   });
 
+  // Ordering may be paused. Checked here rather than only in the form: the
+  // form is a convenience and this is the door. A pause on one brand only
+  // bites when the basket actually contains it, so the brands in the basket
+  // are part of the question.
+  const brandIds = await brandsInBasket(lines.map((line) => line.productId));
+  const pauses = await activePausesFor({ storeId: body.storeId, brandIds });
+
+  const overrideReason =
+    typeof body.overrideReason === "string" ? body.overrideReason.trim() : "";
+
+  if (pauses.length > 0) {
+    const mayOverride = canOverrideOrderPause(user.role);
+
+    if (!mayOverride || overrideReason.length === 0) {
+      return NextResponse.json(
+        {
+          error: pauses.map(describePause).join(" "),
+          paused: true,
+          // Tells the form whether to offer the override box at all.
+          mayOverride,
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   try {
     const order = await createOrder({
       storeId: body.storeId,
@@ -67,6 +98,17 @@ export async function POST(request: Request) {
     // beställning" card pointing at an order already sent.
     await deleteDraft(user.id, body.storeId);
 
+    // Logged after the order exists, so the record points at a real order.
+    for (const pause of pauses) {
+      await recordOverride({
+        pauseId: pause.id,
+        userId: user.id,
+        storeId: body.storeId,
+        orderId: order.id,
+        reason: overrideReason,
+      });
+    }
+
     return NextResponse.json({ id: order.id }, { status: 201 });
   } catch (error) {
     if (error instanceof OrderValidationError) {
@@ -75,4 +117,14 @@ export async function POST(request: Request) {
     console.error("Failed to create order", error);
     return NextResponse.json({ error: "Kunde inte spara beställningen." }, { status: 500 });
   }
+}
+
+/** The brands a basket touches, for brand-scoped pauses. */
+async function brandsInBasket(productIds: string[]): Promise<string[]> {
+  if (productIds.length === 0) return [];
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { brandId: true },
+  });
+  return [...new Set(products.flatMap((product) => (product.brandId ? [product.brandId] : [])))];
 }

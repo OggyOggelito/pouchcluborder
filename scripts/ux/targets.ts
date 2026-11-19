@@ -20,7 +20,7 @@ const ACCOUNTS = {
 type RoleKey = keyof typeof ACCOUNTS;
 
 const PAGES: [RoleKey, string][] = [
-  ["owner", "/"],
+  ["owner", "/idag"],
   ["owner", "/order"],
   ["owner", "/orders"],
   ["owner", "/transfers"],
@@ -35,10 +35,14 @@ const PAGES: [RoleKey, string][] = [
   ["owner", "/schedule/available"],
   ["owner", "/schedule/extra"],
   ["owner", "/store/employees"],
+  ["owner", "/store/demo-days"],
   ["admin", "/admin"],
   ["admin", "/admin/requests"],
   ["admin", "/admin/nearby"],
   ["admin", "/admin/schedule"],
+  ["admin", "/admin/suppliers"],
+  ["admin", "/admin/order-pause"],
+  ["admin", "/admin/demo-days"],
 ];
 
 async function signIn(page: Page, role: RoleKey) {
