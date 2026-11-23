@@ -48,6 +48,7 @@ the seed again updates existing rows instead of duplicating them.
 | `npm run seed:supplier-demo` | Fake supplier logins and invented sales, for testing (`-- --remove` undoes it) |
 | `npm run flavors:retag` | Derive flavour groups (skips hand-edited rows) |
 | `npm test` | Run the test suite |
+| `npm run sharp:probe -- --path "/..."` | Probe a Sharp endpoint and report its shape, never its values |
 | `npm run ux:shots -- before\|after` | Screenshots of the main screens at 390x844 |
 | `npm run ux:axe` | axe-core accessibility scan; `-- --json` for selectors |
 | `npm run ux:targets` | Tap targets under 44px and sideways scroll |
@@ -934,6 +935,25 @@ interface SalesProvider {
 The CSV parser produces the same `SalesLine[]` the real provider will, so the
 whole path behind the seam is already being exercised by real imports.
 
+### Probing Sharp when we get access
+
+Most of the intake list is answerable from one real response, and far faster
+that way than in a meeting:
+
+```bash
+npm run sharp:probe -- --path "/sales?from=2026-11-10&to=2026-11-10"
+```
+
+It reports whether a row is a receipt line or a day's total, whether it carries
+a time of day, a cashier, a customer, an EAN, a VAT figure or a negative
+quantity — and then says which questions it could *not* answer, which is the
+other half of the value.
+
+It prints **shapes** — field names, types, lengths — and never a value. A till
+feed may contain a person, and finding that out should not mean putting it on a
+terminal. The endpoint is an argument rather than a constant precisely because
+nobody has told us one yet; credentials come from `.env.local`.
+
 ### What is stored
 
 `SalesDaily` is **one row per store, day and product**. No receipt lines, no
@@ -971,6 +991,39 @@ commercial data and "every admin" is a wider audience than anybody agreed to.
 The page also has **"Se som leverantör"**, which renders the very same component
 the supplier gets — so what an admin checks cannot drift from what a supplier
 sees.
+
+## Fortnox
+
+**Nothing is built, on purpose.** There is no Fortnox code in this repository:
+no client, no token storage, no schema, not even a stub. Fortnox is a dozen
+APIs — bookkeeping, supplier invoices, customer invoices, orders, articles,
+payroll — and which one matters depends on what is being done by hand today.
+
+[`docs/fortnox-intake.md`](./docs/fortnox-intake.md) is the list of questions
+that turns that into a project. Three of them decide the rest:
+
+- **Which number is somebody assembling by hand each month, out of what?** The
+  answer decides the direction, and the direction decides everything else.
+- **Pull, push, or neither?** Reading Fortnox into a page here, pushing orders
+  into Fortnox, or just an export — the third is the one to rule out first,
+  because if it is enough it costs a day instead of a quarter.
+- **Are our five stores separate cost centres in Fortnox?** If the books do not
+  separate the shops, a per-store figure cannot be produced however good the
+  API is. This may be the real blocker, and it is not a software one.
+
+Two findings from the API worth knowing before anyone promises a date, both
+noted in the document with links to verify:
+
+- OAuth2 means an access token of about an hour and a **refresh token of about
+  45 days**. The integration dies if nobody uses it for 45 days, and
+  reconnecting needs a human at a consent screen. That is an operational
+  commitment, and this app has no job runner and no alerting.
+- A Fortnox scope appears to grant **read *and* write** — there is no read-only
+  scope. An integration that only wants to look at supplier invoices must be
+  granted the right to change them. For a request whose whole purpose is
+  oversight, that is worth a conversation before anybody clicks approve.
+
+`.env.example` has commented placeholders. Nothing reads them.
 
 ## Pausa beställningar
 

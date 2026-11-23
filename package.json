@@ -24,6 +24,7 @@
     "seed:hours": "tsx --env-file-if-exists=.env prisma/seed-opening-hours.ts",
     "seed:supplier-demo": "tsx --env-file-if-exists=.env prisma/seed-supplier-demo.ts",
     "tooeasy:probe": "tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/tooeasy-probe.ts",
+    "sharp:probe": "tsx --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/sharp-probe.ts",
     "test": "node --import tsx --test tests/*.test.ts",
     "ux:shots": "tsx scripts/ux/shots.ts",
     "ux:axe": "tsx scripts/ux/axe.ts",
